@@ -12,6 +12,7 @@ group("all") {
       ":http-util-testrunner",
       ":ipp-manager-testrunner",
       ":ipp-util-testrunner",
+      ":jpeg-util-testrunner",
       ":load-config-testrunner",
       ":smart-buffer-testrunner",
     ]
@@ -22,6 +23,7 @@ pkg_config("target_defaults") {
   pkg_deps = [
     "libbrillo",
     "libchrome",
+    "libjpeg",
     "libxml-2.0",
   ]
 }
@@ -35,6 +37,7 @@ executable("virtual-usb-printer") {
     "http_util.cc",
     "ipp_manager.cc",
     "ipp_util.cc",
+    "jpeg_util.cc",
     "load_config.cc",
     "op_commands.cc",
     "server.cc",
@@ -62,6 +65,7 @@ if (use.test) {
       "escl_manager.cc",
       "escl_manager_test.cc",
       "ipp_util.cc",
+      "jpeg_util.cc",
       "smart_buffer.cc",
       "xml_util.cc",
     ]
@@ -113,6 +117,19 @@ if (use.test) {
       "ipp_util_test.cc",
       "smart_buffer.cc",
       "value_util.cc",
+    ]
+    deps = [ "//common-mk/testrunner" ]
+  }
+
+  executable("jpeg-util-testrunner") {
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    sources = [
+      "jpeg_util.cc",
+      "jpeg_util_test.cc",
     ]
     deps = [ "//common-mk/testrunner" ]
   }

@@ -6,12 +6,12 @@
 
 #include <utility>
 
-#include <base/files/file_util.h>
 #include <base/logging.h>
 #include <base/strings/string_split.h>
 #include <base/strings/string_util.h>
 #include <crypto/random.h>
 
+#include "jpeg_util.h"
 #include "xml_util.h"
 
 namespace {
@@ -193,10 +193,8 @@ base::Optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
   return result;
 }
 
-EsclManager::EsclManager(ScannerCapabilities scanner_capabilities,
-                         const base::FilePath& document_path)
-    : scanner_capabilities_(std::move(scanner_capabilities)),
-      document_path_(document_path) {}
+EsclManager::EsclManager(ScannerCapabilities scanner_capabilities)
+    : scanner_capabilities_(std::move(scanner_capabilities)) {}
 
 HttpResponse EsclManager::HandleEsclRequest(const HttpRequest& request,
                                             const SmartBuffer& request_body) {
@@ -305,6 +303,7 @@ HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
   JobInfo job;
   job.created = base::TimeTicks::Now();
   job.state = kPending;
+  job.settings = std::move(settings);
   status_.jobs[uuid] = job;
 
   response.status = "201 Created";
@@ -344,14 +343,16 @@ HttpResponse EsclManager::HandleGetNextDocument(const std::string& uri) {
       break;
     case kPending: {
       status_.jobs[uuid].state = kCompleted;
-      std::string document;
-      if (!base::ReadFileToString(document_path_, &document)) {
-        LOG(ERROR) << "Failed to read document at " << document_path_
-                   << ", sending empty response";
+      base::Optional<std::vector<uint8_t>> image =
+          GenerateJpegFromScanSettings(info.settings);
+      if (!image.has_value()) {
+        LOG(ERROR) << "Failed to generate image, sending error response.";
+        response.status = "500 Internal Server Error";
+      } else {
+        response.status = "200 OK";
+        response.headers["Content-Type"] = "image/jpeg";
+        response.body.Add(image.value());
       }
-      response.status = "200 OK";
-      response.headers["Content-Type"] = "image/jpeg";
-      response.body.Add(document);
       break;
     }
   }

@@ -236,7 +236,7 @@ TEST(HandleEsclRequest, InvalidEndpoint) {
   request.uri = "/eSCL/InvalidEndpoint";
 
   ScannerCapabilities caps;
-  EsclManager manager(caps, base::FilePath());
+  EsclManager manager(caps);
   HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
   EXPECT_EQ(response.status, "404 Not Found");
   EXPECT_EQ(response.body.size(), 0);
@@ -253,7 +253,7 @@ TEST(HandleEsclRequest, ScannerCapabilities) {
   base::Optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
-  EsclManager manager(caps.value(), base::FilePath());
+  EsclManager manager(caps.value());
   HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
   EXPECT_EQ(response.status, "200 OK");
   EXPECT_GT(response.body.size(), 0);
@@ -274,7 +274,7 @@ TEST(HandleEsclRequest, ScannerStatus) {
   request.uri = "/eSCL/ScannerStatus";
 
   ScannerCapabilities caps;
-  EsclManager manager(caps, base::FilePath());
+  EsclManager manager(caps);
   HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
   EXPECT_EQ(response.status, "200 OK");
   EXPECT_GT(response.body.size(), 0);
@@ -294,7 +294,7 @@ TEST(HandleEsclRequest, ScanJobs) {
   base::Optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
-  EsclManager manager(caps.value(), base::FilePath());
+  EsclManager manager(caps.value());
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
   SmartBuffer body(xml);
 
@@ -315,7 +315,7 @@ TEST(HandleEsclRequest, InvalidScanJobs) {
   base::Optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(std::move(json));
   ASSERT_TRUE(caps);
-  EsclManager manager(caps.value(), base::FilePath());
+  EsclManager manager(caps.value());
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
   SmartBuffer body(xml);
 
@@ -331,7 +331,7 @@ TEST(HandleEsclRequest, DeleteExistingScanJob) {
   base::Optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
-  EsclManager manager(caps.value(), base::FilePath());
+  EsclManager manager(caps.value());
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
   SmartBuffer body(xml);
 
@@ -356,7 +356,7 @@ TEST(HandleEsclRequest, DeleteNonexistentScanJob) {
   request.uri = "/eSCL/ScanJobs/0b2cdf31-edee-4246-a1ad-07bbe754856b";
 
   ScannerCapabilities caps;
-  EsclManager manager(caps, base::FilePath());
+  EsclManager manager(caps);
   HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
   EXPECT_EQ(response.status, "404 Not Found");
 }

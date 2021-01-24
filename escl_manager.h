@@ -9,7 +9,6 @@
 #include <vector>
 
 #include <base/containers/flat_map.h>
-#include <base/files/file_path.h>
 #include <base/optional.h>
 #include <base/time/time.h>
 #include <base/values.h>
@@ -106,6 +105,8 @@ struct JobInfo {
   base::TimeTicks created;
   // The current state of the job.
   JobState state;
+  // The ScanSettings for the job.
+  ScanSettings settings;
 };
 
 struct ScannerStatus {
@@ -117,13 +118,10 @@ struct ScannerStatus {
 
 // This class is responsible for generating responses to eSCL requests sent
 // over USB.
-// The |document_path| parameter specifies the path to the scan data that
-// should be reported to clients within HandleGetNextDocument.
 class EsclManager {
  public:
   EsclManager() = default;
-  EsclManager(ScannerCapabilities scanner_capabilities,
-              const base::FilePath& document_path);
+  explicit EsclManager(ScannerCapabilities scanner_capabilities);
 
   // Generates an HTTP response for the given HttpRequest and request body.
   // If |request| is not a valid eSCL request (for example, invalid endpoint
@@ -138,7 +136,6 @@ class EsclManager {
 
   ScannerCapabilities scanner_capabilities_;
   ScannerStatus status_;
-  base::FilePath document_path_;
 };
 
 #endif  // ESCL_MANAGER_H__
