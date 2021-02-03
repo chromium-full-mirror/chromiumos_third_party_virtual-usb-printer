@@ -295,6 +295,16 @@ std::vector<uint8_t> ScannerCapabilitiesAsXml(const ScannerCapabilities& caps) {
       caps.platen_capabilities, "PlatenInputCaps", &namespaces);
   xmlAddChild(platen, platen_caps.release());
 
+  if (caps.adf_capabilities.has_value()) {
+    xmlNode* adf = AddNode(root.get(), scan, "Adf");
+    UniqueXmlNodePtr adf_simplex_caps = SourceCapabilitiesAsXml(
+        caps.adf_capabilities.value(), "AdfSimplexInputCaps", &namespaces);
+    xmlAddChild(adf, adf_simplex_caps.release());
+    UniqueXmlNodePtr adf_duplex_caps = SourceCapabilitiesAsXml(
+        caps.adf_capabilities.value(), "AdfDuplexInputCaps", &namespaces);
+    xmlAddChild(adf, adf_duplex_caps.release());
+  }
+
   return Serialize(std::move(root));
 }
 

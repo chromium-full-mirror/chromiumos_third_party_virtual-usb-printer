@@ -56,22 +56,40 @@ Value CreateCapabilitiesJson() {
   dict.SetKey("SerialNumber", Value("Test Serial"));
 
   Value platen(Value::Type::DICTIONARY);
-  Value::ListStorage color_modes;
-  color_modes.push_back(Value("RGB24"));
-  color_modes.push_back(Value("Grayscale8"));
-  platen.SetKey("ColorModes", Value(std::move(color_modes)));
+  Value::ListStorage platen_color_modes;
+  platen_color_modes.push_back(Value("RGB24"));
+  platen_color_modes.push_back(Value("Grayscale8"));
+  platen.SetKey("ColorModes", Value(std::move(platen_color_modes)));
 
-  Value::ListStorage document_formats;
-  document_formats.push_back(Value("application/pdf"));
-  platen.SetKey("DocumentFormats", Value(std::move(document_formats)));
+  Value::ListStorage platen_document_formats;
+  platen_document_formats.push_back(Value("application/pdf"));
+  platen.SetKey("DocumentFormats", Value(std::move(platen_document_formats)));
 
-  Value::ListStorage resolutions;
-  resolutions.push_back(Value(100));
-  resolutions.push_back(Value(200));
-  resolutions.push_back(Value(300));
-  platen.SetKey("Resolutions", Value(std::move(resolutions)));
+  Value::ListStorage platen_resolutions;
+  platen_resolutions.push_back(Value(100));
+  platen_resolutions.push_back(Value(200));
+  platen_resolutions.push_back(Value(300));
+  platen.SetKey("Resolutions", Value(std::move(platen_resolutions)));
 
   dict.SetKey("Platen", std::move(platen));
+
+  Value adf(Value::Type::DICTIONARY);
+  Value::ListStorage adf_color_modes;
+  adf_color_modes.push_back(Value("BlackAndWhite1"));
+  adf_color_modes.push_back(Value("Grayscale8"));
+  adf.SetKey("ColorModes", Value(std::move(adf_color_modes)));
+
+  Value::ListStorage adf_document_formats;
+  adf_document_formats.push_back(Value("image/jpeg"));
+  adf.SetKey("DocumentFormats", Value(std::move(adf_document_formats)));
+
+  Value::ListStorage adf_resolutions;
+  adf_resolutions.push_back(Value(75));
+  adf_resolutions.push_back(Value(150));
+  adf_resolutions.push_back(Value(600));
+  adf.SetKey("Resolutions", Value(std::move(adf_resolutions)));
+
+  dict.SetKey("ADF", std::move(adf));
 
   return dict;
 }
@@ -94,6 +112,12 @@ TEST(ScannerCapabilities, Initialize) {
               ElementsAre("RGB24", "Grayscale8"));
   EXPECT_THAT(caps.platen_capabilities.formats, ElementsAre("application/pdf"));
   EXPECT_THAT(caps.platen_capabilities.resolutions, ElementsAre(100, 200, 300));
+  ASSERT_TRUE(caps.adf_capabilities.has_value());
+  EXPECT_THAT(caps.adf_capabilities.value().color_modes,
+              ElementsAre("BlackAndWhite1", "Grayscale8"));
+  EXPECT_THAT(caps.adf_capabilities.value().formats, ElementsAre("image/jpeg"));
+  EXPECT_THAT(caps.adf_capabilities.value().resolutions,
+              ElementsAre(75, 150, 600));
 }
 
 TEST(ScannerCapabilities, InitializeFailColorModeHasInteger) {
@@ -192,6 +216,10 @@ TEST(ScannerCapabilities, AsXml) {
   HasPathWithContents(doc, "/scan:ScannerCapabilities/pwg:SerialNumber",
                       {"Test Serial"});
 
+  // Ensure that the reported Platen capabilities are:
+  // Color modes: Grayscale8, RGB24
+  // Document formats: application/pdf
+  // Discrete Resolutions: 100, 200, 300
   const std::string platen_caps =
       "/scan:ScannerCapabilities/scan:Platen/scan:PlatenInputCaps";
   const std::string profiles = "/scan:SettingProfiles/scan:SettingProfile";
@@ -206,6 +234,55 @@ TEST(ScannerCapabilities, AsXml) {
                           "/scan:SupportedResolutions/scan:DiscreteResolutions/"
                           "scan:DiscreteResolution/scan:XResolution",
                       {"100", "200", "300"});
+
+  // Ensure that the reported ADF simplex capabilities are:
+  // Color modes: BlackAndWhite1, Grayscale8
+  // Document formats: image/jpeg
+  // Discrete Resolutions: 75, 150, 600
+  const std::string adf_simplex_caps =
+      "/scan:ScannerCapabilities/scan:Adf/scan:AdfSimplexInputCaps";
+  HasPathWithContents(
+      doc, adf_simplex_caps + profiles + "/scan:ColorModes/scan:ColorMode",
+      {"BlackAndWhite1", "Grayscale8"});
+  HasPathWithContents(
+      doc,
+      adf_simplex_caps + profiles + "/scan:DocumentFormats/pwg:DocumentFormat",
+      {"image/jpeg"});
+  HasPathWithContents(doc,
+                      adf_simplex_caps + profiles +
+                          "/scan:SupportedResolutions/scan:DiscreteResolutions/"
+                          "scan:DiscreteResolution/scan:XResolution",
+                      {"75", "150", "600"});
+  HasPathWithContents(doc,
+                      adf_simplex_caps + profiles +
+                          "/scan:SupportedResolutions/scan:DiscreteResolutions/"
+                          "scan:DiscreteResolution/scan:YResolution",
+                      {"75", "150", "600"});
+
+  // Ensure that the reported ADF duplex capabilities are:
+  // Color modes: BlackAndWhite1, Grayscale8
+  // Document formats: image/jpeg
+  // Discrete Resolutions: 75, 150, 600
+  const std::string adf_duplex_caps =
+      "/scan:ScannerCapabilities/scan:Adf/scan:AdfDuplexInputCaps";
+  HasPathWithContents(
+      doc, adf_duplex_caps + profiles + "/scan:ColorModes/scan:ColorMode",
+      {"BlackAndWhite1", "Grayscale8"});
+  HasPathWithContents(
+      doc,
+      adf_duplex_caps + profiles + "/scan:DocumentFormats/pwg:DocumentFormat",
+      {"image/jpeg"});
+  HasPathWithContents(doc,
+                      adf_duplex_caps + profiles +
+                          "/scan:SupportedResolutions/scan:DiscreteResolutions/"
+                          "scan:DiscreteResolution/scan:XResolution",
+                      {"75", "150", "600"});
+  HasPathWithContents(doc,
+                      adf_duplex_caps + profiles +
+                          "/scan:SupportedResolutions/scan:DiscreteResolutions/"
+                          "scan:DiscreteResolution/scan:YResolution",
+                      {"75", "150", "600"});
+
   xmlFreeDoc(doc);
 }
 
