@@ -140,6 +140,17 @@ std::string ColorModeAsString(ColorMode mode) {
   }
 }
 
+uint8_t GetTotalPagesForJob(const ScanSettings& settings) {
+  // The only scan job which consists of multiple pages is an ADF scan which is
+  // grayscale and 300 dpi.
+  if (settings.input_source == "Feeder" && settings.color_mode == kGrayscale &&
+      settings.x_resolution == 300 && settings.y_resolution == 300) {
+    return 2;
+  }
+
+  return 1;
+}
+
 }  // namespace
 
 base::Optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
@@ -304,6 +315,7 @@ HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
   job.created = base::TimeTicks::Now();
   job.state = kPending;
   job.settings = std::move(settings);
+  job.num_remaining_pages = GetTotalPagesForJob(job.settings);
   status_.jobs[uuid] = job;
 
   response.status = "201 Created";
@@ -342,7 +354,9 @@ HttpResponse EsclManager::HandleGetNextDocument(const std::string& uri) {
       response.status = "404 Not Found";
       break;
     case kPending: {
-      status_.jobs[uuid].state = kCompleted;
+      status_.jobs[uuid].num_remaining_pages--;
+      if (status_.jobs[uuid].num_remaining_pages == 0)
+        status_.jobs[uuid].state = kCompleted;
       base::Optional<std::vector<uint8_t>> image =
           GenerateJpegFromScanSettings(info.settings);
       if (!image.has_value()) {

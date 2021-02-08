@@ -5,6 +5,7 @@
 #ifndef ESCL_MANAGER_H__
 #define ESCL_MANAGER_H__
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -107,6 +108,8 @@ struct JobInfo {
   JobState state;
   // The ScanSettings for the job.
   ScanSettings settings;
+  // The number of remaining pages for the job.
+  uint8_t num_remaining_pages;
 };
 
 struct ScannerStatus {
