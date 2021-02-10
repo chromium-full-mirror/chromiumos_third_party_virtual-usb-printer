@@ -110,6 +110,8 @@ struct JobInfo {
   ScanSettings settings;
   // The number of remaining pages for the job.
   uint8_t num_remaining_pages;
+  // The delay in providing the job's image, if applicable.
+  base::Optional<base::TimeDelta> delay;
 };
 
 struct ScannerStatus {

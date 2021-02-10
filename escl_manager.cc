@@ -9,6 +9,7 @@
 #include <base/logging.h>
 #include <base/strings/string_split.h>
 #include <base/strings/string_util.h>
+#include <base/threading/platform_thread.h>
 #include <crypto/random.h>
 
 #include "jpeg_util.h"
@@ -149,6 +150,17 @@ uint8_t GetTotalPagesForJob(const ScanSettings& settings) {
   }
 
   return 1;
+}
+
+base::Optional<base::TimeDelta> GetDelayForJob(const ScanSettings& settings) {
+  // The only scan job which sends a delayed response is a Platen scan which is
+  // color and 100 dpi.
+  if (settings.input_source == "Platen" && settings.color_mode == kRGB &&
+      settings.x_resolution == 100 && settings.y_resolution == 100) {
+    return base::TimeDelta::FromSeconds(45);
+  }
+
+  return base::nullopt;
 }
 
 }  // namespace
@@ -316,6 +328,7 @@ HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
   job.state = kPending;
   job.settings = std::move(settings);
   job.num_remaining_pages = GetTotalPagesForJob(job.settings);
+  job.delay = GetDelayForJob(job.settings);
   status_.jobs[uuid] = job;
 
   response.status = "201 Created";
@@ -366,6 +379,12 @@ HttpResponse EsclManager::HandleGetNextDocument(const std::string& uri) {
         response.status = "200 OK";
         response.headers["Content-Type"] = "image/jpeg";
         response.body.Add(image.value());
+
+        // Unfortunately we don't have access to a callback to post a delayed
+        // task which runs the callback, so the easiest way to delay the
+        // response is just to sleep.
+        if (info.delay.has_value())
+          base::PlatformThread::Sleep(info.delay.value());
       }
       break;
     }
