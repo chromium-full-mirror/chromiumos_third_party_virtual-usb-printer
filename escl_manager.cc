@@ -217,7 +217,10 @@ base::Optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
 }
 
 EsclManager::EsclManager(ScannerCapabilities scanner_capabilities)
-    : scanner_capabilities_(std::move(scanner_capabilities)) {}
+    : scanner_capabilities_(std::move(scanner_capabilities)) {
+  status_.idle = true;
+  status_.adf_empty = false;
+}
 
 HttpResponse EsclManager::HandleEsclRequest(const HttpRequest& request,
                                             const SmartBuffer& request_body) {
@@ -232,6 +235,7 @@ HttpResponse EsclManager::HandleEsclRequest(const HttpRequest& request,
     response.status = "200 OK";
     response.headers["Content-Type"] = "text/xml";
     response.body.Add(ScannerStatusAsXml(status_));
+    status_.adf_empty = false;
     return response;
   } else if (request.method == "POST" && request.uri == "/eSCL/ScanJobs") {
     return HandleCreateScanJob(request_body);
@@ -319,6 +323,13 @@ HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
     LOG(ERROR) << "Requested unsupported resolution '" << settings.x_resolution
                << "'";
     response.status = "409 Conflict";
+    return response;
+  }
+
+  if (settings.input_source == "Feeder" && settings.color_mode == kGrayscale &&
+      settings.x_resolution == 600 && settings.y_resolution == 600) {
+    status_.adf_empty = true;
+    response.status = "500 Internal Server Error";
     return response;
   }
 

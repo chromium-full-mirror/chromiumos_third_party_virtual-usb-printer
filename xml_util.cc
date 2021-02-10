@@ -323,6 +323,8 @@ std::vector<uint8_t> ScannerStatusAsXml(const ScannerStatus& status) {
 
   AddNodeWithContent(root.get(), pwg, "Version", "2.6.3");
   AddNodeWithContent(root.get(), pwg, "State", status.idle ? "Idle" : "Busy");
+  AddNodeWithContent(root.get(), scan, "AdfState",
+                     status.adf_empty ? "ScannerAdfEmpty" : "ScannerAdfLoaded");
 
   // Add a list of all of the scan jobs
   namespace_map namespaces;

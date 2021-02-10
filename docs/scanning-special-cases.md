@@ -27,3 +27,14 @@ This behavior is triggered by the combination of:
 
 For scan jobs matching the above combination, retrieving the image for the scan
 job will be delayed by 45 seconds.
+
+## ADF Out of Documents
+
+This behavior is triggered by the combination of:
+-   `input_source`: `Feeder`
+-   `color_mode`: `kGrayscale`
+-   `DPI`: `600`
+
+For scan jobs matching the above combination, posting the scan job will fail
+with a 500 Internal Server Error, and the next GetScannerStatus request will
+return an AdfState of ScannerAdfEmpty.

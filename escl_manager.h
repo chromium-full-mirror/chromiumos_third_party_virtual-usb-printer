@@ -116,6 +116,7 @@ struct JobInfo {
 
 struct ScannerStatus {
   bool idle;
+  bool adf_empty;
   // All of the scan jobs for this scanner.
   // Keys are v4 UUIDs. Scan jobs may be in any state.
   base::flat_map<std::string, JobInfo> jobs;
