@@ -1,0 +1,97 @@
+// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can
+// be found in the LICENSE file.
+
+// These messages provide a Protobuf representation of IPP messages.
+
+// Googlers: please refer to
+// go/cros-printing:virtual-usb-printer-deepmock
+
+syntax = "proto3";
+
+// Field used in `IppAttribute`.
+message IntegerRange {
+  // Required.
+  int32 minimum = 1;
+  // Required.
+  int32 maximum = 2;
+}
+
+// Field used in `IppAttribute`.
+message Resolution {
+  enum Units {
+    DOTS_PER_INCH = 0;
+    DOTS_PER_CENTIMETER = 1;
+  }
+
+  // Required.
+  int32 xres = 1;
+  // Required.
+  int32 yres = 2;
+  // Required.
+  Units units = 3;
+}
+
+// Matches an IPP attribute.
+message IppAttribute {
+  // Required.
+  string name = 1;
+
+  // When matching, the following fields are optional; at most
+  // one can be populated.
+  // When specifying a response, exactly one must be populated.
+
+  // An attribute can be _another_ collection.
+  repeated IppCollection collection = 2;
+
+  // If not another collection, an attribute should be either one
+  // thing of a given type or several of a given type.
+  repeated int32 int_values = 3;
+  repeated string string_values = 4;
+  repeated IntegerRange int_ranges = 5;
+  repeated Resolution resolutions = 6;
+}
+
+// Matches an IPP collection (of attributes).
+message IppCollection {
+  // Required.
+  repeated IppAttribute attributes = 1;
+}
+
+// Matches an IPP group (of collections).
+message IppGroup {
+  enum IppGroupTag {
+    UNSPECIFIED = 0;
+    DOCUMENT_ATTRIBUTES = 1;
+    EVENT_NOTIFICATION_ATTRIBUTES = 2;
+    JOB_ATTRIBUTES = 3;
+    OPERATION_ATTRIBUTES = 4;
+    PRINTER_ATTRIBUTES = 5;
+    RESOURCE_ATTRIBUTES = 6;
+    SUBSCRIPTION_ATTRIBUTES = 7;
+    SYSTEM_ATTRIBUTES = 8;
+    UNSUPPORTED_ATTRIBUTES = 9;
+  }
+
+  // Required.
+  IppGroupTag tag = 1;
+
+  // Optional when matching: specifies an IPP collection to match
+  // against when known or useful to specify in the test case.
+  // Required when specifying a response.
+  repeated IppCollection collections = 2;
+}
+
+// The required parameters preceding the `groups` field
+// are documented in RFC 8010.
+message IppMessage {
+  // Optional; defaults to whatever we implement in
+  // virtual-usb-printer.
+  int32 version_number = 1;
+
+  // Required.
+  int32 operation_id = 2;
+
+  // Required.
+  repeated IppGroup groups = 3;
+}

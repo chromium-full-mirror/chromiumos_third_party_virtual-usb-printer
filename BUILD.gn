@@ -3,9 +3,13 @@
 # found in the LICENSE file.
 
 import("//common-mk/pkg_config.gni")
+import("//common-mk/proto_library.gni")
 
 group("all") {
-  deps = [ ":virtual-usb-printer" ]
+  deps = [
+    ":mocking_protos",
+    ":virtual-usb-printer",
+  ]
   if (use.test) {
     deps += [
       ":escl-manager-testrunner",
@@ -26,6 +30,12 @@ pkg_config("target_defaults") {
     "libjpeg",
     "libxml-2.0",
   ]
+}
+
+proto_library("mocking_protos") {
+  proto_in_dir = "./proto"
+  proto_out_dir = "include/proto"
+  sources = [ "${proto_in_dir}/ipp.proto" ]
 }
 
 executable("virtual-usb-printer") {
