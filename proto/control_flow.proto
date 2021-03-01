@@ -1,0 +1,99 @@
+// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can
+// be found in the LICENSE file.
+
+// These messages provide a Protobuf representation of control flow in
+// virtual-usb-printer's mock printer mode.
+
+// Googlers: please refer to
+// go/cros-printing:virtual-usb-printer-deepmock
+
+syntax = "proto3";
+
+import "ipp.proto";
+
+// Describes which among a group of ExpectationWithResponses apply.
+message Cardinality {
+  enum Type {
+    ALL_IN_ORDER = 0;
+    ALL_IN_ANY_ORDER = 1;
+    SOME_OF = 2;   // requires `Count`
+    REPEATED = 3;  // requires `Count`
+    NONE_OF = 4;
+  }
+  // Required.
+  Type type = 1;
+
+  message Count {
+    // At least one of the following fields must be
+    // populated. `exactly` is exclusive against
+    // `at_least` and `at_most`.
+    int32 at_least = 1;
+    int32 at_most = 2;
+    int32 exactly = 3;
+  }
+
+  // Required for some Types; optional otherwise (see above).
+  // *  Indicates when a TestCaseStep is fulfilled. See the
+  //    mock printer documentation for details on fuzzy counts.
+  // *  Note that one can simulate “any of” by combining
+  //    Type::SOME_OF with Count::exactly == 1.
+  // *  Note that Type::ALL_IN_ANY_ORDER is logically equivalent to
+  //    Type::SOME_OF with Count::exactly set to the number of
+  //    ExpectationWithResponse messages given.
+  Count count = 2;
+}
+
+message Expectation {
+  // Required.
+  IppMessage ipp_matcher = 3;
+}
+
+// A concrete reaction from virtual-usb-printer in response to some
+// Expectation.
+// Exactly one field must be populated.
+message Response {
+  // Causes virtual-usb-printer to pause for at least the
+  // specified time.
+  //
+  // The primary use case for this field is to simulate an unresponsive
+  // printer. virtual-usb-printer processes messages sequentially and
+  // offers no facilities to do anything while paused.
+  int32 pause_seconds = 1;
+
+  // Causes virtual-usb-printer to respond with the specified
+  // IPP message.
+  IppMessage ipp_response = 2;
+}
+
+// An Expectation with an associated Response. Models the statement
+// "when `expectation` is fulfilled, build and send `response`."
+message ExpectationWithResponse {
+  // Required.
+  Expectation expectation = 1;
+
+  // Optional.
+  Response response = 2;
+}
+
+// A cluster of expectations and responses. Part of the larger
+// `TestCase` message.
+message TestCaseStep {
+  // Required.
+  Cardinality cardinality = 1;
+
+  // Required.
+  //
+  // When this field is repeated, `virtual-usb-printer` greedily
+  // matches incoming messages against the first reachable Expectation.
+  // Even if more than one Expectation could match a given message, the
+  // first reachable matcher is taken to be fulfilled.
+  repeated ExpectationWithResponse expectation_with_response = 2;
+}
+
+// One TestCase comprises a consecutive sequence of TestCaseStep
+// messages, processed and acted upon in order.
+message TestCase {
+  // Required.
+  repeated TestCaseStep steps = 1;
+}

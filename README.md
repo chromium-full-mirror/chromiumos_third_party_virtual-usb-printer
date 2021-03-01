@@ -43,6 +43,13 @@ USE="usbip" ./build_packages --board=$BOARD
 
 ## How to Use
 
+*** promo
+`virtual-usb-printer` can behave like
+*   a printer,
+*   an eSCL scanner, or
+*   a [scriptable mock printer][./mock-printer.md].
+***
+
 Before the first use you have to load a required kernel module:
 
 ```

@@ -35,7 +35,10 @@ pkg_config("target_defaults") {
 proto_library("mocking_protos") {
   proto_in_dir = "./proto"
   proto_out_dir = "include/proto"
-  sources = [ "${proto_in_dir}/ipp.proto" ]
+  sources = [
+    "${proto_in_dir}/control_flow.proto",
+    "${proto_in_dir}/ipp.proto",
+  ]
 }
 
 executable("virtual-usb-printer") {
