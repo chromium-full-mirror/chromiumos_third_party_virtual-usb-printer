@@ -9,6 +9,8 @@
 
 syntax = "proto3";
 
+package mocking;
+
 // Field used in `IppAttribute`.
 message IntegerRange {
   // Required.

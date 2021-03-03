@@ -10,6 +10,8 @@
 
 syntax = "proto3";
 
+package mocking;
+
 import "ipp.proto";
 
 // Describes which among a group of ExpectationWithResponses apply.
