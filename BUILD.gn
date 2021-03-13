@@ -6,10 +6,7 @@ import("//common-mk/pkg_config.gni")
 import("//common-mk/proto_library.gni")
 
 group("all") {
-  deps = [
-    ":mocking_protos",
-    ":virtual-usb-printer",
-  ]
+  deps = [ ":virtual-usb-printer" ]
   if (use.test) {
     deps += [
       ":escl-manager-testrunner",
@@ -29,6 +26,10 @@ pkg_config("target_defaults") {
     "libchrome",
     "libjpeg",
     "libxml-2.0",
+
+    # We're not performance-sensitive enough
+    # to want protobuf-lite at the moment.
+    "protobuf",
   ]
 }
 
@@ -39,6 +40,13 @@ proto_library("mocking_protos") {
     "${proto_in_dir}/control_flow.proto",
     "${proto_in_dir}/ipp.proto",
   ]
+}
+
+source_set("mock_printer_test_support") {
+  configs += [ ":target_defaults" ]
+  public = [ "mock_printer/proto_test_utils.h" ]
+  public_deps = [ ":mocking_protos" ]
+  sources = [ "mock_printer/proto_test_utils.cc" ]
 }
 
 executable("virtual-usb-printer") {
