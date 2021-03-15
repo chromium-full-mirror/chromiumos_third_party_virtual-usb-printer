@@ -43,8 +43,8 @@ message IppAttribute {
   // one can be populated.
   // When specifying a response, exactly one must be populated.
 
-  // An attribute can be _another_ collection.
-  repeated IppCollection collection = 2;
+  // An attribute can be _another_ collection (or set thereof).
+  repeated IppCollection collections = 2;
 
   // If not another collection, an attribute should be either one
   // thing of a given type or several of a given type.
