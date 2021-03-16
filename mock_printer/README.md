@@ -13,6 +13,30 @@ TODO(b/178649877): document the command-line flag that will cause
 TODO(b/178649877): document the general usage of mock printer mode.
 ***
 
+## Terminology
+
+*   *Test case* - a series of steps that verify at least (and hopefully
+    at most) one particular behavior of the Chromium OS printing stack.
+*   *Test case step* - a cluster of expectations and at most one
+    response. In prose, "`virtual-usb-printer` expects some of events A,
+    B, and C; when the expectation is met, `virtual-usb-printer`
+    responds with response D."
+*   *Matcher* - an expression that defines how an expectation is met.
+    For example, "Expectation X is met when `virtual-usb-printer`
+    receives message with contents A, B, and C."
+
+*** promo
+Mock printer mode will only support building matchers for IPP messages
+in the near term.
+***
+
+## Source Code Layout
+
+*   `proto/` - defines Protobuf representations of test cases: control
+    flow, matchers, and responses.
+*   `ipp_matching_validation.h` - used to verify that the IPP
+    message Protobufs used as matchers are well-formed.
+
 ## Appendix: TestCaseStep with multiple Expectations
 
 Each `TestCaseStep` associates a `Cardinality` with a set of

@@ -12,6 +12,7 @@ group("all") {
       ":escl-manager-testrunner",
       ":http-util-testrunner",
       ":ipp-manager-testrunner",
+      ":ipp-matching-validation-testrunner",
       ":ipp-util-testrunner",
       ":jpeg-util-testrunner",
       ":load-config-testrunner",
@@ -49,8 +50,21 @@ source_set("mock_printer_test_support") {
   sources = [ "mock_printer/proto_test_utils.cc" ]
 }
 
+source_set("ipp_matching_validation") {
+  configs += [ ":target_defaults" ]
+  deps = [ ":mocking_protos" ]
+
+  public = [ "mock_printer/ipp_matching_validation.h" ]
+  sources = [ "mock_printer/ipp_matching_validation.cc" ]
+}
+
+source_set("mock_printer") {
+  deps = [ ":ipp_matching_validation" ]
+}
+
 executable("virtual-usb-printer") {
   configs += [ ":target_defaults" ]
+  deps = [ ":mock_printer" ]
   sources = [
     "cups_constants.cc",
     "device_descriptors.cc",
@@ -122,6 +136,20 @@ if (use.test) {
       "smart_buffer.cc",
     ]
     deps = [ "//common-mk/testrunner" ]
+  }
+
+  executable("ipp-matching-validation-testrunner") {
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":ipp_matching_validation",
+      ":mock_printer_test_support",
+      "//common-mk/testrunner",
+    ]
+    sources = [ "mock_printer/ipp_matching_validation_test.cc" ]
   }
 
   executable("ipp-util-testrunner") {
