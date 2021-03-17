@@ -67,5 +67,145 @@ TEST(IppMatchingValidation, IppGroupDisallowsUnspecifiedTag) {
   EXPECT_THAT(result.error_message, HasSubstr("IppGroupTag"));
 }
 
+TEST(IppMatchingValidation, IppCollectionMustContainAttributes) {
+  const mocking::IppMessage message = ParseTestProto(R"(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      # This IppCollection is empty, which is an illegal construct.
+      # Parsing will succeed here, but validation will fail.
+      collections {}
+    }
+  )");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  ASSERT_FALSE(result.IsValid());
+  EXPECT_THAT(result.error_message, HasSubstr("empty IppCollection"));
+}
+
+TEST(IppMatchingValidation, IppAttributeMustBeNamed) {
+  const mocking::IppMessage message = ParseTestProto(R"(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections {
+        # This IppAttribute has no name.
+        # Parsing will succeed here, but validation will fail.
+        attributes {}
+      }
+    }
+  )");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  ASSERT_FALSE(result.IsValid());
+  EXPECT_THAT(result.error_message, HasSubstr("empty name"));
+}
+
+TEST(IppMatchingValidation, IppAttributeNeedsOnlyName) {
+  const mocking::IppMessage message = ParseTestProto(R"(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections {
+        # This IppAttribute has a name and no other fields filled in.
+        # This is a legal construct.
+        attributes { name: "foo" }
+      }
+    }
+  )");
+
+  EXPECT_TRUE(ValidateIppMessage(message).IsValid());
+}
+
+TEST(IppMatchingValidation, IppAttributeMayContainAtMostOneSubmessage) {
+  const mocking::IppMessage message = ParseTestProto(R"(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections {
+        attributes {
+          name: "hello there"
+
+          # This IppAttribute has more than one value field populated;
+          # this is an illegal construct. Parsing will succeed here,
+          # but validation will fail.
+          int_values: 1
+          int_values: 2
+          int_values: 3
+          string_values: "general kenobi"
+        }
+      }
+    }
+  )");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  ASSERT_FALSE(result.IsValid());
+  EXPECT_THAT(result.error_message, HasSubstr("multiple populated"));
+}
+
+TEST(IppMatchingValidation, IppAttributeWithCollectionIsRecursivelyValidated) {
+  const mocking::IppMessage message = ParseTestProto(R"(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections {
+        attributes {
+          name: "hello there"
+
+          # This IppCollection is placed in a valid spot; the containing
+          # IppAttribute is well-formed, but this empty IppCollection is
+          # illegal and will fail validation.
+          collections {}
+        }
+      }
+    }
+  )");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  ASSERT_FALSE(result.IsValid());
+  EXPECT_THAT(result.error_message, HasSubstr("empty IppCollection"));
+}
+
+TEST(IppMatchingValidation, IppAttributeDisallowsUnspecifiedResolutionUnits) {
+  const mocking::IppMessage message = ParseTestProto(R"(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections {
+        attributes {
+          name: "hello there"
+
+          resolutions {
+            # This Units variant is illegal and will fail validation.
+            units: UNSPECIFIED
+          }
+        }
+      }
+    }
+  )");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  ASSERT_FALSE(result.IsValid());
+  EXPECT_THAT(result.error_message, HasSubstr("Units"));
+}
+
 }  // namespace
 }  // namespace mock_printer
