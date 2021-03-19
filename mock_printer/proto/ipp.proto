@@ -22,8 +22,9 @@ message IntegerRange {
 // Field used in `IppAttribute`.
 message Resolution {
   enum Units {
-    DOTS_PER_INCH = 0;
-    DOTS_PER_CENTIMETER = 1;
+    UNSPECIFIED = 0;
+    DOTS_PER_INCH = 1;
+    DOTS_PER_CENTIMETER = 2;
   }
 
   // Required.
