@@ -36,6 +36,8 @@ in the near term.
     flow, matchers, and responses.
 *   `ipp_matching_validation.h` - used to verify that the IPP
     message Protobufs used as matchers are well-formed.
+*   `ipp_matching.h` - used to match `mocking::IppMessage` Protobufs
+    with incoming `ipp::Request` messages (received by libipp).
 
 ## Appendix: TestCaseStep with multiple Expectations
 
