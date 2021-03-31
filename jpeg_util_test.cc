@@ -14,6 +14,8 @@
 
 #include "escl_manager.h"
 
+#include <base/notreached.h>
+
 namespace {
 
 // Since libjpeg is not lossless, individual pixels of the decoded bitmap don't

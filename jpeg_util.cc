@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <base/logging.h>
+#include <base/notreached.h>
 #include <base/optional.h>
 
 #include <jerror.h>
