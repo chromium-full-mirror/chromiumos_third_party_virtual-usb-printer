@@ -12,6 +12,7 @@
 #include "usb_printer.h"
 #include "usbip_constants.h"
 
+#include <base/check.h>
 #include <base/logging.h>
 
 SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply) {

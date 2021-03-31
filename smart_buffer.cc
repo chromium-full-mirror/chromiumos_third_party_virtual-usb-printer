@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include <base/check_op.h>
 #include <base/logging.h>
 
 SmartBuffer::SmartBuffer(size_t size) {

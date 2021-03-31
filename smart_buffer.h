@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include <base/check.h>
 #include <base/logging.h>
 
 // Wrapper class used for packing bytes to be transferred on a network socket.

@@ -10,6 +10,8 @@
 #include <set>
 #include <string>
 
+#include <base/check.h>
+#include <base/check_op.h>
 #include <base/optional.h>
 #include <base/values.h>
 

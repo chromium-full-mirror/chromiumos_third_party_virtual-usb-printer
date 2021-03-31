@@ -8,7 +8,8 @@
 
 #include <google/protobuf/text_format.h>
 
-#include "base/logging.h"
+#include <base/check.h>
+#include <base/logging.h>
 
 namespace mock_printer {
 

@@ -14,6 +14,8 @@
 
 #include "escl_manager.h"
 
+#include <base/check.h>
+#include <base/check_op.h>
 #include <base/notreached.h>
 
 namespace {
