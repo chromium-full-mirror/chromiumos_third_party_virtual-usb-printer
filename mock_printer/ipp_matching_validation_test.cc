@@ -16,13 +16,13 @@ namespace {
 using ::testing::HasSubstr;
 
 TEST(IppMatchingValidation, IppMessageDisallowsZeroedOperationId) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     # Operation ID must not be 0.
     operation_id: 0
 
     # This IppGroup is irrelevant to the test case.
     groups { tag: DOCUMENT_ATTRIBUTES }
-  )");
+  )pb");
 
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
@@ -30,23 +30,23 @@ TEST(IppMatchingValidation, IppMessageDisallowsZeroedOperationId) {
 }
 
 TEST(IppMatchingValidation, IppMessageAllowsNonzeroOperationId) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     operation_id: 1
 
     # This IppGroup is irrelevant to the test case.
     groups { tag: DOCUMENT_ATTRIBUTES }
-  )");
+  )pb");
 
   EXPECT_TRUE(ValidateIppMessage(message).IsValid());
 }
 
 TEST(IppMatchingValidation, IppMessageRequiresIppGroup) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     operation_id: 1
 
     # This IppMessage lacks an IppGroup in its required `groups` field.
     # Parsing will succeed here, but validation will fail.
-  )");
+  )pb");
 
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
@@ -54,13 +54,13 @@ TEST(IppMatchingValidation, IppMessageRequiresIppGroup) {
 }
 
 TEST(IppMatchingValidation, IppGroupDisallowsUnspecifiedTag) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     operation_id: 1
 
     # IppGroupTag::UNSPECIFIED is an illegal value here.
     # Parsing will succeed here, but validation will fail.
     groups { tag: UNSPECIFIED }
-  )");
+  )pb");
 
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
@@ -68,7 +68,7 @@ TEST(IppMatchingValidation, IppGroupDisallowsUnspecifiedTag) {
 }
 
 TEST(IppMatchingValidation, IppCollectionMustContainAttributes) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     operation_id: 1
 
     groups {
@@ -79,7 +79,7 @@ TEST(IppMatchingValidation, IppCollectionMustContainAttributes) {
       # Parsing will succeed here, but validation will fail.
       collections {}
     }
-  )");
+  )pb");
 
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
@@ -87,7 +87,7 @@ TEST(IppMatchingValidation, IppCollectionMustContainAttributes) {
 }
 
 TEST(IppMatchingValidation, IppAttributeMustBeNamed) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     operation_id: 1
 
     groups {
@@ -100,7 +100,7 @@ TEST(IppMatchingValidation, IppAttributeMustBeNamed) {
         attributes {}
       }
     }
-  )");
+  )pb");
 
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
@@ -108,7 +108,7 @@ TEST(IppMatchingValidation, IppAttributeMustBeNamed) {
 }
 
 TEST(IppMatchingValidation, IppAttributeNeedsOnlyName) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     operation_id: 1
 
     groups {
@@ -121,13 +121,13 @@ TEST(IppMatchingValidation, IppAttributeNeedsOnlyName) {
         attributes { name: "foo" }
       }
     }
-  )");
+  )pb");
 
   EXPECT_TRUE(ValidateIppMessage(message).IsValid());
 }
 
 TEST(IppMatchingValidation, IppAttributeMayContainAtMostOneSubmessage) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     operation_id: 1
 
     groups {
@@ -148,7 +148,7 @@ TEST(IppMatchingValidation, IppAttributeMayContainAtMostOneSubmessage) {
         }
       }
     }
-  )");
+  )pb");
 
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
@@ -156,7 +156,7 @@ TEST(IppMatchingValidation, IppAttributeMayContainAtMostOneSubmessage) {
 }
 
 TEST(IppMatchingValidation, IppAttributeWithCollectionIsRecursivelyValidated) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     operation_id: 1
 
     groups {
@@ -174,7 +174,7 @@ TEST(IppMatchingValidation, IppAttributeWithCollectionIsRecursivelyValidated) {
         }
       }
     }
-  )");
+  )pb");
 
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
@@ -182,7 +182,7 @@ TEST(IppMatchingValidation, IppAttributeWithCollectionIsRecursivelyValidated) {
 }
 
 TEST(IppMatchingValidation, IppAttributeDisallowsUnspecifiedResolutionUnits) {
-  const mocking::IppMessage message = ParseTestProto(R"(
+  const mocking::IppMessage message = ParseTestProto(R"pb(
     operation_id: 1
 
     groups {
@@ -200,7 +200,7 @@ TEST(IppMatchingValidation, IppAttributeDisallowsUnspecifiedResolutionUnits) {
         }
       }
     }
-  )");
+  )pb");
 
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
