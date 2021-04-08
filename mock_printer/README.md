@@ -4,6 +4,11 @@ Test cases in mock printer mode are built from
 [control flow Protobufs](./proto/control_flow.proto). The appendices
 in this documentation provide some examples of their mechanics.
 
+Much of this document intermingles usage and maintenance notes. Casual
+users need not read this document in detail: try reading an existing
+test first and following it by example. Return to this document if you
+seek greater depth.
+
 *** aside
 TODO(b/178649877): document the command-line flag that will cause
 `virtual-usb-printer` to enter mock printer mode.
@@ -30,6 +35,32 @@ Mock printer mode will only support building matchers for IPP messages
 in the near term.
 ***
 
+Test case steps (`TestCaseStep`s) have some additional associated terms:
+
+*   *Progression* - a test case step makes _progress_ when
+    `virtual-usb-printer` receives a message that matches some
+    expectation of said step. `virtual-usb-printer` marks the particular
+    expectation as met, thereby progressing the test case step.
+*   *Fulfillment* - a test case step is _fulfilled_ when
+    `virtual-usb-printer` has received enough messages s.t. said step
+    could be considered complete.
+*   *Saturation* - a test case step is _saturated_ when
+    `virtual-usb-printer` cannot match any more expectations against it
+    without exceeding the specified `Cardinality::Count`; the test case
+    step is forbidden from progressing further.
+*   *Reachable* - a test case step is _reachable_ when it is eligible
+    for progression. For example, the "current" test case step is always
+    trivially reachable.
+
+*** aside
+Fulfillment and saturation are always synonymous when the test case step
+has `Cardinality::Type::{ALL_IN_ORDER,ALL_IN_ANY_ORDER}`: _all_ given
+expectations must be met, fulfilling and saturating the step
+simultaneously. They can diverge for
+`Cardinality::Type::{SOME_OF,REPEATED}`, depending on the associated
+`Cardinality::Count`.
+***
+
 ## Source Code Layout
 
 *   `proto/` - defines Protobuf representations of test cases: control
@@ -38,6 +69,104 @@ in the near term.
     message Protobufs used as matchers are well-formed.
 *   `ipp_matching.h` - used to match `mocking::IppMessage` Protobufs
     with incoming `ipp::Request` messages (received by libipp).
+
+## Appendix: TestCase Flow
+
+`virtual-usb-printer` takes a `TestCase` and reads out the sequence of
+`TestCaseStep`s. `virtual-usb-printer` maintains
+
+*   The current test case step. This is the oldest step that is not
+    saturated (though it might be fulfilled).
+*   Some number of reachable test case steps. Excluding the
+    always-reachable current test case step, there may be zero or more
+    future test case steps that are also reachable. This is determined
+    by the `Cardinality` of each test case step.
+
+### Basic Reachability Example
+
+Given a `TestCase`:
+
+```none
+steps {
+  cardinality {
+    type: SOME_OF
+    count { at_most: 3 }
+  }
+  expectation_with_response { # A }
+  expectation_with_response { # B }
+  expectation_with_response { # C }
+}
+steps {
+  cardinality {
+    type: ALL_IN_ORDER
+  }
+  expectation_with_response { # X }
+}
+steps {
+  cardinality {
+    type: ALL_IN_ORDER
+  }
+  expectation_with_response { # Y }
+}
+```
+
+Then the starting state of the test case in `virtual-usb-printer` looks
+like this:
+
+![Starting state](./images/basic-reachability-example-00.png)
+
+*   The _current_ step is the first one (`A`, `B`, or `C`).
+*   The second step (expecting `X`) is reachable.
+*   The third step (expecting `Y`) is _not_ reachable.
+
+If `virtual-usb-printer` then receives a message matching `X`, then
+
+*   The second step (expecting `X`) would match and be progressed.
+*   The second step would be both fulfilled and saturated.
+*   The current step would change to be the third (expecting `Y`).
+
+![Having received X](./images/basic-reachability-example-01.png)
+
+### Reachability Example: Laziness
+
+`virtual-usb-printer` takes a lazy approach to progressing test case
+steps. It will always try to progress the oldest non-saturated test case
+step (starting with the current one), even if other reachable steps may
+match.
+
+Given a `TestCase`:
+
+```none
+steps {
+  cardinality {
+    type: SOME_OF
+    count { at_most: 3 }
+  }
+  expectation_with_response { # A }
+  expectation_with_response { # A }
+  expectation_with_response { # B }
+  expectation_with_response { # C }
+}
+steps {
+  cardinality {
+    type: ALL_IN_ORDER
+  }
+  expectation_with_response { # A }
+}
+```
+
+Then the starting state of the test case in `virtual-usb-printer` looks
+like this:
+
+![Starting state](./images/lazy-reachability-example-00.png)
+
+Although step two is _reachable_, `virtual-usb-printer` will only
+progress it if
+
+*   either step 1 saturates (e.g. `B, A, C` arrive in succession) or
+*   three `A` messages arrive in succession, _not_ saturating step 1,
+    but making the second step the only reachable matcher that can
+    accept an `A` message.
 
 ## Appendix: TestCaseStep with multiple Expectations
 

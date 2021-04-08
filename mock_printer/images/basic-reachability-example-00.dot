@@ -1,0 +1,7 @@
+digraph {
+  rankdir = LR
+  node [shape=box, style=bold]
+  ABC [label="A, B, C"]
+  Y [style=dotted]
+  ABC -> X -> Y
+}
