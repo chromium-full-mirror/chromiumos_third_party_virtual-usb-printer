@@ -21,7 +21,6 @@ message Cardinality {
     ALL_IN_ANY_ORDER = 1;
     SOME_OF = 2;   // requires `Count`
     REPEATED = 3;  // requires `Count`
-    NONE_OF = 4;
   }
   // Required.
   Type type = 1;
