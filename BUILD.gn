@@ -45,10 +45,10 @@ proto_library("mocking_protos") {
   ]
 }
 
-source_set("mock_printer_test_support") {
-  sources = [ "mock_printer/proto_test_utils.cc" ]
+source_set("parse_textproto") {
+  sources = [ "mock_printer/parse_textproto.cc" ]
   configs += [ ":target_defaults" ]
-  public = [ "mock_printer/proto_test_utils.h" ]
+  public = [ "mock_printer/parse_textproto.h" ]
   public_deps = [ ":mocking_protos" ]
 }
 
@@ -159,7 +159,7 @@ if (use.test) {
     ]
     deps = [
       ":ipp_matching",
-      ":mock_printer_test_support",
+      ":parse_textproto",
       "//common-mk/testrunner",
     ]
   }
@@ -173,7 +173,7 @@ if (use.test) {
     ]
     deps = [
       ":ipp_matching_validation",
-      ":mock_printer_test_support",
+      ":parse_textproto",
       "//common-mk/testrunner",
     ]
   }

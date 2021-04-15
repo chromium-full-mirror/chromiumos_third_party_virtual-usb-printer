@@ -7,7 +7,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "proto_test_utils.h"
+#include "parse_textproto.h"
 #include "proto/ipp.pb.h"
 
 namespace mock_printer {
@@ -16,7 +16,7 @@ namespace {
 using ::testing::HasSubstr;
 
 TEST(IppMatchingValidation, IppMessageDisallowsZeroedOperationId) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     # Operation ID must not be 0.
     operation_id: 0
 
@@ -30,7 +30,7 @@ TEST(IppMatchingValidation, IppMessageDisallowsZeroedOperationId) {
 }
 
 TEST(IppMatchingValidation, IppMessageAllowsNonzeroOperationId) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     operation_id: 1
 
     # This IppGroup is irrelevant to the test case.
@@ -41,7 +41,7 @@ TEST(IppMatchingValidation, IppMessageAllowsNonzeroOperationId) {
 }
 
 TEST(IppMatchingValidation, IppMessageRequiresIppGroup) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     operation_id: 1
 
     # This IppMessage lacks an IppGroup in its required `groups` field.
@@ -54,7 +54,7 @@ TEST(IppMatchingValidation, IppMessageRequiresIppGroup) {
 }
 
 TEST(IppMatchingValidation, IppGroupDisallowsUnspecifiedTag) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     operation_id: 1
 
     # IppGroupTag::UNSPECIFIED is an illegal value here.
@@ -68,7 +68,7 @@ TEST(IppMatchingValidation, IppGroupDisallowsUnspecifiedTag) {
 }
 
 TEST(IppMatchingValidation, IppCollectionMustContainAttributes) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     operation_id: 1
 
     groups {
@@ -87,7 +87,7 @@ TEST(IppMatchingValidation, IppCollectionMustContainAttributes) {
 }
 
 TEST(IppMatchingValidation, IppAttributeMustBeNamed) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     operation_id: 1
 
     groups {
@@ -108,7 +108,7 @@ TEST(IppMatchingValidation, IppAttributeMustBeNamed) {
 }
 
 TEST(IppMatchingValidation, IppAttributeNeedsOnlyName) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     operation_id: 1
 
     groups {
@@ -127,7 +127,7 @@ TEST(IppMatchingValidation, IppAttributeNeedsOnlyName) {
 }
 
 TEST(IppMatchingValidation, IppAttributeMayContainAtMostOneSubmessage) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     operation_id: 1
 
     groups {
@@ -156,7 +156,7 @@ TEST(IppMatchingValidation, IppAttributeMayContainAtMostOneSubmessage) {
 }
 
 TEST(IppMatchingValidation, IppAttributeWithCollectionIsRecursivelyValidated) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     operation_id: 1
 
     groups {
@@ -182,7 +182,7 @@ TEST(IppMatchingValidation, IppAttributeWithCollectionIsRecursivelyValidated) {
 }
 
 TEST(IppMatchingValidation, IppAttributeDisallowsUnspecifiedResolutionUnits) {
-  const mocking::IppMessage message = ParseTestProto(R"pb(
+  const mocking::IppMessage message = ParseTextprotoOrDie(R"pb(
     operation_id: 1
 
     groups {
