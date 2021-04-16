@@ -46,26 +46,24 @@ proto_library("mocking_protos") {
 }
 
 source_set("mock_printer_test_support") {
+  sources = [ "mock_printer/proto_test_utils.cc" ]
   configs += [ ":target_defaults" ]
   public = [ "mock_printer/proto_test_utils.h" ]
   public_deps = [ ":mocking_protos" ]
-  sources = [ "mock_printer/proto_test_utils.cc" ]
 }
 
 source_set("ipp_matching_validation") {
-  configs += [ ":target_defaults" ]
-  deps = [ ":mocking_protos" ]
-
-  public = [ "mock_printer/ipp_matching_validation.h" ]
   sources = [ "mock_printer/ipp_matching_validation.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "mock_printer/ipp_matching_validation.h" ]
+  deps = [ ":mocking_protos" ]
 }
 
 source_set("ipp_matching") {
-  configs += [ ":target_defaults" ]
-  deps = [ ":mocking_protos" ]
-
-  public = [ "mock_printer/ipp_matching.h" ]
   sources = [ "mock_printer/ipp_matching.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "mock_printer/ipp_matching.h" ]
+  deps = [ ":mocking_protos" ]
 }
 
 source_set("mock_printer") {
@@ -76,8 +74,6 @@ source_set("mock_printer") {
 }
 
 executable("virtual-usb-printer") {
-  configs += [ ":target_defaults" ]
-  deps = [ ":mock_printer" ]
   sources = [
     "cups_constants.cc",
     "device_descriptors.cc",
@@ -96,6 +92,8 @@ executable("virtual-usb-printer") {
     "virtual_usb_printer.cc",
     "xml_util.cc",
   ]
+  configs += [ ":target_defaults" ]
+  deps = [ ":mock_printer" ]
 }
 
 if (use.test) {
@@ -104,11 +102,6 @@ if (use.test) {
   }
 
   executable("escl-manager-testrunner") {
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
     sources = [
       "escl_manager.cc",
       "escl_manager_test.cc",
@@ -117,41 +110,48 @@ if (use.test) {
       "smart_buffer.cc",
       "xml_util.cc",
     ]
-    deps = [ "//common-mk/testrunner" ]
-  }
-
-  executable("http-util-testrunner") {
-    # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
     configs += [
       "//common-mk:test",
       ":target_defaults",
       ":test_config",
     ]
+    deps = [ "//common-mk/testrunner" ]
+  }
+
+  executable("http-util-testrunner") {
     sources = [
       "http_util.cc",
       "http_util_test.cc",
       "smart_buffer.cc",
       "value_util.cc",
     ]
-    deps = [ "//common-mk/testrunner" ]
-  }
 
-  executable("ipp-manager-testrunner") {
+    # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
     configs += [
       "//common-mk:test",
       ":target_defaults",
       ":test_config",
     ]
+    deps = [ "//common-mk/testrunner" ]
+  }
+
+  executable("ipp-manager-testrunner") {
     sources = [
       "ipp_manager.cc",
       "ipp_manager_test.cc",
       "ipp_util.cc",
       "smart_buffer.cc",
     ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
     deps = [ "//common-mk/testrunner" ]
   }
 
   executable("ipp-matching-testrunner") {
+    sources = [ "mock_printer/ipp_matching_test.cc" ]
     configs += [
       "//common-mk:test",
       ":target_defaults",
@@ -162,10 +162,10 @@ if (use.test) {
       ":mock_printer_test_support",
       "//common-mk/testrunner",
     ]
-    sources = [ "mock_printer/ipp_matching_test.cc" ]
   }
 
   executable("ipp-matching-validation-testrunner") {
+    sources = [ "mock_printer/ipp_matching_validation_test.cc" ]
     configs += [
       "//common-mk:test",
       ":target_defaults",
@@ -176,16 +176,9 @@ if (use.test) {
       ":mock_printer_test_support",
       "//common-mk/testrunner",
     ]
-    sources = [ "mock_printer/ipp_matching_validation_test.cc" ]
   }
 
   executable("ipp-util-testrunner") {
-    # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
     sources = [
       "cups_constants.cc",
       "http_util.cc",
@@ -194,47 +187,54 @@ if (use.test) {
       "smart_buffer.cc",
       "value_util.cc",
     ]
-    deps = [ "//common-mk/testrunner" ]
-  }
 
-  executable("jpeg-util-testrunner") {
+    # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
     configs += [
       "//common-mk:test",
       ":target_defaults",
       ":test_config",
     ]
+    deps = [ "//common-mk/testrunner" ]
+  }
+
+  executable("jpeg-util-testrunner") {
     sources = [
       "jpeg_util.cc",
       "jpeg_util_test.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
     ]
     deps = [ "//common-mk/testrunner" ]
   }
 
   executable("smart-buffer-testrunner") {
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
     sources = [
       "smart_buffer.cc",
       "smart_buffer_test.cc",
       "value_util.cc",
     ]
-    deps = [ "//common-mk/testrunner" ]
-  }
-
-  executable("load-config-testrunner") {
     configs += [
       "//common-mk:test",
       ":target_defaults",
       ":test_config",
     ]
+    deps = [ "//common-mk/testrunner" ]
+  }
+
+  executable("load-config-testrunner") {
     sources = [
       "device_descriptors.cc",
       "load_config.cc",
       "load_config_test.cc",
       "value_util.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
     ]
     deps = [ "//common-mk/testrunner" ]
   }
