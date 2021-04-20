@@ -13,21 +13,30 @@
 #include <base/logging.h>
 #include <base/optional.h>
 
+#include "proto/control_flow.pb.h"
+#include "proto/ipp.pb.h"
+
 namespace mock_printer {
 
-base::Optional<mocking::IppMessage> ParseTextproto(
-    const std::string& textproto) {
-  mocking::IppMessage result;
-  if (!google::protobuf::TextFormat::ParseFromString(textproto, &result)) {
+base::Optional<mocking::TestCase> ParseTestCase(const std::string& textproto) {
+  mocking::TestCase parsed;
+  if (!google::protobuf::TextFormat::ParseFromString(textproto, &parsed)) {
     return base::nullopt;
   }
-  return result;
+  return parsed;
 }
 
-mocking::IppMessage ParseTextprotoOrDie(const std::string& textproto) {
-  base::Optional<mocking::IppMessage> result = ParseTextproto(textproto);
-  CHECK(result.has_value());
+mocking::TestCase ParseTestCaseOrDie(const std::string& textproto) {
+  base::Optional<mocking::TestCase> result = ParseTestCase(textproto);
+  CHECK(result.has_value()) << "failed to parse `mocking::TestCase`";
   return std::move(result.value());
+}
+
+mocking::IppMessage ParseIppMessageOrDie(const std::string& textproto) {
+  mocking::IppMessage parsed;
+  CHECK(google::protobuf::TextFormat::ParseFromString(textproto, &parsed))
+      << "failed to parse `mocking::IppMessage`";
+  return parsed;
 }
 
 }  // namespace mock_printer

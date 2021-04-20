@@ -9,20 +9,29 @@
 
 #include <base/optional.h>
 
+#include "proto/control_flow.pb.h"
 #include "proto/ipp.pb.h"
 
 namespace mock_printer {
 
-// Returns a `mocking::IppMessage` parsed from `textproto`. Returns
+// Returns a `mocking::TestCase` parsed from `textproto`. Returns
 // base::nullopt if parsing fails.
-base::Optional<mocking::IppMessage> ParseTextproto(
-    const std::string& textproto);
+base::Optional<mocking::TestCase> ParseTestCase(const std::string& textproto);
+
+// Returns a `mocking::TestCase` parsed from `textproto`. Aborts
+// the program if parsing fails.
+//
+// This function is intended for use in unit tests where we don't ever
+// expect a bogus `mocking::TestCase` at all.
+mocking::TestCase ParseTestCaseOrDie(const std::string& textproto);
 
 // Returns a `mocking::IppMessage` parsed from `textproto`. Aborts
 // the program if parsing fails.
 //
-// This function is intended for use in unit tests.
-mocking::IppMessage ParseTextprotoOrDie(const std::string& textproto);
+// This function is intended for use in unit tests, since
+// `virtual-usb-printer` doesn't need to parse `mocking::IppMessage`
+// in isolation.
+mocking::IppMessage ParseIppMessageOrDie(const std::string& textproto);
 
 }  // namespace mock_printer
 

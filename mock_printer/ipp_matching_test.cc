@@ -39,7 +39,7 @@ std::unique_ptr<ipp::Request> GetPrinterAttributesRequest() {
 // returned by libipp looks like.
 TEST(IppMatchingTest, GetPrinterAttributesMatches) {
   const auto request = GetPrinterAttributesRequest();
-  const mocking::IppMessage mock_request = ParseTextprotoOrDie(R"pb(
+  const mocking::IppMessage mock_request = ParseIppMessageOrDie(R"pb(
     # E_operations_supported::Get_Printer_Attributes
     operation_id: 0x000b
 
@@ -79,7 +79,7 @@ TEST(IppMatchingTest, GetPrinterAttributesMatches) {
 // in the matcher Protobufs).
 TEST(IppMatchingTest, MatchingNeedNotDependOnAttributeValues) {
   const auto request = GetPrinterAttributesRequest();
-  const mocking::IppMessage mock_request = ParseTextprotoOrDie(R"pb(
+  const mocking::IppMessage mock_request = ParseIppMessageOrDie(R"pb(
     # E_operations_supported::Get_Printer_Attributes
     operation_id: 0x000b
 
@@ -104,7 +104,7 @@ TEST(IppMatchingTest, MatchingNeedNotDependOnAttributeValues) {
 // *  with an extra IPP attribute, which will cause matching to fail.
 TEST(IppMatchingTest, MatchingForbidsExtraIppAttributes) {
   const auto request = GetPrinterAttributesRequest();
-  const mocking::IppMessage mock_request = ParseTextprotoOrDie(R"pb(
+  const mocking::IppMessage mock_request = ParseIppMessageOrDie(R"pb(
     # E_operations_supported::Get_Printer_Attributes
     operation_id: 0x000b
 
@@ -131,7 +131,7 @@ TEST(IppMatchingTest, MatchingForbidsExtraIppAttributes) {
 //    cause matching to fail.
 TEST(IppMatchingTest, MatchingRequiresAllIppAttributes) {
   const auto request = GetPrinterAttributesRequest();
-  const mocking::IppMessage mock_request = ParseTextprotoOrDie(R"pb(
+  const mocking::IppMessage mock_request = ParseIppMessageOrDie(R"pb(
     # E_operations_supported::Get_Printer_Attributes
     operation_id: 0x000b
 
@@ -157,7 +157,7 @@ TEST(IppMatchingTest, MatchingRequiresAllIppAttributes) {
 //    order than what's specified in the ipp::Request.
 TEST(IppMatchingTest, MatchingDoesNotRequireOrderedIppAttributes) {
   const auto request = GetPrinterAttributesRequest();
-  const mocking::IppMessage mock_request = ParseTextprotoOrDie(R"pb(
+  const mocking::IppMessage mock_request = ParseIppMessageOrDie(R"pb(
     # E_operations_supported::Get_Printer_Attributes
     operation_id: 0x000b
 

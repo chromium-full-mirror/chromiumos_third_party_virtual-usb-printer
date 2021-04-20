@@ -69,6 +69,8 @@ simultaneously. They can diverge for
     message Protobufs used as matchers are well-formed.
 *   `ipp_matching.h` - used to match `mocking::IppMessage` Protobufs
     with incoming `ipp::Request` messages (received by libipp).
+*   `parse_textproto.h` - declares functions for parsing the Protobufs
+    defined in the `proto/` subdirectory.
 
 ## Appendix: TestCase Flow
 
