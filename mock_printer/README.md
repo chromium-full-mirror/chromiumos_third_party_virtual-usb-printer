@@ -71,6 +71,24 @@ simultaneously. They can diverge for
     with incoming `ipp::Request` messages (received by libipp).
 *   `parse_textproto.h` - declares functions for parsing the Protobufs
     defined in the `proto/` subdirectory.
+*   `test_case_holder.h` - defines the container in which
+    `virtual-usb-printer` holds given test cases. See the diagram below.
+
+### TestCaseHolder Layout
+
+The `TestCaseHolder` is the top-level container for
+`mocking::TestCase`s.
+
+![TestCaseHolder members](./doc/images/testcaseholder-layout.png)
+
+*   The `TestCaseHolder` tracks the overall progression of the
+    `TestCase`, including what `TestCaseStep`s are reachable.
+*   The `WrappedTestCaseStep` tracks the progression of a single
+    `mocking::TestCaseStep`, including which
+    `mocking::ExpectationWithResponse`s have been fulfilled.
+    *   `WrappedTestCaseStep` contains a `WrappedMatcher`, which is an
+        injection-friendly wrapper for matching functions (like those
+        in `ipp_matching.h`).
 
 ## Appendices
 

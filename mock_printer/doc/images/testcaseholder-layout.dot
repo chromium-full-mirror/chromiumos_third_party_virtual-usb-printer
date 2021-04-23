@@ -1,0 +1,44 @@
+digraph {
+  fontname = Monospace
+  compound = true
+  node [shape=box,fontname=Monospace]
+
+  subgraph cluster_TestCaseHolder {
+    label = "TestCaseHolder"
+
+    subgraph cluster_TestCase {
+      label = "mocking::TestCase"
+
+      step_a[label="mocking::TestCaseStep"]
+      step_b[label="mocking::TestCaseStep"]
+      step_c[label="mocking::TestCaseStep"]
+
+      step_a->step_b->step_c
+    }
+
+    subgraph cluster_WrappedTestCaseSteps {
+      label = "std::vector<WrappedTestCaseStep>"
+
+      subgraph cluster_WrappedTestCaseStep {
+        label = "WrappedTestCaseStep"
+        ref_a[label="const mocking::TestCaseStep&"]
+        matcher_object[label="WrappedMatcher"]
+        step_state[label="[other state]"]
+
+        ref_a->step_a[style=dotted, lhead=cluster_TestCase, constraint=false]
+        ref_a->matcher_object->step_state[style=invis]
+      }
+
+      second_WrappedTestCaseStep[label="WrappedTestCaseStep"]
+      third_WrappedTestCaseStep[label="WrappedTestCaseStep"]
+
+      step_state->second_WrappedTestCaseStep[ltail=cluster_WrappedTestCaseStep]
+      second_WrappedTestCaseStep->third_WrappedTestCaseStep
+    }
+
+    case_state[label="[other state]"]
+    // Forces the "other state" member of the enclosing `TestCaseHolder`
+    // way over to the far right.
+    step_a->case_state[style=invis]
+  }
+}
