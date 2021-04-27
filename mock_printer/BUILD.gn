@@ -1,0 +1,95 @@
+# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//common-mk/pkg_config.gni")
+import("//common-mk/proto_library.gni")
+
+source_set("implementation") {
+  deps = [
+    ":ipp_matching",
+    ":ipp_matching_validation",
+  ]
+}
+
+if (use.test) {
+  pkg_config("test_config") {
+    pkg_deps = [ "libchrome-test" ]
+  }
+
+  group("unit_tests") {
+    deps = [
+      ":ipp-matching-testrunner",
+      ":ipp-matching-validation-testrunner",
+    ]
+  }
+
+  executable("ipp-matching-testrunner") {
+    sources = [ "ipp_matching_test.cc" ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":ipp_matching",
+      ":parse_textproto",
+      "//common-mk/testrunner",
+    ]
+  }
+
+  executable("ipp-matching-validation-testrunner") {
+    sources = [ "ipp_matching_validation_test.cc" ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":ipp_matching_validation",
+      ":parse_textproto",
+      "//common-mk/testrunner",
+    ]
+  }
+}
+
+pkg_config("target_defaults") {
+  pkg_deps = [
+    "libchrome",
+    "libipp",
+
+    # We're not performance-sensitive enough
+    # to want protobuf-lite at the moment.
+    "protobuf",
+  ]
+}
+
+proto_library("mocking_protos") {
+  proto_in_dir = "./proto"
+  proto_out_dir = "include/proto"
+  sources = [
+    "${proto_in_dir}/control_flow.proto",
+    "${proto_in_dir}/ipp.proto",
+  ]
+}
+
+source_set("parse_textproto") {
+  sources = [ "parse_textproto.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "parse_textproto.h" ]
+  public_deps = [ ":mocking_protos" ]
+}
+
+source_set("ipp_matching_validation") {
+  sources = [ "ipp_matching_validation.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "ipp_matching_validation.h" ]
+  deps = [ ":mocking_protos" ]
+}
+
+source_set("ipp_matching") {
+  sources = [ "ipp_matching.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "ipp_matching.h" ]
+  deps = [ ":mocking_protos" ]
+}

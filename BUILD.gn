@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import("//common-mk/pkg_config.gni")
-import("//common-mk/proto_library.gni")
 
 group("all") {
   deps = [ ":virtual-usb-printer" ]
@@ -12,12 +11,11 @@ group("all") {
       ":escl-manager-testrunner",
       ":http-util-testrunner",
       ":ipp-manager-testrunner",
-      ":ipp-matching-testrunner",
-      ":ipp-matching-validation-testrunner",
       ":ipp-util-testrunner",
       ":jpeg-util-testrunner",
       ":load-config-testrunner",
       ":smart-buffer-testrunner",
+      "//virtual-usb-printer/mock_printer:unit_tests",
     ]
   }
 }
@@ -26,50 +24,8 @@ pkg_config("target_defaults") {
   pkg_deps = [
     "libbrillo",
     "libchrome",
-    "libipp",
     "libjpeg",
     "libxml-2.0",
-
-    # We're not performance-sensitive enough
-    # to want protobuf-lite at the moment.
-    "protobuf",
-  ]
-}
-
-proto_library("mocking_protos") {
-  proto_in_dir = "./mock_printer/proto"
-  proto_out_dir = "include/proto"
-  sources = [
-    "${proto_in_dir}/control_flow.proto",
-    "${proto_in_dir}/ipp.proto",
-  ]
-}
-
-source_set("parse_textproto") {
-  sources = [ "mock_printer/parse_textproto.cc" ]
-  configs += [ ":target_defaults" ]
-  public = [ "mock_printer/parse_textproto.h" ]
-  public_deps = [ ":mocking_protos" ]
-}
-
-source_set("ipp_matching_validation") {
-  sources = [ "mock_printer/ipp_matching_validation.cc" ]
-  configs += [ ":target_defaults" ]
-  public = [ "mock_printer/ipp_matching_validation.h" ]
-  deps = [ ":mocking_protos" ]
-}
-
-source_set("ipp_matching") {
-  sources = [ "mock_printer/ipp_matching.cc" ]
-  configs += [ ":target_defaults" ]
-  public = [ "mock_printer/ipp_matching.h" ]
-  deps = [ ":mocking_protos" ]
-}
-
-source_set("mock_printer") {
-  deps = [
-    ":ipp_matching",
-    ":ipp_matching_validation",
   ]
 }
 
@@ -93,7 +49,7 @@ executable("virtual-usb-printer") {
     "xml_util.cc",
   ]
   configs += [ ":target_defaults" ]
-  deps = [ ":mock_printer" ]
+  deps = [ "//virtual-usb-printer/mock_printer:implementation" ]
 }
 
 if (use.test) {
@@ -148,34 +104,6 @@ if (use.test) {
       ":test_config",
     ]
     deps = [ "//common-mk/testrunner" ]
-  }
-
-  executable("ipp-matching-testrunner") {
-    sources = [ "mock_printer/ipp_matching_test.cc" ]
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
-    deps = [
-      ":ipp_matching",
-      ":parse_textproto",
-      "//common-mk/testrunner",
-    ]
-  }
-
-  executable("ipp-matching-validation-testrunner") {
-    sources = [ "mock_printer/ipp_matching_validation_test.cc" ]
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
-    deps = [
-      ":ipp_matching_validation",
-      ":parse_textproto",
-      "//common-mk/testrunner",
-    ]
   }
 
   executable("ipp-util-testrunner") {
