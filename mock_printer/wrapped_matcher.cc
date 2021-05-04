@@ -1,0 +1,41 @@
+// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "wrapped_matcher.h"
+
+#include <utility>
+
+#include <base/check.h>
+
+#include "ipp_matching.h"
+
+namespace mock_printer {
+
+namespace {
+
+class WrappedIppMatcher : public WrappedMatcher {
+ public:
+  WrappedIppMatcher() = default;
+  ~WrappedIppMatcher() override = default;
+
+  bool Match(const MatchableData data) override {
+    auto* ipp_data = std::get_if<MatchableIppData>(&data);
+    CHECK(ipp_data) << "BUG: expected `MatchableIppData` variant";
+    return IppMessageMatches(ipp_data->ipp_request, ipp_data->mock_ipp_request);
+  }
+};
+
+}  // namespace
+
+MatchableIppData::MatchableIppData(const ipp::Request* message,
+                                   const mocking::IppMessage& mock_message)
+    : ipp_request(message), mock_ipp_request(mock_message) {}
+MatchableIppData::~MatchableIppData() = default;
+
+// static
+std::unique_ptr<WrappedMatcher> WrappedMatcher::Create() {
+  return std::make_unique<WrappedIppMatcher>();
+}
+
+}  // namespace mock_printer

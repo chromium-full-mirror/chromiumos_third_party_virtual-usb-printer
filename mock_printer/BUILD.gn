@@ -9,6 +9,7 @@ source_set("implementation") {
   deps = [
     ":ipp_matching",
     ":ipp_matching_validation",
+    ":wrapped_matcher",
   ]
 }
 
@@ -92,4 +93,14 @@ source_set("ipp_matching") {
   configs += [ ":target_defaults" ]
   public = [ "ipp_matching.h" ]
   deps = [ ":mocking_protos" ]
+}
+
+source_set("wrapped_matcher") {
+  sources = [ "wrapped_matcher.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "wrapped_matcher.h" ]
+  deps = [
+    ":ipp_matching",
+    ":mocking_protos",
+  ]
 }
