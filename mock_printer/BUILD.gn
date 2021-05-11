@@ -9,7 +9,6 @@ source_set("implementation") {
   deps = [
     ":ipp_matching",
     ":ipp_matching_validation",
-    ":wrapped_matcher",
   ]
 }
 
@@ -20,8 +19,23 @@ if (use.test) {
 
   group("unit_tests") {
     deps = [
+      ":cardinality-helper-testrunner",
       ":ipp-matching-testrunner",
       ":ipp-matching-validation-testrunner",
+    ]
+  }
+
+  executable("cardinality-helper-testrunner") {
+    sources = [ "cardinality_helper_test.cc" ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":cardinality_helper",
+      ":parse_textproto",
+      "//common-mk/testrunner",
     ]
   }
 
@@ -111,4 +125,11 @@ source_set("wrapped_matcher") {
     ":ipp_matching",
     ":mocking_protos",
   ]
+}
+
+source_set("cardinality_helper") {
+  sources = [ "cardinality_helper.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "cardinality_helper.h" ]
+  deps = [ ":mocking_protos" ]
 }

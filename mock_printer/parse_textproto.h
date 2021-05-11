@@ -33,6 +33,14 @@ mocking::TestCase ParseTestCaseOrDie(const std::string& textproto);
 // in isolation.
 mocking::IppMessage ParseIppMessageOrDie(const std::string& textproto);
 
+// Returns a `mocking::Cardinality` parsed from `textproto`. Aborts the
+// program if parsing fails.
+//
+// This function is intended for use in unit tests, since
+// `virtual-usb-printer` doesn't need to parse `mocking::Cardinality`
+// in isolation.
+mocking::Cardinality ParseCardinalityOrDie(const std::string& textproto);
+
 }  // namespace mock_printer
 
 #endif  // MOCK_PRINTER_PARSE_TEXTPROTO_H_

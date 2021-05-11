@@ -39,4 +39,11 @@ mocking::IppMessage ParseIppMessageOrDie(const std::string& textproto) {
   return parsed;
 }
 
+mocking::Cardinality ParseCardinalityOrDie(const std::string& textproto) {
+  mocking::Cardinality parsed;
+  CHECK(google::protobuf::TextFormat::ParseFromString(textproto, &parsed))
+      << "failed to parse `mocking::Cardinality`";
+  return parsed;
+}
+
 }  // namespace mock_printer

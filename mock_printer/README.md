@@ -73,6 +73,10 @@ simultaneously. They can diverge for
     defined in the `proto/` subdirectory.
 *   `test_case_holder.h` - defines the container in which
     `virtual-usb-printer` holds given test cases. See the diagram below.
+    *   `cardinality_helper.h` - defines an abstract class that allows
+        callers to progress control flow.
+    *   `wrapped_matcher.h` - defines a mock-friendly way to call
+        matcher functions for test case steps.
 
 ### TestCaseHolder Layout
 
