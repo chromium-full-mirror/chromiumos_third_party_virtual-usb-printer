@@ -74,6 +74,13 @@ proto_library("mocking_protos") {
   ]
 }
 
+source_set("argument_variants") {
+  sources = [ "argument_variants.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "argument_variants.h" ]
+  public_deps = [ ":mocking_protos" ]
+}
+
 source_set("parse_textproto") {
   sources = [ "parse_textproto.cc" ]
   configs += [ ":target_defaults" ]
@@ -100,6 +107,7 @@ source_set("wrapped_matcher") {
   configs += [ ":target_defaults" ]
   public = [ "wrapped_matcher.h" ]
   deps = [
+    ":argument_variants",
     ":ipp_matching",
     ":mocking_protos",
   ]

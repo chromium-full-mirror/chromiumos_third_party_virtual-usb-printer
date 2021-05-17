@@ -6,10 +6,10 @@
 #define MOCK_PRINTER_WRAPPED_MATCHER_H_
 
 #include <memory>
-#include <variant>
 
 #include <chromeos/libipp/ipp.h>
 
+#include "argument_variants.h"
 #include "proto/ipp.pb.h"
 
 // This header declares a trivial wrapper class for matching functions
@@ -21,24 +21,6 @@
 // https://google.github.io/googletest/gmock_cook_book.html#mocking-free-functions
 
 namespace mock_printer {
-
-// Unowned pointers to
-// *  a real IPP message to be matched and
-// *  a mock IPP message to be matched against.
-//
-// This struct does not own its members and must not outlive them.
-struct MatchableIppData {
-  MatchableIppData(const ipp::Request* message,
-                   const mocking::IppMessage& mock_message);
-  ~MatchableIppData();
-
-  const ipp::Request* ipp_request;
-  const mocking::IppMessage& mock_ipp_request;
-};
-
-// Pseudo-type-erasing holder for data that we'll pass to
-// `WrappedMatcher::Match()`.
-using MatchableData = std::variant<MatchableIppData>;
 
 class WrappedMatcher {
  public:

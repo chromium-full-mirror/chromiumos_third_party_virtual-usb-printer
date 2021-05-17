@@ -28,11 +28,6 @@ class WrappedIppMatcher : public WrappedMatcher {
 
 }  // namespace
 
-MatchableIppData::MatchableIppData(const ipp::Request* message,
-                                   const mocking::IppMessage& mock_message)
-    : ipp_request(message), mock_ipp_request(mock_message) {}
-MatchableIppData::~MatchableIppData() = default;
-
 // static
 std::unique_ptr<WrappedMatcher> WrappedMatcher::Create() {
   return std::make_unique<WrappedIppMatcher>();
