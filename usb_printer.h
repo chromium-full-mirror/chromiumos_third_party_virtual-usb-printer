@@ -185,11 +185,13 @@ class UsbPrinter {
   void HandleHttpData(const UsbipCmdSubmit& usb_request, SmartBuffer* message);
 
   // Handles the standard USB requests.
-  void HandleStandardControl(int sockfd, const UsbipCmdSubmit& usb_request,
+  void HandleStandardControl(int sockfd,
+                             const UsbipCmdSubmit& usb_request,
                              const UsbControlRequest& control_request) const;
 
   // Handles printer-specific USB requests.
-  void HandlePrinterControl(int sockfd, const UsbipCmdSubmit& usb_request,
+  void HandlePrinterControl(int sockfd,
+                            const UsbipCmdSubmit& usb_request,
                             const UsbControlRequest& control_request) const;
 
   // Get a pointer to the InterfaceManager that manages |endpoint|.
@@ -198,36 +200,45 @@ class UsbPrinter {
   HttpResponse GenerateHttpResponse(const HttpRequest& request,
                                     SmartBuffer* body);
 
-  void HandleGetStatus(int sockfd, const UsbipCmdSubmit& usb_request,
+  void HandleGetStatus(int sockfd,
+                       const UsbipCmdSubmit& usb_request,
                        const UsbControlRequest& control_request) const;
 
-  void HandleGetDescriptor(int sockfd, const UsbipCmdSubmit& usb_request,
+  void HandleGetDescriptor(int sockfd,
+                           const UsbipCmdSubmit& usb_request,
                            const UsbControlRequest& control_request) const;
 
   void HandleGetDeviceDescriptor(
-      int sockfd, const UsbipCmdSubmit& usb_request,
+      int sockfd,
+      const UsbipCmdSubmit& usb_request,
       const UsbControlRequest& control_request) const;
 
   void HandleGetConfigurationDescriptor(
-      int sockfd, const UsbipCmdSubmit& usb_request,
+      int sockfd,
+      const UsbipCmdSubmit& usb_request,
       const UsbControlRequest& control_request) const;
 
   void HandleGetDeviceQualifierDescriptor(
-      int sockfd, const UsbipCmdSubmit& usb_request,
+      int sockfd,
+      const UsbipCmdSubmit& usb_request,
       const UsbControlRequest& control_request) const;
 
   void HandleGetStringDescriptor(
-      int sockfd, const UsbipCmdSubmit& usb_request,
+      int sockfd,
+      const UsbipCmdSubmit& usb_request,
       const UsbControlRequest& control_request) const;
 
-  void HandleGetConfiguration(int sockfd, const UsbipCmdSubmit& usb_request,
+  void HandleGetConfiguration(int sockfd,
+                              const UsbipCmdSubmit& usb_request,
                               const UsbControlRequest& control_request) const;
 
   // Used to send an empty response to control requests which are not supported.
-  void HandleUnsupportedRequest(int sockfd, const UsbipCmdSubmit& usb_request,
+  void HandleUnsupportedRequest(int sockfd,
+                                const UsbipCmdSubmit& usb_request,
                                 const UsbControlRequest& control_request) const;
 
-  void HandleGetDeviceId(int sockfd, const UsbipCmdSubmit& usb_request,
+  void HandleGetDeviceId(int sockfd,
+                         const UsbipCmdSubmit& usb_request,
                          const UsbControlRequest& control_request) const;
 
   void QueueHttpResponse(const UsbipCmdSubmit& usb_request,

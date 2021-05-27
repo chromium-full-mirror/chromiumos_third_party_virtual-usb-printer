@@ -92,13 +92,16 @@ UsbipCmdSubmit UnpackUsbipCmdSubmit(SmartBuffer* buf);
 // Responds to the USB data request |usb_request| by sending a UsbRetSubmit
 // message that uses |received| to indicate how many uint8_ts that it
 // successfully received.
-void SendUsbDataResponse(int sockfd, const UsbipCmdSubmit& usb_request,
+void SendUsbDataResponse(int sockfd,
+                         const UsbipCmdSubmit& usb_request,
                          size_t received);
 
 // Sends a UsbipRetSubmit message to the socket described by |sockfd|.
 // |usb_request| is used to create the UsbipRetSubmit header and |data|
 // contains the actual URB data.
-void SendUsbControlResponse(int sockfd, const UsbipCmdSubmit& usb_request,
-                            const uint8_t* data, size_t size);
+void SendUsbControlResponse(int sockfd,
+                            const UsbipCmdSubmit& usb_request,
+                            const uint8_t* data,
+                            size_t size);
 
 #endif  // USBIP_H__

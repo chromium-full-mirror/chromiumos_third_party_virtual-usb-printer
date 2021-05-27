@@ -245,7 +245,8 @@ void UsbPrinter::HandleHttpData(const UsbipCmdSubmit& usb_request,
 }
 
 void UsbPrinter::HandleStandardControl(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   switch (control_request.bRequest) {
     case GET_STATUS:
@@ -275,7 +276,8 @@ void UsbPrinter::HandleStandardControl(
 }
 
 void UsbPrinter::HandlePrinterControl(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   switch (control_request.bRequest) {
     case GET_DEVICE_ID:
@@ -333,7 +335,8 @@ HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
 }
 
 void UsbPrinter::HandleGetStatus(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   printf("HandleGetStatus %u[%u]\n", control_request.wValue1,
          control_request.wValue0);
@@ -344,7 +347,8 @@ void UsbPrinter::HandleGetStatus(
 }
 
 void UsbPrinter::HandleGetDescriptor(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   printf("HandleGetDescriptor %u[%u]\n", control_request.wValue1,
          control_request.wValue0);
@@ -373,7 +377,8 @@ void UsbPrinter::HandleGetDescriptor(
 }
 
 void UsbPrinter::HandleGetDeviceDescriptor(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   printf("HandleGetDeviceDescriptor %u[%u]\n", control_request.wValue1,
          control_request.wValue0);
@@ -393,7 +398,8 @@ void UsbPrinter::HandleGetDeviceDescriptor(
 }
 
 void UsbPrinter::HandleGetConfigurationDescriptor(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   printf("HandleGetConfigurationDescriptor %u[%u]\n", control_request.wValue1,
          control_request.wValue0);
@@ -436,7 +442,8 @@ void UsbPrinter::HandleGetConfigurationDescriptor(
 }
 
 void UsbPrinter::HandleGetDeviceQualifierDescriptor(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   printf("HandleGetDeviceQualifierDescriptor %u[%u]\n", control_request.wValue1,
          control_request.wValue0);
@@ -447,7 +454,8 @@ void UsbPrinter::HandleGetDeviceQualifierDescriptor(
 }
 
 void UsbPrinter::HandleGetStringDescriptor(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   printf("HandleGetStringDescriptor %u[%u]\n", control_request.wValue1,
          control_request.wValue0);
@@ -460,7 +468,8 @@ void UsbPrinter::HandleGetStringDescriptor(
 }
 
 void UsbPrinter::HandleGetConfiguration(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   printf("HandleGetConfiguration %u[%u]\n", control_request.wValue1,
          control_request.wValue0);
@@ -475,7 +484,8 @@ void UsbPrinter::HandleGetConfiguration(
 }
 
 void UsbPrinter::HandleUnsupportedRequest(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   printf("HandleUnsupportedRequest %u: %u[%u]\n", control_request.bRequest,
          control_request.wValue1, control_request.wValue0);
@@ -483,7 +493,8 @@ void UsbPrinter::HandleUnsupportedRequest(
 }
 
 void UsbPrinter::HandleGetDeviceId(
-    int sockfd, const UsbipCmdSubmit& usb_request,
+    int sockfd,
+    const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
   printf("HandleGetDeviceId %u[%u]\n", control_request.wValue1,
          control_request.wValue0);

@@ -131,7 +131,8 @@ IppTag GetIppTag(const std::string& group);
 void AddEndOfAttributes(SmartBuffer* buf);
 
 void AddPrinterAttributes(const std::vector<IppAttribute>& ipp_attributes,
-                          const std::string& group, SmartBuffer* buf);
+                          const std::string& group,
+                          SmartBuffer* buf);
 
 // Determine the number of bytes required to write the portion of |attribute|
 // which is the same regardless of the underlying value type to a buffer.

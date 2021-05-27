@@ -374,11 +374,26 @@ TEST(GetEndpointDescriptorMap, ValidDescriptor) {
 TEST(ConvertStringToStringDescriptor, ValidString) {
   const std::string string_descriptor = "Virtual USB Printer";
   const char size = static_cast<char>(string_descriptor.size()) * 2 + 2;
-  const std::vector<char> expected = {
-    size, USB_DESCRIPTOR_STRING,
-    'V', 0x00, 'i', 0x00, 'r', 0x00, 't', 0x00, 'u', 0x00, 'a', 0x00, 'l', 0x00,
-    ' ', 0x00, 'U', 0x00, 'S', 0x00, 'B', 0x00, ' ', 0x00, 'P', 0x00, 'r', 0x00,
-    'i', 0x00, 'n', 0x00, 't', 0x00, 'e', 0x00, 'r', 0x00};
+  const std::vector<char> expected = {size, USB_DESCRIPTOR_STRING,
+                                      'V',  0x00,
+                                      'i',  0x00,
+                                      'r',  0x00,
+                                      't',  0x00,
+                                      'u',  0x00,
+                                      'a',  0x00,
+                                      'l',  0x00,
+                                      ' ',  0x00,
+                                      'U',  0x00,
+                                      'S',  0x00,
+                                      'B',  0x00,
+                                      ' ',  0x00,
+                                      'P',  0x00,
+                                      'r',  0x00,
+                                      'i',  0x00,
+                                      'n',  0x00,
+                                      't',  0x00,
+                                      'e',  0x00,
+                                      'r',  0x00};
   EXPECT_EQ(ConvertStringToStringDescriptor(string_descriptor), expected);
 }
 
@@ -392,7 +407,7 @@ TEST(ConvertStringToStringDescriptor, MaxLengthString) {
   EXPECT_EQ(result[1], USB_DESCRIPTOR_STRING);
   for (int i = 2; i < size; i += 2) {
     EXPECT_EQ(result[i], 's');
-    EXPECT_EQ(result[i+1], 0x00);
+    EXPECT_EQ(result[i + 1], 0x00);
   }
 }
 
@@ -433,13 +448,33 @@ TEST(GetStringDescriptors, ValidDescriptors) {
                                                           0x04};
   const std::vector<char> expected_string_descriptor1 = {
       14,  USB_DESCRIPTOR_STRING,
-      'D', 0x00, 'a', 0x00, 'v', 0x00, 'i', 0x00, 'e', 0x00, 'V', 0x00};
+      'D', 0x00,
+      'a', 0x00,
+      'v', 0x00,
+      'i', 0x00,
+      'e', 0x00,
+      'V', 0x00};
   const std::vector<char> expected_string_descriptor2 = {
-      40, USB_DESCRIPTOR_STRING,
-      'V',  0x00, 'i',  0x00, 'r',  0x00, 't',  0x00, 'u',  0x00, 'a',  0x00,
-      'l',  0x00, ' ',  0x00, 'U',  0x00, 'S',  0x00, 'B',  0x00, ' ',  0x00,
-      'P',  0x00, 'r',  0x00, 'i',  0x00, 'n',  0x00, 't',  0x00, 'e',  0x00,
-      'r',  0x00};
+      40,  USB_DESCRIPTOR_STRING,
+      'V', 0x00,
+      'i', 0x00,
+      'r', 0x00,
+      't', 0x00,
+      'u', 0x00,
+      'a', 0x00,
+      'l', 0x00,
+      ' ', 0x00,
+      'U', 0x00,
+      'S', 0x00,
+      'B', 0x00,
+      ' ', 0x00,
+      'P', 0x00,
+      'r', 0x00,
+      'i', 0x00,
+      'n', 0x00,
+      't', 0x00,
+      'e', 0x00,
+      'r', 0x00};
   std::vector<std::vector<char>> expected = {expected_language_descriptor,
                                              expected_string_descriptor1,
                                              expected_string_descriptor2};

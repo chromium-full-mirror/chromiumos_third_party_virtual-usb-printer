@@ -54,6 +54,6 @@ enum class IppTag : uint8_t {
   MEMBERNAME
 };
 
-std::ostream& operator <<(std::ostream& os, const IppTag& tag);
+std::ostream& operator<<(std::ostream& os, const IppTag& tag);
 
 #endif  // CUPS_CONSTANTS_H__

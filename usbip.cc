@@ -99,7 +99,8 @@ UsbipRetSubmit CreateUsbipRetSubmit(const UsbipCmdSubmit& request) {
   return response;
 }
 
-void SendUsbDataResponse(int sockfd, const UsbipCmdSubmit& usb_request,
+void SendUsbDataResponse(int sockfd,
+                         const UsbipCmdSubmit& usb_request,
                          size_t received) {
   UsbipRetSubmit response = CreateUsbipRetSubmit(usb_request);
   response.actual_length = received;
@@ -108,8 +109,10 @@ void SendUsbDataResponse(int sockfd, const UsbipCmdSubmit& usb_request,
   SendBuffer(sockfd, PackUsbipRetSubmit(response));
 }
 
-void SendUsbControlResponse(int sockfd, const UsbipCmdSubmit& usb_request,
-                            const uint8_t* data, size_t data_size) {
+void SendUsbControlResponse(int sockfd,
+                            const UsbipCmdSubmit& usb_request,
+                            const uint8_t* data,
+                            size_t data_size) {
   UsbipRetSubmit response = CreateUsbipRetSubmit(usb_request);
   response.actual_length = data_size;
 

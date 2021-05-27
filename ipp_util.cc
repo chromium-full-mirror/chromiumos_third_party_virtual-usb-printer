@@ -44,8 +44,7 @@ void AddTag(IppTag tag, SmartBuffer* buf) {
 // Adds the IPP |name| to |bytes|. If |include_name| is set to true then the
 // length of |name| and |name| itself are added to |buf|. Otherwise just a
 // length with value 0 is added to indicate that there is no value.
-void AddName(const std::string& name, bool include_name,
-             SmartBuffer* buf) {
+void AddName(const std::string& name, bool include_name, SmartBuffer* buf) {
   CHECK_LE(name.size(), USHRT_MAX) << "Name size is too large";
   uint16_t name_length = (include_name) ? name.size() : 0;
   name_length = htons(name_length);
@@ -64,8 +63,11 @@ void AddValueLength(size_t value_length, SmartBuffer* buf) {
 }
 
 // Adds the IPP attribute of type bool to |buf|.
-void AddBooleanAttribute(bool value, IppTag tag, const std::string& name,
-                         bool include_name, SmartBuffer* buf) {
+void AddBooleanAttribute(bool value,
+                         IppTag tag,
+                         const std::string& name,
+                         bool include_name,
+                         SmartBuffer* buf) {
   AddTag(tag, buf);
   AddName(name, include_name, buf);
   AddValueLength(sizeof(value), buf);
@@ -73,8 +75,11 @@ void AddBooleanAttribute(bool value, IppTag tag, const std::string& name,
 }
 
 // Adds the IPP attribute of type int to |buf|.
-void AddIntAttribute(int value, IppTag tag, const std::string& name,
-                     bool include_name, SmartBuffer* buf) {
+void AddIntAttribute(int value,
+                     IppTag tag,
+                     const std::string& name,
+                     bool include_name,
+                     SmartBuffer* buf) {
   AddTag(tag, buf);
   AddName(name, include_name, buf);
   AddValueLength(sizeof(value), buf);
@@ -84,8 +89,10 @@ void AddIntAttribute(int value, IppTag tag, const std::string& name,
 }
 
 // Adds the IPP attribute of type string to |buf|.
-void AddStringAttribute(const std::string& value, IppTag tag,
-                        const std::string& name, bool include_name,
+void AddStringAttribute(const std::string& value,
+                        IppTag tag,
+                        const std::string& name,
+                        bool include_name,
                         SmartBuffer* buf) {
   AddTag(tag, buf);
   AddName(name, include_name, buf);
@@ -391,9 +398,9 @@ void AddEndOfAttributes(SmartBuffer* buf) {
 }
 
 void AddPrinterAttributes(const std::vector<IppAttribute>& ipp_attributes,
-                          const std::string& group, SmartBuffer* buf) {
-  std::map<std::string,
-           std::function<void(const IppAttribute&, SmartBuffer*)>>
+                          const std::string& group,
+                          SmartBuffer* buf) {
+  std::map<std::string, std::function<void(const IppAttribute&, SmartBuffer*)>>
       function_map = {{kUnsupported, AddString},
                       {kNoValue, AddString},
                       {kInteger, AddInteger},

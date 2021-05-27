@@ -17,13 +17,20 @@
 // USB Device Descriptor
 struct UsbDeviceDescriptor {
   UsbDeviceDescriptor() = default;
-  UsbDeviceDescriptor(uint8_t _bLength, uint8_t _bDescriptorType,
-                      uint16_t _bcdUSB, uint8_t _bDeviceClass,
-                      uint8_t _bDeviceSubClass, uint8_t _bDeviceProtocol,
-                      uint8_t _bMaxPacketSize0, uint16_t _idVendor,
-                      uint16_t _idProduct, uint16_t _bcdDevice,
-                      uint8_t _iManufacturer, uint8_t _iProduct,
-                      uint8_t _iSerialNumber, uint8_t _bNumConfigurations)
+  UsbDeviceDescriptor(uint8_t _bLength,
+                      uint8_t _bDescriptorType,
+                      uint16_t _bcdUSB,
+                      uint8_t _bDeviceClass,
+                      uint8_t _bDeviceSubClass,
+                      uint8_t _bDeviceProtocol,
+                      uint8_t _bMaxPacketSize0,
+                      uint16_t _idVendor,
+                      uint16_t _idProduct,
+                      uint16_t _bcdDevice,
+                      uint8_t _iManufacturer,
+                      uint8_t _iProduct,
+                      uint8_t _iSerialNumber,
+                      uint8_t _bNumConfigurations)
       : bLength(_bLength),
         bDescriptorType(_bDescriptorType),
         bcdUSB(_bcdUSB),
@@ -58,10 +65,13 @@ struct UsbDeviceDescriptor {
 // USB Configuration Descriptor
 struct UsbConfigurationDescriptor {
   UsbConfigurationDescriptor() = default;
-  UsbConfigurationDescriptor(uint8_t _bLength, uint8_t _bDescriptorType,
-                             uint16_t _wTotalLength, uint8_t _bNumInterfaces,
+  UsbConfigurationDescriptor(uint8_t _bLength,
+                             uint8_t _bDescriptorType,
+                             uint16_t _wTotalLength,
+                             uint8_t _bNumInterfaces,
                              uint8_t _bConfigurationValue,
-                             uint8_t _iConfiguration, uint8_t _bmAttributes,
+                             uint8_t _iConfiguration,
+                             uint8_t _bmAttributes,
                              uint8_t _bMaxPower)
       : bLength(_bLength),
         bDescriptorType(_bDescriptorType),
@@ -86,11 +96,15 @@ struct UsbConfigurationDescriptor {
 // USB Interface Descriptor
 struct UsbInterfaceDescriptor {
   UsbInterfaceDescriptor() = default;
-  UsbInterfaceDescriptor(uint8_t _bLength, uint8_t _bDescriptorType,
-                         uint8_t _bInterfaceNumber, uint8_t _bAlternateSetting,
-                         uint8_t _bNumEndpoints, uint8_t _bInterfaceClass,
+  UsbInterfaceDescriptor(uint8_t _bLength,
+                         uint8_t _bDescriptorType,
+                         uint8_t _bInterfaceNumber,
+                         uint8_t _bAlternateSetting,
+                         uint8_t _bNumEndpoints,
+                         uint8_t _bInterfaceClass,
                          uint8_t _bInterfaceSubClass,
-                         uint8_t _bInterfaceProtocol, uint8_t _iInterface)
+                         uint8_t _bInterfaceProtocol,
+                         uint8_t _iInterface)
       : bLength(_bLength),
         bDescriptorType(_bDescriptorType),
         bInterfaceNumber(_bInterfaceNumber),
@@ -115,9 +129,12 @@ struct UsbInterfaceDescriptor {
 // USB Endpoint Descriptor
 struct UsbEndpointDescriptor {
   UsbEndpointDescriptor() = default;
-  UsbEndpointDescriptor(uint8_t _bLength, uint8_t _bDescriptorType,
-                        uint8_t _bEndpointAddress, uint8_t _bmAttributes,
-                        uint16_t _wMaxPacketSize, uint8_t _bInterval)
+  UsbEndpointDescriptor(uint8_t _bLength,
+                        uint8_t _bDescriptorType,
+                        uint8_t _bEndpointAddress,
+                        uint8_t _bmAttributes,
+                        uint16_t _wMaxPacketSize,
+                        uint8_t _bInterval)
       : bLength(_bLength),
         bDescriptorType(_bDescriptorType),
         bEndpointAddress(_bEndpointAddress),
@@ -136,12 +153,15 @@ struct UsbEndpointDescriptor {
 // USB Device Qualifier Descriptor
 struct UsbDeviceQualifierDescriptor {
   UsbDeviceQualifierDescriptor() = default;
-  UsbDeviceQualifierDescriptor(uint8_t _bLength, uint8_t _bDescriptorType,
-                               uint16_t _bcdUSB, uint8_t _bDeviceClass,
+  UsbDeviceQualifierDescriptor(uint8_t _bLength,
+                               uint8_t _bDescriptorType,
+                               uint16_t _bcdUSB,
+                               uint8_t _bDeviceClass,
                                uint8_t _bDeviceSubClass,
                                uint8_t _bDeviceProtocol,
                                uint8_t _bMaxPacketSize0,
-                               uint8_t _bNumConfigurations, uint8_t _bReserved)
+                               uint8_t _bNumConfigurations,
+                               uint8_t _bReserved)
       : bLength(_bLength),
         bDescriptorType(_bDescriptorType),
         bcdUSB(_bcdUSB),

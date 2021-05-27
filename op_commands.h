@@ -99,7 +99,9 @@ struct OpRepImport {
 void SetOpHeader(uint16_t command, int status, OpHeader* header);
 
 // Sets the corresponding members of |devlist_header| using the given values.
-void SetOpRepDevlistHeader(uint16_t command, int status, int numExportedDevices,
+void SetOpRepDevlistHeader(uint16_t command,
+                           int status,
+                           int numExportedDevices,
                            OpRepDevlistHeader* header);
 
 // Sets the members of |device| using the corresponding values in

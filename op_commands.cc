@@ -30,7 +30,9 @@ void SetOpHeader(uint16_t command, int status, OpHeader* header) {
   header->status = status;
 }
 
-void SetOpRepDevlistHeader(uint16_t command, int status, int numExportedDevices,
+void SetOpRepDevlistHeader(uint16_t command,
+                           int status,
+                           int numExportedDevices,
                            OpRepDevlistHeader* devlist_header) {
   SetOpHeader(command, status, &devlist_header->header);
   devlist_header->numExportedDevices = numExportedDevices;
