@@ -183,6 +183,7 @@ struct UsbDeviceQualifierDescriptor {
   uint8_t bReserved;           // Reserved, must be zero (0)
 } __attribute__((packed));
 
+// Test-only operators.
 bool operator==(const UsbDeviceDescriptor& lhs, const UsbDeviceDescriptor& rhs);
 bool operator==(const UsbConfigurationDescriptor& lhs,
                 const UsbConfigurationDescriptor& rhs);
@@ -192,10 +193,5 @@ bool operator==(const UsbEndpointDescriptor& lhs,
                 const UsbEndpointDescriptor& rhs);
 bool operator==(const UsbDeviceQualifierDescriptor& lhs,
                 const UsbDeviceQualifierDescriptor& rhs);
-
-void PrintDeviceDescriptor(const UsbDeviceDescriptor& dev);
-void PrintConfigurationDescriptor(const UsbConfigurationDescriptor& conf);
-void PrintInterfaceDescriptor(const UsbInterfaceDescriptor& intf);
-void PrintEndpointDescriptor(const UsbEndpointDescriptor& endp);
 
 #endif  // DEVICE_DESCRIPTORS_H__
