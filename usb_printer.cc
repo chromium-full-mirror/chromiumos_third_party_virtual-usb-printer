@@ -338,8 +338,8 @@ void UsbPrinter::HandleGetStatus(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  printf("HandleGetStatus %u[%u]\n", control_request.wValue1,
-         control_request.wValue0);
+  VLOG(2) << "HandleGetStatus " << unsigned{control_request.wValue1} << "["
+          << unsigned{control_request.wValue0} << "]";
   uint16_t status = 0;
   SmartBuffer response(sizeof(status));
   response.Add(&status, sizeof(status));
@@ -350,8 +350,8 @@ void UsbPrinter::HandleGetDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  printf("HandleGetDescriptor %u[%u]\n", control_request.wValue1,
-         control_request.wValue0);
+  VLOG(2) << "HandleGetDescriptor " << unsigned{control_request.wValue1} << "["
+          << unsigned{control_request.wValue0} << "]";
 
   switch (control_request.wValue1) {
     case USB_DESCRIPTOR_DEVICE:
@@ -380,8 +380,8 @@ void UsbPrinter::HandleGetDeviceDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  printf("HandleGetDeviceDescriptor %u[%u]\n", control_request.wValue1,
-         control_request.wValue0);
+  VLOG(2) << "HandleGetDeviceDescriptor " << unsigned{control_request.wValue1}
+          << "[" << unsigned{control_request.wValue0} << "]";
 
   SmartBuffer response(sizeof(device_descriptor()));
   const UsbDeviceDescriptor& dev = device_descriptor();
@@ -401,15 +401,16 @@ void UsbPrinter::HandleGetConfigurationDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  printf("HandleGetConfigurationDescriptor %u[%u]\n", control_request.wValue1,
-         control_request.wValue0);
+  VLOG(2) << "HandleGetConfigurationDescriptor "
+          << unsigned{control_request.wValue1} << "["
+          << unsigned{control_request.wValue0} << "]";
 
   SmartBuffer response(control_request.wLength);
   response.Add(configuration_descriptor());
 
   if (control_request.wLength == sizeof(configuration_descriptor())) {
     // Only the configuration descriptor itself has been requested.
-    printf("Only configuration descriptor requested\n");
+    VLOG(2) << "Only configuration descriptor requested";
     SendUsbControlResponse(sockfd, usb_request, response.data(),
                            response.size());
     return;
@@ -445,8 +446,9 @@ void UsbPrinter::HandleGetDeviceQualifierDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  printf("HandleGetDeviceQualifierDescriptor %u[%u]\n", control_request.wValue1,
-         control_request.wValue0);
+  VLOG(2) << "HandleGetDeviceQualifierDescriptor "
+          << unsigned{control_request.wValue1} << "["
+          << unsigned{control_request.wValue0} << "]";
 
   SmartBuffer response(sizeof(qualifier_descriptor()));
   response.Add(qualifier_descriptor());
@@ -457,8 +459,8 @@ void UsbPrinter::HandleGetStringDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  printf("HandleGetStringDescriptor %u[%u]\n", control_request.wValue1,
-         control_request.wValue0);
+  VLOG(2) << "HandleGetStringDescriptor " << unsigned{control_request.wValue1}
+          << "[" << unsigned{control_request.wValue0} << "]";
 
   int index = control_request.wValue0;
   const auto& strings = string_descriptors();
@@ -471,8 +473,8 @@ void UsbPrinter::HandleGetConfiguration(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  printf("HandleGetConfiguration %u[%u]\n", control_request.wValue1,
-         control_request.wValue0);
+  VLOG(2) << "HandleGetConfiguration " << unsigned{control_request.wValue1}
+          << "[" << unsigned{control_request.wValue0} << "]";
 
   // Note: For now we only have one configuration set, so we just respond with
   // with |configuration_descriptor_.bConfigurationValue|.
@@ -487,8 +489,9 @@ void UsbPrinter::HandleUnsupportedRequest(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  printf("HandleUnsupportedRequest %u: %u[%u]\n", control_request.bRequest,
-         control_request.wValue1, control_request.wValue0);
+  VLOG(2) << "HandleUnsupportedRequest " << unsigned{control_request.bRequest}
+          << ": " << unsigned{control_request.wValue1} << "["
+          << unsigned{control_request.wValue0} << "]";
   SendUsbControlResponse(sockfd, usb_request, 0, 0);
 }
 
@@ -496,8 +499,8 @@ void UsbPrinter::HandleGetDeviceId(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  printf("HandleGetDeviceId %u[%u]\n", control_request.wValue1,
-         control_request.wValue0);
+  VLOG(2) << "HandleGetDeviceId " << unsigned{control_request.wValue1} << "["
+          << unsigned{control_request.wValue0} << "]";
 
   SmartBuffer response(ieee_device_id().size());
   response.Add(ieee_device_id());

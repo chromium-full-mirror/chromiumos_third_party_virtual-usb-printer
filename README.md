@@ -89,6 +89,13 @@ usbip attach -r localhost -b 1-1
 Once the device has been attached it should appear in the list of connected USB
 devices (`lsusb`), and can be used with the native printing system in Chrome OS.
 
+*** note
+While not shown in the `--help` dialogue, the usage of `VLOG()` in some
+source files can be made visible by passing an appropriate `--vmodule=`
+argument. Consult the primary documentation in `base/logging.h` for
+details.
+***
+
 ## Configuration
 
 The printer's USB descriptors and defined IPP attributes can be configured using

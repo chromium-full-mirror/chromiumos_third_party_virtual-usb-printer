@@ -161,6 +161,10 @@ void Server::Run() {
   }
 
   // Print notification that the server is ready to begin accepting connections.
+  //
+  // TODO(b/186000173): The tast function `usbprinter.waitLaunch()`
+  // relies on this message appearing on stdout. This may change when
+  // we change `virtual-usb-printer` to trigger via Upstart.
   printf("virtual-usb-printer: ready to accept connections\n");
 
   while (true) {

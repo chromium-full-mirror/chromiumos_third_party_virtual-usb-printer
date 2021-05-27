@@ -42,7 +42,7 @@ SmartBuffer IppManager::HandleIppRequest(const IppHeader& ipp_header,
 
 SmartBuffer IppManager::HandleValidateJob(
     const IppHeader& request_header) const {
-  printf("HandleValidateJob %u\n", request_header.request_id);
+  VLOG(2) << "HandleValidateJob " << request_header.request_id;
 
   IppHeader response_header = request_header;
   response_header.operation_id = kSuccessStatus;

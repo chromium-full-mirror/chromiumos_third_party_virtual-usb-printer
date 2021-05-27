@@ -55,37 +55,39 @@ UsbipCmdSubmit UnpackUsbipCmdSubmit(SmartBuffer* buf) {
 }
 
 void PrintUsbipHeaderBasic(const UsbipHeaderBasic& header) {
-  printf("usbip cmd %u\n", header.command);
-  printf("usbip seqnum %u\n", header.seqnum);
-  printf("usbip devid %u\n", header.devid);
-  printf("usbip direction %u\n", header.direction);
-  printf("usbip ep %u\n", header.ep);
+  VLOG(2) << "usbip cmd " << header.command;
+  VLOG(2) << "usbip seqnum " << header.seqnum;
+  VLOG(2) << "usbip devid " << header.devid;
+  VLOG(2) << "usbip direction " << header.direction;
+  VLOG(2) << "usbip ep " << header.ep;
 }
 
 void PrintUsbipCmdSubmit(const UsbipCmdSubmit& command) {
   PrintUsbipHeaderBasic(command.header);
-  printf("usbip flags %u\n", command.transfer_flags);
-  printf("usbip number of packets %u\n", command.number_of_packets);
-  printf("usbip interval %u\n", command.interval);
-  printf("usbip setup %" PRIu64 "\n", command.setup);
-  printf("usbip buffer length  %u\n", command.transfer_buffer_length);
+  VLOG(2) << "usbip flags " << command.transfer_flags;
+  VLOG(2) << "usbip number of packets " << command.number_of_packets;
+  VLOG(2) << "usbip interval " << command.interval;
+  VLOG(2) << "usbip setup " << command.setup;
+  VLOG(2) << "usbip buffer length " << command.transfer_buffer_length;
 }
 
 void PrintUsbipRetSubmit(const UsbipRetSubmit& response) {
   PrintUsbipHeaderBasic(response.header);
-  printf("usbip status %u\n", response.status);
-  printf("usbip actual_length %u\n", response.actual_length);
-  printf("usbip start_frame %u\n", response.start_frame);
-  printf("usbip number_of_packets %u\n", response.number_of_packets);
-  printf("usbip error_count %u\n", response.error_count);
+  VLOG(2) << "usbip status " << response.status;
+  VLOG(2) << "usbip actual_length " << response.actual_length;
+  VLOG(2) << "usbip start_frame " << response.start_frame;
+  VLOG(2) << "usbip number_of_packets " << response.number_of_packets;
+  VLOG(2) << "usbip error_count " << response.error_count;
 }
 
 void PrintUsbControlRequest(const UsbControlRequest& request) {
-  printf("  UC Request Type %u\n", request.bmRequestType);
-  printf("  UC Request %u\n", request.bRequest);
-  printf("  UC Value  %u[%u]\n", request.wValue1, request.wValue0);
-  printf("  UC Index  %u-%u\n", request.wIndex1, request.wIndex0);
-  printf("  UC Length %u\n", request.wLength);
+  VLOG(2) << "  UC Request Type " << unsigned{request.bmRequestType};
+  VLOG(2) << "  UC Request " << unsigned{request.bRequest};
+  VLOG(2) << "  UC Value  " << unsigned{request.wValue1} << "["
+          << unsigned{request.wValue0} << "]";
+  VLOG(2) << "  UC Index  " << unsigned{request.wIndex1} << "-"
+          << unsigned{request.wIndex0};
+  VLOG(2) << "  UC Length " << unsigned{request.wLength};
 }
 
 UsbipRetSubmit CreateUsbipRetSubmit(const UsbipCmdSubmit& request) {
