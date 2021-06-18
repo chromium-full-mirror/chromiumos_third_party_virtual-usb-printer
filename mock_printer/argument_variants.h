@@ -10,6 +10,7 @@
 #include <chromeos/libipp/ipp.h>
 
 #include "proto/ipp.pb.h"
+#include "proto/control_flow.pb.h"
 
 // This header defines the arguments that the mock printer understands.
 // That includes holders for
@@ -40,6 +41,14 @@ struct MatchableIppData {
 // Pseudo-type-erasing holder for data that we'll pass to
 // `WrappedMatcher::Match()`.
 using MatchableData = std::variant<MatchableIppData>;
+
+// Counterpart to `MatchableData` exposed by `WrappedTestCaseStep`,
+// omitting the mock Protobuf.
+using InputMessage = std::variant<const ipp::Request*>;
+
+// CHECK()s that `message` contains the IPP variant.
+MatchableData GetAsIpp(const InputMessage message,
+                       const mocking::ExpectationWithResponse& mock_message);
 
 }  // namespace mock_printer
 

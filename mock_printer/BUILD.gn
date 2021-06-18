@@ -9,6 +9,10 @@ source_set("implementation") {
   deps = [
     ":ipp_matching",
     ":ipp_matching_validation",
+
+    # Temporary addition to build :wrapped_matcher and its dependencies;
+    # will be obviated by `WrappedTestCaseStep` implementation
+    ":wrapped_matcher",
   ]
 }
 
