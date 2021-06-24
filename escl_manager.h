@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <base/containers/flat_map.h>
+#include <base/files/file_path.h>
 #include <base/optional.h>
 #include <base/time/time.h>
 #include <base/values.h>
@@ -20,6 +21,7 @@ struct SourceCapabilities {
   std::vector<std::string> color_modes;
   std::vector<std::string> formats;
   std::vector<int> resolutions;
+  base::Optional<std::string> x_justification;
 };
 
 struct ScannerCapabilities {
@@ -127,7 +129,8 @@ struct ScannerStatus {
 class EsclManager {
  public:
   EsclManager() = default;
-  explicit EsclManager(ScannerCapabilities scanner_capabilities);
+  explicit EsclManager(ScannerCapabilities scanner_capabilities,
+                       const base::FilePath& output_log_dir);
 
   // Generates an HTTP response for the given HttpRequest and request body.
   // If |request| is not a valid eSCL request (for example, invalid endpoint
@@ -140,8 +143,13 @@ class EsclManager {
   HttpResponse HandleGetNextDocument(const std::string& uri);
   HttpResponse HandleDeleteJob(const std::string& uri);
 
+  bool LogSettings(const ScanSettings& settings);
+  base::Value SettingsToDict(const ScanSettings& settings);
+
   ScannerCapabilities scanner_capabilities_;
   ScannerStatus status_;
+  base::FilePath output_log_dir_;
+  int log_counter_;
 };
 
 #endif  // ESCL_MANAGER_H__

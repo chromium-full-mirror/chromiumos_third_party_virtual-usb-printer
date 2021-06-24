@@ -34,7 +34,8 @@ constexpr char kUsage[] =
     "    --descriptors_path=<path>\n"
     "    [--record_doc_path=<path>]\n"
     "    [--attributes_path=<path>]\n"
-    "    [--scanner_capabilities_path=<path>]";
+    "    [--scanner_capabilities_path=<path>]\n"
+    "    [--output_log_directory=<path>]";
 
 // Create a new UsbDescriptors object using the USB descriptors defined in
 // |printer_config|.
@@ -59,7 +60,7 @@ UsbDescriptors CreateUsbDescriptors(const base::Value& printer_config) {
 // Parses |capabilities_path| into a JSON object in order to do so, returning
 // nullopt if that parsing fails.
 base::Optional<EsclManager> InitializeEsclManager(
-    const std::string& capabilities_path) {
+    const std::string& capabilities_path, base::FilePath log_dir) {
   if (capabilities_path.empty()) {
     return EsclManager();
   }
@@ -85,7 +86,7 @@ base::Optional<EsclManager> InitializeEsclManager(
     return base::nullopt;
   }
 
-  return EsclManager(std::move(capabilities.value()));
+  return EsclManager(std::move(capabilities.value()), log_dir);
 }
 
 }  // namespace
@@ -100,6 +101,8 @@ int main(int argc, char* argv[]) {
   // longer pass this flag.
   DEFINE_string(scanner_doc_path, "",
                 "Path to file containing data to return from scan jobs");
+  DEFINE_string(output_log_dir, "",
+                "Path to the directory for writing out log info");
 
   brillo::FlagHelper::Init(argc, argv, "Virtual USB Printer");
   brillo::InitLog(brillo::kLogToSyslog | brillo::kLogToStderrIfTty);
@@ -163,8 +166,20 @@ int main(int argc, char* argv[]) {
                    unsupported_attributes, document_output_path);
   }
 
+  base::FilePath log_dir;
+  if (!FLAGS_output_log_dir.empty()) {
+    base::FilePath output_log_path(FLAGS_output_log_dir);
+    if (!base::DirectoryExists(output_log_path)) {
+      LOG(ERROR) << "Directory doesn't exist.";
+      return 1;
+    }
+    log_dir = output_log_path;
+  } else {
+    log_dir = base::FilePath();
+  }
+
   base::Optional<EsclManager> escl_manager =
-      InitializeEsclManager(FLAGS_scanner_capabilities_path);
+      InitializeEsclManager(FLAGS_scanner_capabilities_path, log_dir);
   if (!escl_manager.has_value())
     return 1;
 

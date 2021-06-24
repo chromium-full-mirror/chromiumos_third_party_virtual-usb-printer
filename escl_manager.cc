@@ -6,6 +6,9 @@
 
 #include <utility>
 
+#include <base/files/file_util.h>
+#include <base/json/json_writer.h>
+#include <base/strings/stringprintf.h>
 #include <base/logging.h>
 #include <base/strings/string_split.h>
 #include <base/strings/string_util.h>
@@ -55,6 +58,17 @@ base::Optional<std::vector<int>> ExtractIntList(
   return config_list;
 }
 
+base::Optional<std::string> ExtractString(const base::Value& root,
+                                          const std::string& config_name) {
+  const base::Value* value =
+      root.FindKeyOfType(config_name, base::Value::Type::STRING);
+  if (!value) {
+    LOG(ERROR) << "Config is missing " << config_name << " setting";
+    return base::nullopt;
+  }
+  return value->GetString();
+}
+
 base::Optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
     const base::Value& config) {
   if (!config.is_dict()) {
@@ -86,6 +100,8 @@ base::Optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
     return base::nullopt;
   }
   result.resolutions = resolutions.value();
+
+  result.x_justification = ExtractString(config, "XJustification");
 
   return result;
 }
@@ -216,8 +232,11 @@ base::Optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
   return result;
 }
 
-EsclManager::EsclManager(ScannerCapabilities scanner_capabilities)
-    : scanner_capabilities_(std::move(scanner_capabilities)) {
+EsclManager::EsclManager(ScannerCapabilities scanner_capabilities,
+                         const base::FilePath& output_log_dir)
+    : scanner_capabilities_(std::move(scanner_capabilities)),
+      output_log_dir_(output_log_dir),
+      log_counter_(1) {
   status_.idle = true;
   status_.adf_empty = false;
 }
@@ -277,6 +296,9 @@ HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
     return response;
   }
   ScanSettings settings = settings_opt.value();
+  if (!LogSettings(settings)) {
+    LOG(ERROR) << "Failed to log settings.";
+  }
 
   SourceCapabilities caps;
   if (settings.input_source == "Platen") {
@@ -423,4 +445,47 @@ HttpResponse EsclManager::HandleDeleteJob(const std::string& uri) {
     response.status = "404 Not Found";
   }
   return response;
+}
+
+bool EsclManager::LogSettings(const ScanSettings& settings) {
+  if (output_log_dir_.empty())
+    return true;
+
+  base::Value settings_dict = SettingsToDict(settings);
+  std::string json_settings;
+  if (!base::JSONWriter::Write(settings_dict, &json_settings)) {
+    LOG(ERROR) << "Failed to write settings in json format.";
+    return false;
+  }
+
+  base::FilePath json_file_path = output_log_dir_.Append(
+      base::StringPrintf("%02d_createscanjob.json", log_counter_));
+  if (!base::WriteFile(json_file_path, json_settings)) {
+    LOG(ERROR) << "Failed to write settings to json file.";
+    return false;
+  }
+
+  return true;
+}
+
+base::Value EsclManager::SettingsToDict(const ScanSettings& settings) {
+  base::flat_map<std::string, base::Value> dict;
+  dict["DocumentFormat"] = base::Value(settings.document_format);
+  dict["ColorMode"] = base::Value(settings.color_mode);
+  dict["InputSource"] = base::Value(settings.input_source);
+  dict["XResolution"] = base::Value(settings.x_resolution);
+  dict["YResolution"] = base::Value(settings.y_resolution);
+  std::vector<base::Value> regions;
+  for (const ScanRegion& r : settings.regions) {
+    base::flat_map<std::string, base::Value> region_dict;
+    region_dict["Units"] = base::Value(r.units);
+    region_dict["Height"] = base::Value(r.height);
+    region_dict["Width"] = base::Value(r.width);
+    region_dict["XOffset"] = base::Value(r.x_offset);
+    region_dict["YOffset"] = base::Value(r.y_offset);
+    regions.push_back(base::Value(region_dict));
+  }
+  dict["Regions"] = base::Value(regions);
+
+  return base::Value(dict);
 }

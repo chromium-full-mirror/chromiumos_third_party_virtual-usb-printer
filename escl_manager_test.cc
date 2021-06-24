@@ -6,6 +6,8 @@
 
 #include <utility>
 
+#include <base/files/scoped_temp_dir.h>
+#include <base/files/file_util.h>
 #include <base/logging.h>
 #include <base/values.h>
 #include <gmock/gmock.h>
@@ -89,6 +91,8 @@ Value CreateCapabilitiesJson() {
   adf_resolutions.push_back(Value(600));
   adf.SetKey("Resolutions", Value(std::move(adf_resolutions)));
 
+  adf.SetKey("XJustification", Value("Right"));
+
   dict.SetKey("ADF", std::move(adf));
 
   return dict;
@@ -96,6 +100,23 @@ Value CreateCapabilitiesJson() {
 
 inline const xmlChar* XmlCast(const char* p) {
   return reinterpret_cast<const xmlChar*>(p);
+}
+
+std::string GetCapLogStr() {
+  return "{"
+         "\"ColorMode\":2,"
+         "\"DocumentFormat\":\"application/pdf\","
+         "\"InputSource\":\"Platen\","
+         "\"Regions\":[{"
+         "\"Height\":600,"
+         "\"Units\":\"escl:ThreeHundredthsOfInches\","
+         "\"Width\":200,"
+         "\"XOffset\":0,"
+         "\"YOffset\":0"
+         "}],"
+         "\"XResolution\":300,"
+         "\"YResolution\":300"
+         "}";
 }
 
 }  // namespace
@@ -118,6 +139,7 @@ TEST(ScannerCapabilities, Initialize) {
   EXPECT_THAT(caps.adf_capabilities.value().formats, ElementsAre("image/jpeg"));
   EXPECT_THAT(caps.adf_capabilities.value().resolutions,
               ElementsAre(75, 150, 600));
+  EXPECT_EQ(caps.adf_capabilities.value().x_justification, "Right");
 }
 
 TEST(ScannerCapabilities, InitializeFailColorModeHasInteger) {
@@ -172,6 +194,12 @@ TEST(ScannerCapabilities, InitializeFailMissingPlatenSection) {
   Value json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveKey("Platen"));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+}
+
+TEST(ScannerCapabilities, InitializePassMissingJustification) {
+  Value json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.RemovePath("ADF.XJustification"));
+  EXPECT_TRUE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 // Despite taking a mutable pointer to |doc|, this does not modify |doc|.
@@ -239,6 +267,7 @@ TEST(ScannerCapabilities, AsXml) {
   // Color modes: BlackAndWhite1, Grayscale8
   // Document formats: image/jpeg
   // Discrete Resolutions: 75, 150, 600
+  // X Justification: Right
   const std::string adf_simplex_caps =
       "/scan:ScannerCapabilities/scan:Adf/scan:AdfSimplexInputCaps";
   HasPathWithContents(
@@ -283,6 +312,11 @@ TEST(ScannerCapabilities, AsXml) {
                           "scan:DiscreteResolution/scan:YResolution",
                       {"75", "150", "600"});
 
+  HasPathWithContents(doc,
+                      "/scan:ScannerCapabilities/scan:Adf/scan:Justification/"
+                      "pwg:XImagePosition",
+                      {"Right"});
+
   xmlFreeDoc(doc);
 }
 
@@ -313,7 +347,7 @@ TEST(HandleEsclRequest, InvalidEndpoint) {
   request.uri = "/eSCL/InvalidEndpoint";
 
   ScannerCapabilities caps;
-  EsclManager manager(caps);
+  EsclManager manager(caps, base::FilePath());
   HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
   EXPECT_EQ(response.status, "404 Not Found");
   EXPECT_EQ(response.body.size(), 0);
@@ -330,7 +364,7 @@ TEST(HandleEsclRequest, ScannerCapabilities) {
   base::Optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
-  EsclManager manager(caps.value());
+  EsclManager manager(caps.value(), base::FilePath());
   HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
   EXPECT_EQ(response.status, "200 OK");
   EXPECT_GT(response.body.size(), 0);
@@ -351,7 +385,7 @@ TEST(HandleEsclRequest, ScannerStatus) {
   request.uri = "/eSCL/ScannerStatus";
 
   ScannerCapabilities caps;
-  EsclManager manager(caps);
+  EsclManager manager(caps, base::FilePath());
   HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
   EXPECT_EQ(response.status, "200 OK");
   EXPECT_GT(response.body.size(), 0);
@@ -371,7 +405,7 @@ TEST(HandleEsclRequest, ScanJobs) {
   base::Optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
-  EsclManager manager(caps.value());
+  EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
   SmartBuffer body(xml);
 
@@ -392,7 +426,7 @@ TEST(HandleEsclRequest, InvalidScanJobs) {
   base::Optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(std::move(json));
   ASSERT_TRUE(caps);
-  EsclManager manager(caps.value());
+  EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
   SmartBuffer body(xml);
 
@@ -408,7 +442,7 @@ TEST(HandleEsclRequest, DeleteExistingScanJob) {
   base::Optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
-  EsclManager manager(caps.value());
+  EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
   SmartBuffer body(xml);
 
@@ -433,7 +467,32 @@ TEST(HandleEsclRequest, DeleteNonexistentScanJob) {
   request.uri = "/eSCL/ScanJobs/0b2cdf31-edee-4246-a1ad-07bbe754856b";
 
   ScannerCapabilities caps;
-  EsclManager manager(caps);
+  EsclManager manager(caps, base::FilePath());
   HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
   EXPECT_EQ(response.status, "404 Not Found");
+}
+
+TEST(HandleEsclRequest, ScanJobsLogFileProvided) {
+  HttpRequest request;
+  request.method = "POST";
+  request.uri = "/eSCL/ScanJobs";
+
+  base::Optional<ScannerCapabilities> caps =
+      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+  ASSERT_TRUE(caps);
+  base::ScopedTempDir temp_dir;
+  ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
+  EsclManager manager(caps.value(), temp_dir.GetPath());
+  std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
+  SmartBuffer body(xml);
+
+  HttpResponse response = manager.HandleEsclRequest(request, body);
+  EXPECT_EQ(response.status, "201 Created");
+  base::FilePath log_file(temp_dir.GetPath().value() +
+                          "/01_createscanjob.json");
+  EXPECT_TRUE(base::PathExists(log_file));
+
+  std::string file_contents;
+  EXPECT_TRUE(base::ReadFileToString(log_file, &file_contents));
+  EXPECT_EQ(GetCapLogStr(), file_contents);
 }

@@ -111,6 +111,7 @@ The configuration files can be loaded with the following flags:
   + Only needed for IPP-over-USB printer configurations
 + `--record_doc_path` - full path to the file used to record documents received
   from print jobs
++ `--output_log_dir` - directory path specifying where scan settings will be logged
 
 ## Using in Tast
 

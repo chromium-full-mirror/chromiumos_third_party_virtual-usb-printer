@@ -303,6 +303,14 @@ std::vector<uint8_t> ScannerCapabilitiesAsXml(const ScannerCapabilities& caps) {
     UniqueXmlNodePtr adf_duplex_caps = SourceCapabilitiesAsXml(
         caps.adf_capabilities.value(), "AdfDuplexInputCaps", &namespaces);
     xmlAddChild(adf, adf_duplex_caps.release());
+
+    base::Optional<std::string> x_justification =
+        caps.adf_capabilities.value().x_justification;
+    if (x_justification.has_value()) {
+      xmlNode* justification = AddNode(adf, scan, "Justification");
+      AddNodeWithContent(justification, pwg, "XImagePosition",
+                         x_justification.value());
+    }
   }
 
   return Serialize(std::move(root));
