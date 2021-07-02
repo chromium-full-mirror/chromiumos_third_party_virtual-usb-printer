@@ -9,10 +9,7 @@ source_set("implementation") {
   deps = [
     ":ipp_matching",
     ":ipp_matching_validation",
-
-    # Temporary addition to build :wrapped_matcher and its dependencies;
-    # will be obviated by `WrappedTestCaseStep` implementation
-    ":wrapped_matcher",
+    ":wrapped_test_case_step",
   ]
 }
 
@@ -26,6 +23,7 @@ if (use.test) {
       ":cardinality-helper-testrunner",
       ":ipp-matching-testrunner",
       ":ipp-matching-validation-testrunner",
+      ":wrapped-test-case-step-testrunner",
     ]
   }
 
@@ -67,6 +65,20 @@ if (use.test) {
     deps = [
       ":ipp_matching_validation",
       ":parse_textproto",
+      "//common-mk/testrunner",
+    ]
+  }
+
+  executable("wrapped-test-case-step-testrunner") {
+    sources = [ "wrapped_test_case_step_test.cc" ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":parse_textproto",
+      ":wrapped_test_case_step",
       "//common-mk/testrunner",
     ]
   }
@@ -136,4 +148,16 @@ source_set("cardinality_helper") {
   configs += [ ":target_defaults" ]
   public = [ "cardinality_helper.h" ]
   deps = [ ":mocking_protos" ]
+}
+
+source_set("wrapped_test_case_step") {
+  sources = [ "wrapped_test_case_step.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "wrapped_test_case_step.h" ]
+  deps = [
+    ":argument_variants",
+    ":cardinality_helper",
+    ":mocking_protos",
+    ":wrapped_matcher",
+  ]
 }
