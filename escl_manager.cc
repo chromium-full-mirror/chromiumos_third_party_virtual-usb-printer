@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include <base/containers/contains.h>
 #include <base/files/file_util.h>
 #include <base/json/json_writer.h>
 #include <base/strings/stringprintf.h>
