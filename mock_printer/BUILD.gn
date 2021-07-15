@@ -9,6 +9,7 @@ source_set("implementation") {
   deps = [
     ":ipp_matching",
     ":ipp_matching_validation",
+    ":proto_to_libipp",
     ":wrapped_test_case_step",
   ]
 }
@@ -23,6 +24,7 @@ if (use.test) {
       ":cardinality-helper-testrunner",
       ":ipp-matching-testrunner",
       ":ipp-matching-validation-testrunner",
+      ":proto-to-libipp-testrunner",
       ":wrapped-test-case-step-testrunner",
     ]
   }
@@ -65,6 +67,20 @@ if (use.test) {
     deps = [
       ":ipp_matching_validation",
       ":parse_textproto",
+      "//common-mk/testrunner",
+    ]
+  }
+
+  executable("proto-to-libipp-testrunner") {
+    sources = [ "proto_to_libipp_test.cc" ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":parse_textproto",
+      ":proto_to_libipp",
       "//common-mk/testrunner",
     ]
   }
@@ -130,6 +146,16 @@ source_set("ipp_matching") {
   configs += [ ":target_defaults" ]
   public = [ "ipp_matching.h" ]
   deps = [ ":mocking_protos" ]
+}
+
+source_set("proto_to_libipp") {
+  sources = [ "proto_to_libipp.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "proto_to_libipp.h" ]
+  deps = [
+    ":ipp_matching_validation",
+    ":mocking_protos",
+  ]
 }
 
 source_set("wrapped_matcher") {
