@@ -6,8 +6,8 @@
 
 #include <string>
 
-#include "base/strings/stringprintf.h"
-#include "base/logging.h"
+#include <base/strings/stringprintf.h>
+#include <base/logging.h>
 
 namespace mock_printer {
 

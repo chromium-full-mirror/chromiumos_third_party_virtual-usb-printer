@@ -7,9 +7,9 @@
 #include <string>
 #include <type_traits>
 
+#include <base/check.h>
 #include <chromeos/libipp/ipp.h>
 
-#include "base/check.h"
 #include "proto/ipp.pb.h"
 
 // By convention, helper functions that determine whether or not X

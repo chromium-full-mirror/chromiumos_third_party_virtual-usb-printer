@@ -4,13 +4,14 @@
 
 #include "ipp_matching.h"
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
 #include <memory>
 
-#include "base/check.h"
-#include "base/strings/string_piece.h"
-#include "chromeos/libipp/ipp.h"
+#include <base/check.h>
+#include <base/strings/string_piece.h>
+#include <chromeos/libipp/ipp.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include "parse_textproto.h"
 #include "proto/ipp.pb.h"
 
