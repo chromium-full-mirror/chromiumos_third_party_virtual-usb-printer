@@ -35,24 +35,113 @@ message Resolution {
   Units units = 3;
 }
 
+// Field used in `IppAttribute`.
+// Embedded message indirection to work around Protobuf's `oneof`
+// limitation prohibiting repeated fields.
+message RepeatedIppCollection {
+  repeated IppCollection collections = 1;
+}
+
+// Field used in `IppAttribute`.
+// Embedded message indirection to work around Protobuf's `oneof`
+// limitation prohibiting repeated fields.
+message RepeatedIntValues {
+  repeated int32 int_values = 1;
+}
+
+// Field used by `RepeatedStringValues`.
+// Holds several types backed by "octet strings" per RFC 8010.
+message OctetString {
+  // Usually optional.
+  // Required when this message holds a language-dependent value, e.g.
+  // `textWithLanguage` (0x35) or `nameWithLanguage` (0x36).
+  string language = 1;
+
+  // Required.
+  bytes value = 2;
+}
+
+// Field used in `IppAttribute`.
+// Embedded message indirection to work around Protobuf's `oneof`
+// limitation prohibiting repeated fields.
+message RepeatedStringValues {
+  repeated OctetString string_values = 1;
+}
+
+// Field used in `IppAttribute`.
+// Embedded message indirection to work around Protobuf's `oneof`
+// limitation prohibiting repeated fields.
+message RepeatedIntRanges {
+  repeated IntegerRange int_ranges = 1;
+}
+
+// Field used in `IppAttribute`.
+// Embedded message indirection to work around Protobuf's `oneof`
+// limitation prohibiting repeated fields.
+message RepeatedResolutions {
+  repeated Resolution resolutions = 1;
+}
+
 // Matches an IPP attribute.
 message IppAttribute {
   // Required.
   string name = 1;
 
-  // When matching, the following fields are optional; at most
-  // one can be populated.
-  // When specifying a response, exactly one must be populated.
+  // *  Most fields below are optional when matching.
+  // *  Special constraints are noted in the field comments.
+  // *  When building responses, you should specify exactly what you
+  //    need; do not rely on the mock printer to infer what you want.
 
-  // An attribute can be _another_ collection (or set thereof).
-  repeated IppCollection collections = 2;
+  // Defines the attribute type as described here:
+  // https://www.iana.org/assignments/ipp-registrations/ipp-registrations.xml#ipp-registrations-9
+  // Unassigned values are marked reserved.
+  enum IppAttributeType {
+    UNSPECIFIED = 0x00;
+    reserved 0x01 to 0x20;
+    INTEGER = 0x21;
+    BOOLEAN = 0x22;
+    ENUM = 0x23;
+    reserved 0x24 to 0x2f;
+    OCTET_STRING = 0x30;
+    DATETIME = 0x31;
+    RESOLUTION = 0x32;
+    RANGE_OF_INTEGER = 0x33;
+    BEGIN_COLLECTION = 0x34;
+    TEXT_WITH_LANGUAGE = 0x35;
+    NAME_WITH_LANGUAGE = 0x36;
 
-  // If not another collection, an attribute should be either one
-  // thing of a given type or several of a given type.
-  repeated int32 int_values = 3;
-  repeated string string_values = 4;
-  repeated IntegerRange int_ranges = 5;
-  repeated Resolution resolutions = 6;
+    // RFC 8010 3.1.6 "Collection Attribute" indicates that we should
+    // never see an `IppAttribute` with the `endCollection` type (0x37)
+    // explicitly set. Therefore we also reserve 0x37.
+    reserved 0x37 to 0x40;
+
+    TEXT_WITHOUT_LANGUAGE = 0x41;
+    NAME_WITHOUT_LANGUAGE = 0x42;
+    reserved 0x43;
+    KEYWORD = 0x44;
+    URI = 0x45;
+    URI_SCHEME = 0x46;
+    CHARSET = 0x47;
+    NATURAL_LANGUAGE = 0x48;
+    MIME_MEDIA_TYPE = 0x49;
+    MEMBER_ATTRIBUTE_NAME = 0x4a;
+    reserved 0x4b to 0x7e;
+  }
+
+  // Required when the `oneof value` field below is populated.
+  IppAttributeType type = 2;
+
+  oneof value {
+    // An attribute can be _another_ collection (or set thereof).
+    RepeatedIppCollection collections = 3;
+
+    // If not another collection, an attribute should be either one
+    // thing of a given type or several of a given type.
+    RepeatedIntValues int_values = 4;
+    RepeatedStringValues string_values = 5;
+    RepeatedIntRanges int_ranges = 6;
+    RepeatedResolutions resolutions = 7;
+  }
 }
 
 // Matches an IPP collection (of attributes).

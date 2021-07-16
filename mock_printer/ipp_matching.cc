@@ -8,7 +8,9 @@
 #include <type_traits>
 
 #include <base/check.h>
+#include <base/notreached.h>
 #include <chromeos/libipp/ipp.h>
+#include <chromeos/libipp/ipp_attribute.h>
 
 #include "proto/ipp.pb.h"
 
@@ -42,13 +44,12 @@ bool ResolutionMatches(const ipp::Resolution& resolution,
 
 bool EmbeddedCollectionsMatch(const ipp::Attribute* const attribute,
                               const mocking::IppAttribute& mock_attribute) {
-  if (attribute->GetType() != ipp::AttrType::collection ||
-      mock_attribute.collections_size() != attribute->GetSize()) {
+  if (mock_attribute.collections().collections_size() != attribute->GetSize()) {
     return false;
   }
   std::size_t index = 0;
   for (const mocking::IppCollection& mock_collection :
-       mock_attribute.collections()) {
+       mock_attribute.collections().collections()) {
     const ipp::Collection* const collection = attribute->GetCollection(index);
     CHECK(collection) << "BUG: expected non-nullptr ipp::Collection*";
     if (!IppCollectionMatches(collection, mock_collection)) {
@@ -61,12 +62,11 @@ bool EmbeddedCollectionsMatch(const ipp::Attribute* const attribute,
 
 bool IntValuesMatch(const ipp::Attribute* const attribute,
                     const mocking::IppAttribute& mock_attribute) {
-  if (attribute->GetType() != ipp::AttrType::integer ||
-      mock_attribute.int_values_size() != attribute->GetSize()) {
+  if (mock_attribute.int_values().int_values_size() != attribute->GetSize()) {
     return false;
   }
   std::size_t index = 0;
-  for (const int mock_integer : mock_attribute.int_values()) {
+  for (const int mock_integer : mock_attribute.int_values().int_values()) {
     int true_integer;
     CHECK(attribute->GetValue(&true_integer, index))
         << "BUG: expected integer here";
@@ -95,16 +95,19 @@ bool StringValuesMatch(const ipp::Attribute* const attribute,
     default:
       return false;
   }
-  if (mock_attribute.string_values_size() != attribute->GetSize()) {
+  if (mock_attribute.string_values().string_values_size() !=
+      attribute->GetSize()) {
     return false;
   }
 
   std::size_t index = 0;
-  for (const std::string& mock_string : mock_attribute.string_values()) {
-    std::string true_string;
+  for (const mocking::OctetString& octet_string :
+       mock_attribute.string_values().string_values()) {
+    ipp::StringWithLanguage true_string;
     CHECK(attribute->GetValue(&true_string, index))
-        << "BUG: expected string here";
-    if (true_string != mock_string) {
+        << "BUG: expected StringWithLanguage here";
+    if (true_string.language != octet_string.language() ||
+        true_string.value != octet_string.value()) {
       return false;
     }
     index++;
@@ -114,12 +117,12 @@ bool StringValuesMatch(const ipp::Attribute* const attribute,
 
 bool IntRangesMatch(const ipp::Attribute* const attribute,
                     const mocking::IppAttribute& mock_attribute) {
-  if (attribute->GetType() != ipp::AttrType::rangeOfInteger ||
-      attribute->GetSize() != mock_attribute.int_ranges_size()) {
+  if (attribute->GetSize() != mock_attribute.int_ranges().int_ranges_size()) {
     return false;
   }
   std::size_t index = 0;
-  for (const mocking::IntegerRange& mock_range : mock_attribute.int_ranges()) {
+  for (const mocking::IntegerRange& mock_range :
+       mock_attribute.int_ranges().int_ranges()) {
     ipp::RangeOfInteger true_range;
     CHECK(attribute->GetValue(&true_range, index))
         << "BUG: expected RangeOfInteger here";
@@ -134,13 +137,12 @@ bool IntRangesMatch(const ipp::Attribute* const attribute,
 
 bool ResolutionsMatch(const ipp::Attribute* const attribute,
                       const mocking::IppAttribute& mock_attribute) {
-  if (attribute->GetType() != ipp::AttrType::resolution ||
-      attribute->GetSize() != mock_attribute.resolutions_size()) {
+  if (attribute->GetSize() != mock_attribute.resolutions().resolutions_size()) {
     return false;
   }
   std::size_t index = 0;
   for (const mocking::Resolution& mock_resolution :
-       mock_attribute.resolutions()) {
+       mock_attribute.resolutions().resolutions()) {
     ipp::Resolution true_resolution;
     CHECK(attribute->GetValue(&true_resolution, index))
         << "BUG: expected Resolution here";
@@ -152,27 +154,84 @@ bool ResolutionsMatch(const ipp::Attribute* const attribute,
   return true;
 }
 
+bool AttributeTypeMatches(const ipp::Attribute* const attribute,
+                          const mocking::IppAttribute& mock_attribute) {
+  if (mock_attribute.type() == mocking::IppAttribute::UNSPECIFIED) {
+    return true;
+  }
+  switch (attribute->GetType()) {
+    case (ipp::AttrType::integer):
+      return mock_attribute.type() == mocking::IppAttribute::INTEGER;
+    case (ipp::AttrType::boolean):
+      return mock_attribute.type() == mocking::IppAttribute::BOOLEAN;
+    case (ipp::AttrType::enum_):
+      return mock_attribute.type() == mocking::IppAttribute::ENUM;
+    case (ipp::AttrType::octetString):
+      return mock_attribute.type() == mocking::IppAttribute::OCTET_STRING;
+    case (ipp::AttrType::dateTime):
+      return mock_attribute.type() == mocking::IppAttribute::DATETIME;
+    case (ipp::AttrType::resolution):
+      return mock_attribute.type() == mocking::IppAttribute::RESOLUTION;
+    case (ipp::AttrType::rangeOfInteger):
+      return mock_attribute.type() == mocking::IppAttribute::RANGE_OF_INTEGER;
+    case (ipp::AttrType::collection):
+      return mock_attribute.type() == mocking::IppAttribute::BEGIN_COLLECTION;
+    // libipp does not provide `AttrType` variants for text / names
+    // with(out) language. Even if we can't catch a mismatch right
+    // here, the value check later on can.
+    case (ipp::AttrType::text):
+      return mock_attribute.type() ==
+                 mocking::IppAttribute::TEXT_WITH_LANGUAGE ||
+             mock_attribute.type() ==
+                 mocking::IppAttribute::TEXT_WITHOUT_LANGUAGE;
+    case (ipp::AttrType::name):
+      return mock_attribute.type() ==
+                 mocking::IppAttribute::NAME_WITH_LANGUAGE ||
+             mock_attribute.type() ==
+                 mocking::IppAttribute::NAME_WITHOUT_LANGUAGE;
+    case (ipp::AttrType::keyword):
+      return mock_attribute.type() == mocking::IppAttribute::KEYWORD;
+    case (ipp::AttrType::uri):
+      return mock_attribute.type() == mocking::IppAttribute::URI;
+    case (ipp::AttrType::uriScheme):
+      return mock_attribute.type() == mocking::IppAttribute::URI_SCHEME;
+    case (ipp::AttrType::charset):
+      return mock_attribute.type() == mocking::IppAttribute::CHARSET;
+    case (ipp::AttrType::naturalLanguage):
+      return mock_attribute.type() == mocking::IppAttribute::NATURAL_LANGUAGE;
+    case (ipp::AttrType::mimeMediaType):
+      return mock_attribute.type() == mocking::IppAttribute::MIME_MEDIA_TYPE;
+    default:
+      NOTREACHED() << "BUG: unhandled `ipp::AttrType`";
+      return false;
+  }
+}
+
+bool AttributeValueMatches(const ipp::Attribute* const attribute,
+                           const mocking::IppAttribute& mock_attribute) {
+  switch (mock_attribute.value_case()) {
+    case (mocking::IppAttribute::ValueCase::VALUE_NOT_SET):
+      return true;
+    case (mocking::IppAttribute::ValueCase::kCollections):
+      return EmbeddedCollectionsMatch(attribute, mock_attribute);
+    case (mocking::IppAttribute::ValueCase::kIntValues):
+      return IntValuesMatch(attribute, mock_attribute);
+    case (mocking::IppAttribute::ValueCase::kStringValues):
+      return StringValuesMatch(attribute, mock_attribute);
+    case (mocking::IppAttribute::ValueCase::kIntRanges):
+      return IntRangesMatch(attribute, mock_attribute);
+    case (mocking::IppAttribute::ValueCase::kResolutions):
+      return ResolutionsMatch(attribute, mock_attribute);
+    default:
+      NOTREACHED() << "BUG: unhandled `ValueCase`";
+      return false;
+  }
+}
+
 bool IppAttributeMatches(const ipp::Attribute* const attribute,
                          const mocking::IppAttribute& mock_attribute) {
-  // Validation code will already have checked that `mock_attribute`
-  // contains at most one populated field. If any is specified, then
-  // it must match the corresponding value in `attribute`.
-  if (mock_attribute.collections_size()) {
-    return EmbeddedCollectionsMatch(attribute, mock_attribute);
-  } else if (mock_attribute.int_values_size()) {
-    return IntValuesMatch(attribute, mock_attribute);
-  } else if (mock_attribute.string_values_size()) {
-    return StringValuesMatch(attribute, mock_attribute);
-  } else if (mock_attribute.int_ranges_size()) {
-    return IntRangesMatch(attribute, mock_attribute);
-  } else if (mock_attribute.resolutions_size()) {
-    return ResolutionsMatch(attribute, mock_attribute);
-  }
-
-  // "At most one populated field" implies that the matcher Protobuf
-  // doesn't _need_ to specify attribute values at all. If none are
-  // given, it's a trivial match.
-  return true;
+  return AttributeTypeMatches(attribute, mock_attribute) &&
+         AttributeValueMatches(attribute, mock_attribute);
 }
 
 bool IppCollectionMatches(const ipp::Collection* const collection,

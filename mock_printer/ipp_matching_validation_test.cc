@@ -126,35 +126,6 @@ TEST(IppMatchingValidation, IppAttributeNeedsOnlyName) {
   EXPECT_TRUE(ValidateIppMessage(message).IsValid());
 }
 
-TEST(IppMatchingValidation, IppAttributeMayContainAtMostOneSubmessage) {
-  const mocking::IppMessage message = ParseIppMessageOrDie(R"pb(
-    operation_id: 1
-
-    groups {
-      # This IppGroupTag is irrelevant to the test case.
-      tag: DOCUMENT_ATTRIBUTES
-
-      collections {
-        attributes {
-          name: "hello there"
-
-          # This IppAttribute has more than one value field populated;
-          # this is an illegal construct. Parsing will succeed here,
-          # but validation will fail.
-          int_values: 1
-          int_values: 2
-          int_values: 3
-          string_values: "general kenobi"
-        }
-      }
-    }
-  )pb");
-
-  const ProtobufValidationResult result = ValidateIppMessage(message);
-  ASSERT_FALSE(result.IsValid());
-  EXPECT_THAT(result.error_message, HasSubstr("multiple populated"));
-}
-
 TEST(IppMatchingValidation, IppAttributeWithCollectionIsRecursivelyValidated) {
   const mocking::IppMessage message = ParseIppMessageOrDie(R"pb(
     operation_id: 1
@@ -166,6 +137,7 @@ TEST(IppMatchingValidation, IppAttributeWithCollectionIsRecursivelyValidated) {
       collections {
         attributes {
           name: "hello there"
+          type: BEGIN_COLLECTION
 
           # This IppCollection is placed in a valid spot; the containing
           # IppAttribute is well-formed, but this empty IppCollection is
@@ -178,7 +150,7 @@ TEST(IppMatchingValidation, IppAttributeWithCollectionIsRecursivelyValidated) {
 
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
-  EXPECT_THAT(result.error_message, HasSubstr("empty IppCollection"));
+  EXPECT_THAT(result.error_message, HasSubstr("empty"));
 }
 
 TEST(IppMatchingValidation, IppAttributeDisallowsUnspecifiedResolutionUnits) {
@@ -192,10 +164,13 @@ TEST(IppMatchingValidation, IppAttributeDisallowsUnspecifiedResolutionUnits) {
       collections {
         attributes {
           name: "hello there"
+          type: RESOLUTION
 
           resolutions {
-            # This Units variant is illegal and will fail validation.
-            units: UNSPECIFIED
+            resolutions {
+              # This Units variant is illegal and will fail validation.
+              units: UNSPECIFIED
+            }
           }
         }
       }
@@ -205,6 +180,106 @@ TEST(IppMatchingValidation, IppAttributeDisallowsUnspecifiedResolutionUnits) {
   const ProtobufValidationResult result = ValidateIppMessage(message);
   ASSERT_FALSE(result.IsValid());
   EXPECT_THAT(result.error_message, HasSubstr("Units"));
+}
+
+TEST(IppMatchingValidation, IppAttributeTypeMustBeSelfConsistent) {
+  const mocking::IppMessage message = ParseIppMessageOrDie(R"pb(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections {
+        attributes {
+          name: "hello there"
+          type: INTEGER
+
+          string_values {
+            string_values {
+              # We've declared this attribute an integer but have
+              # actually populated it with a string. This is an illegal
+              # construct.
+              value: "general kenobi"
+            }
+          }
+        }
+      }
+    }
+  )pb");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  ASSERT_FALSE(result.IsValid());
+  EXPECT_THAT(result.error_message, HasSubstr("mismatch"));
+}
+
+// Verifies that a mock attribute type can be specified without an
+// actual value.
+TEST(IppMatchingValidation, IppAttributeDoesNotRequireValue) {
+  const mocking::IppMessage message = ParseIppMessageOrDie(R"pb(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections { attributes { name: "hello there" type: OCTET_STRING } }
+    }
+  )pb");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  EXPECT_TRUE(result.IsValid());
+}
+
+// Verifies that a mock attribute's oneof `value` field must not
+// contain an empty container (at the level of the oneof).
+TEST(IppMatchingValidation, IppAttributeValueMustNotBeEmptyContainer) {
+  const mocking::IppMessage message = ParseIppMessageOrDie(R"pb(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections {
+        attributes {
+          name: "hello there"
+          type: OCTET_STRING
+          string_values {}
+        }
+      }
+    }
+  )pb");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  ASSERT_FALSE(result.IsValid());
+  EXPECT_THAT(result.error_message, HasSubstr("empty"));
+}
+
+// Verifies that a mock attribute's oneof `value` field must not
+// contain an empty container (inside the container itself, at the level
+// of its repeated field).
+TEST(IppMatchingValidation, IppAttributeInnerValueMustNotBeEmptyContainer) {
+  const mocking::IppMessage message = ParseIppMessageOrDie(R"pb(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections {
+        attributes {
+          name: "hello there"
+          type: OCTET_STRING
+          string_values { string_values {} }
+        }
+      }
+    }
+  )pb");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  ASSERT_FALSE(result.IsValid());
+  EXPECT_THAT(result.error_message, HasSubstr("OctetString"));
 }
 
 }  // namespace
