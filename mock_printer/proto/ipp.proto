@@ -36,6 +36,35 @@ message Resolution {
 }
 
 // Field used in `IppAttribute`.
+message DateTime {
+  enum UtcDirection {
+    UNSPECIFIED = 0;
+    PLUS = 1;
+    MINUS = 2;
+  }
+
+  int32 year = 1;
+  int32 month = 2;
+  int32 day = 3;
+
+  // Fields from here can contain zero values. Since a zero value is
+  // indistinguishable with an unspecified value, test authors should
+  // avoid depending on zero values that are actually significant. The
+  // mock printer currently treats zero values as wildcard matchers.
+  //
+  // If we _need_ to intermingle zero values with unspecified ones,
+  // we can add one or more fields that explicitly spell out what zero
+  // values to take literally.
+  int32 hour = 4;
+  int32 minutes = 5;
+  int32 seconds = 6;
+  int32 deciseconds = 7;
+  UtcDirection utc_direction = 8;
+  int32 utc_hours = 9;
+  int32 utc_minutes = 10;
+}
+
+// Field used in `IppAttribute`.
 // Embedded message indirection to work around Protobuf's `oneof`
 // limitation prohibiting repeated fields.
 message RepeatedIppCollection {
@@ -80,6 +109,13 @@ message RepeatedIntRanges {
 // limitation prohibiting repeated fields.
 message RepeatedResolutions {
   repeated Resolution resolutions = 1;
+}
+
+// Field used in `IppAttribute`.
+// Embedded message indirection to work around Protobuf's `oneof`
+// limitation prohibiting repeated fields.
+message RepeatedDateTimes {
+  repeated DateTime date_times = 1;
 }
 
 // Matches an IPP attribute.
@@ -141,6 +177,7 @@ message IppAttribute {
     RepeatedStringValues string_values = 5;
     RepeatedIntRanges int_ranges = 6;
     RepeatedResolutions resolutions = 7;
+    RepeatedDateTimes date_times = 8;
   }
 }
 

@@ -10,6 +10,7 @@
 #include <base/check.h>
 #include <base/strings/string_piece.h>
 #include <chromeos/libipp/ipp.h>
+#include <chromeos/libipp/ipp_attribute.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -24,6 +25,7 @@
 namespace mock_printer {
 namespace {
 
+// Creates a canned `get-printer-attributes` request.
 std::unique_ptr<ipp::Request> GetPrinterAttributesRequest() {
   auto request = std::make_unique<ipp::Request_Get_Printer_Attributes>();
 
@@ -36,6 +38,35 @@ std::unique_ptr<ipp::Request> GetPrinterAttributesRequest() {
       {"one", "two", "three"});
   request->operation_attributes->document_format.Set("PWG Raster, maybe");
   return request;
+}
+
+// Holds an IPP request
+// *  with one group,
+// *  with one `collection`, and
+// *  with no attributes.
+//
+// The `collection` pointer into `request` is provided to allow easy
+// access to attribute manipulation.
+struct RequestAndCollection {
+  std::unique_ptr<ipp::Request> request;
+  ipp::Collection* collection;
+};
+
+// Creates an IPP request
+// *  with a "shutdown one printer" op-code and
+// *  with a `job_attributes` group.
+//
+// Caller is expected to populate one or more attributes.
+RequestAndCollection RequestWithOneGroup() {
+  auto libipp_request =
+      std::make_unique<ipp::Request>(ipp::Operation::Shutdown_One_Printer);
+  libipp_request->AddUnknownGroup(ipp::GroupTag::job_attributes, false)
+      ->Resize(1);
+  auto holder = RequestAndCollection{.request = std::move(libipp_request),
+                                     .collection = nullptr};
+  holder.collection =
+      holder.request->GetGroup(ipp::GroupTag::job_attributes)->GetCollection();
+  return holder;
 }
 
 // Trivial test written to show what the standard get-printer-attributes
@@ -280,6 +311,73 @@ TEST(IppMatchingTest, MatchingAttributesIsTypeSensitive) {
   )pb");
 
   EXPECT_FALSE(IppMessageMatches(request.get(), mock_request));
+}
+
+// Tests that an IPP DateTime attribute can be matched.
+TEST(IppMatchingTest, BasicDateTimeMatching) {
+  auto request = RequestWithOneGroup();
+  ipp::Attribute* attribute = request.collection->AddUnknownAttribute(
+      "some-date-and-time", /*is_a_set=*/false, ipp::AttrType::dateTime);
+  attribute->SetValue(ipp::DateTime{
+      .year = 2001,
+      .month = 1,
+      .day = 31,
+      .hour = 13,
+      .minutes = 13,
+  });
+  const mocking::IppMessage mock_request = ParseIppMessageOrDie(R"pb(
+    # E_operations_supported::Shutdown_One_Printer
+    operation_id: 0x0050
+
+    groups {
+      tag: JOB_ATTRIBUTES
+      collections {
+        attributes {
+          name: "some-date-and-time"
+          type: DATETIME
+          date_times {
+            date_times { year: 2001 month: 1 day: 31 hour: 13 minutes: 13 }
+          }
+        }
+      }
+    }
+  )pb");
+
+  EXPECT_TRUE(IppMessageMatches(request.request.get(), mock_request));
+}
+
+// Tests that an IPP DateTime attribute can be matched even when the
+// mock Protobuf uses "wildcard" values.
+TEST(IppMatchingTest, DateTimeMatchingWithWildcardMembers) {
+  auto request = RequestWithOneGroup();
+  ipp::Attribute* attribute = request.collection->AddUnknownAttribute(
+      "some-date-and-time", /*is_a_set=*/false, ipp::AttrType::dateTime);
+  attribute->SetValue(ipp::DateTime{
+      .year = 2001,
+      .month = 1,
+      .day = 31,
+      .hour = 13,
+      .minutes = 13,
+  });
+  const mocking::IppMessage mock_request = ParseIppMessageOrDie(R"pb(
+    # E_operations_supported::Shutdown_One_Printer
+    operation_id: 0x0050
+
+    groups {
+      tag: JOB_ATTRIBUTES
+      collections {
+        attributes {
+          name: "some-date-and-time"
+          type: DATETIME
+          # Intermingles zero-valued members together with wholly
+          # unspecified fields (hour & minutes).
+          date_times { date_times { year: 2001 month: 0 day: 0 } }
+        }
+      }
+    }
+  )pb");
+
+  EXPECT_TRUE(IppMessageMatches(request.request.get(), mock_request));
 }
 
 }  // namespace

@@ -4,6 +4,7 @@
 
 #include "ipp_matching.h"
 
+#include <cstdint>
 #include <string>
 #include <type_traits>
 
@@ -40,6 +41,47 @@ bool ResolutionMatches(const ipp::Resolution& resolution,
   }
   return resolution.xres == mock_resolution.xres() &&
          resolution.yres == mock_resolution.yres();
+}
+
+// Compares corresponding members between a `mocking::DateTime` and
+// an `ipp::DateTime`. Returns whether the members match.
+bool MockDateTimeMemberMatches(int32_t member, int32_t mock_member) {
+  return !mock_member || mock_member == member;
+}
+
+// Overload for the above specific to the `ipp::DateTime::UTC_direction`
+// member.
+bool MockDateTimeMemberMatches(int32_t direction,
+                               mocking::DateTime::UtcDirection mock_direction) {
+  switch (mock_direction) {
+    case mocking::DateTime::PLUS:
+      return direction == '+';
+    case mocking::DateTime::MINUS:
+      return direction == '-';
+    // UNSPECIFIED shall always be taken to match.
+    default:
+      return true;
+  }
+}
+
+bool DateTimeMatches(const ipp::DateTime& date_time,
+                     const mocking::DateTime& mock_date_time) {
+  return MockDateTimeMemberMatches(date_time.year, mock_date_time.year()) &&
+         MockDateTimeMemberMatches(date_time.month, mock_date_time.month()) &&
+         MockDateTimeMemberMatches(date_time.day, mock_date_time.day()) &&
+         MockDateTimeMemberMatches(date_time.hour, mock_date_time.hour()) &&
+         MockDateTimeMemberMatches(date_time.minutes,
+                                   mock_date_time.minutes()) &&
+         MockDateTimeMemberMatches(date_time.seconds,
+                                   mock_date_time.seconds()) &&
+         MockDateTimeMemberMatches(date_time.deci_seconds,
+                                   mock_date_time.deciseconds()) &&
+         MockDateTimeMemberMatches(date_time.UTC_direction,
+                                   mock_date_time.utc_direction()) &&
+         MockDateTimeMemberMatches(date_time.UTC_hours,
+                                   mock_date_time.utc_hours()) &&
+         MockDateTimeMemberMatches(date_time.UTC_minutes,
+                                   mock_date_time.utc_minutes());
 }
 
 bool EmbeddedCollectionsMatch(const ipp::Attribute* const attribute,
@@ -154,6 +196,25 @@ bool ResolutionsMatch(const ipp::Attribute* const attribute,
   return true;
 }
 
+bool DateTimesMatch(const ipp::Attribute* const attribute,
+                    const mocking::IppAttribute& mock_attribute) {
+  if (attribute->GetSize() != mock_attribute.date_times().date_times_size()) {
+    return false;
+  }
+  std::size_t index = 0;
+  for (const mocking::DateTime& mock_date_time :
+       mock_attribute.date_times().date_times()) {
+    ipp::DateTime true_date_time;
+    CHECK(attribute->GetValue(&true_date_time, index))
+        << "BUG: expected DateTime here";
+    if (!DateTimeMatches(true_date_time, mock_date_time)) {
+      return false;
+    }
+    index++;
+  }
+  return true;
+}
+
 bool AttributeTypeMatches(const ipp::Attribute* const attribute,
                           const mocking::IppAttribute& mock_attribute) {
   if (mock_attribute.type() == mocking::IppAttribute::UNSPECIFIED) {
@@ -220,6 +281,8 @@ bool AttributeValueMatches(const ipp::Attribute* const attribute,
       return StringValuesMatch(attribute, mock_attribute);
     case (mocking::IppAttribute::ValueCase::kIntRanges):
       return IntRangesMatch(attribute, mock_attribute);
+    case (mocking::IppAttribute::ValueCase::kDateTimes):
+      return DateTimesMatch(attribute, mock_attribute);
     case (mocking::IppAttribute::ValueCase::kResolutions):
       return ResolutionsMatch(attribute, mock_attribute);
     default:

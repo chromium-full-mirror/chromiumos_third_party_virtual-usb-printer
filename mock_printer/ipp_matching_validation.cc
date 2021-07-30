@@ -69,6 +69,19 @@ ProtobufValidationResult ValidateResolutions(
   return ProtobufValidationResult{};
 }
 
+ProtobufValidationResult ValidateDateTimes(
+    const mocking::IppAttribute& ipp_attribute) {
+  for (const mocking::DateTime& date_time :
+       ipp_attribute.date_times().date_times()) {
+    // No particular enforcement is provided for bogus values; we're
+    // most interested in weeding out spurious empty messages.
+    if (!date_time.ByteSizeLong()) {
+      return ProtobufValidationResult{"empty `mocking::DateTime`"};
+    }
+  }
+  return ProtobufValidationResult{};
+}
+
 // This helper function is called given a declared type for a
 // `mocking::IppAttribute`. It's called with
 // *  the type of the actual `populated_value`,
@@ -159,9 +172,6 @@ ProtobufValidationResult EnsureOctetStringsArePopulated(
 // *  The `oneof value` field can be altogether empty, but it cannot be
 //    "partially empty;" e.g. it is illegal to directly supply an empty
 //    `RepeatedIntValues`.
-//
-// TODO(b/178649877): add validation for
-// mocking::IppAttribute::DATETIME.
 ProtobufValidationResult EnsureAttributeValueMatchesType(
     const mocking::IppAttribute& ipp_attribute) {
   const auto declared_type = ipp_attribute.type();
@@ -194,6 +204,10 @@ ProtobufValidationResult EnsureAttributeValueMatchesType(
       return EnsureAttributeTypeAndSize(
           populated_value, mocking::IppAttribute::ValueCase::kIntValues,
           ipp_attribute.int_values().int_values_size());
+    case (mocking::IppAttribute::DATETIME):
+      return EnsureAttributeTypeAndSize(
+          populated_value, mocking::IppAttribute::ValueCase::kDateTimes,
+          ipp_attribute.date_times().date_times_size());
     case (mocking::IppAttribute::RESOLUTION):
       return EnsureAttributeTypeAndSize(
           populated_value, mocking::IppAttribute::ValueCase::kResolutions,
@@ -248,6 +262,8 @@ ProtobufValidationResult ValidateIppAttribute(
       return ValidateEmbeddedCollection(ipp_attribute);
     case (mocking::IppAttribute::RESOLUTION):
       return ValidateResolutions(ipp_attribute);
+    case (mocking::IppAttribute::DATETIME):
+      return ValidateDateTimes(ipp_attribute);
     default:
       return ProtobufValidationResult{};
   }

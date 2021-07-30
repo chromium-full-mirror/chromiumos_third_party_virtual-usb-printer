@@ -282,5 +282,29 @@ TEST(IppMatchingValidation, IppAttributeInnerValueMustNotBeEmptyContainer) {
   EXPECT_THAT(result.error_message, HasSubstr("OctetString"));
 }
 
+// The same test as above, but for `mocking::DateTime`.
+TEST(IppMatchingValidation, IppAttributeDisallowsEmptyDateTime) {
+  const mocking::IppMessage message = ParseIppMessageOrDie(R"pb(
+    operation_id: 1
+
+    groups {
+      # This IppGroupTag is irrelevant to the test case.
+      tag: DOCUMENT_ATTRIBUTES
+
+      collections {
+        attributes {
+          name: "hello there"
+          type: DATETIME
+          date_times { date_times {} }
+        }
+      }
+    }
+  )pb");
+
+  const ProtobufValidationResult result = ValidateIppMessage(message);
+  ASSERT_FALSE(result.IsValid());
+  EXPECT_THAT(result.error_message, HasSubstr("empty"));
+}
+
 }  // namespace
 }  // namespace mock_printer
