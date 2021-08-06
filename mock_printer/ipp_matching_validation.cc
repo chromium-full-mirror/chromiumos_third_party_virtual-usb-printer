@@ -11,10 +11,31 @@
 #include <base/strings/string_piece.h>
 #include <base/logging.h>
 #include <base/check.h>
+#include <base/check_op.h>
+#include <base/containers/fixed_flat_set.h>
 
 namespace mock_printer {
 
 namespace {
+
+// Defines the set of `mocking::IppAttribute::IppAttributeType`
+// that are considered strings.
+constexpr auto kMockAttributeStringTypes =
+    base::MakeFixedFlatSet<mocking::IppAttribute::IppAttributeType>(
+        {mocking::IppAttribute::OCTET_STRING,
+         mocking::IppAttribute::TEXT_WITH_LANGUAGE,
+         mocking::IppAttribute::NAME_WITH_LANGUAGE,
+         mocking::IppAttribute::TEXT_WITHOUT_LANGUAGE,
+         mocking::IppAttribute::NAME_WITHOUT_LANGUAGE,
+         mocking::IppAttribute::KEYWORD, mocking::IppAttribute::URI,
+         mocking::IppAttribute::URI_SCHEME, mocking::IppAttribute::CHARSET,
+         mocking::IppAttribute::NATURAL_LANGUAGE,
+         mocking::IppAttribute::MIME_MEDIA_TYPE,
+         mocking::IppAttribute::MEMBER_ATTRIBUTE_NAME});
+
+bool IsStringType(const mocking::IppAttribute::IppAttributeType type) {
+  return kMockAttributeStringTypes.contains(type);
+}
 
 // Collections contain attributes but attributes may then contain
 // collections; this circular hierarchy forces us to declare this
@@ -61,11 +82,9 @@ ProtobufValidationResult EnsureAttributeTypeAndSize(
     const mocking::IppAttribute::ValueCase populated_value,
     const mocking::IppAttribute::ValueCase expected_populated_value,
     int32_t values_size) {
-  // It is perfectly permissible to declare a type for matching but to
-  // supply no values to match on.
-  if (populated_value == mocking::IppAttribute::ValueCase::VALUE_NOT_SET) {
-    return ProtobufValidationResult{};
-  } else if (populated_value != expected_populated_value) {
+  CHECK_NE(populated_value, mocking::IppAttribute::ValueCase::VALUE_NOT_SET)
+      << "BUG: unset value not expected here";
+  if (populated_value != expected_populated_value) {
     return ProtobufValidationResult{base::StringPrintf(
         // There appears to be no `ValueCase_Name()` function generated.
         "mismatched IppAttribute type: expected ``%d'' but populated ``%d''",
@@ -152,52 +171,29 @@ ProtobufValidationResult EnsureAttributeValueMatchesType(
   // squares with the populated value:
   // *  no values may be populated without a declared type, and
   // *  a declared type must be reasonable for the populated value.
+  //
+  // We handle string types up front because there are a lot of them,
+  // which would otherwise clutter up the switch statement.
+  if (IsStringType(declared_type)) {
+    // `EnsureAttributeTypeAndSize()` only checks that the oneof
+    // `value` contains a non-empty `RepeatedStringValues` message.
+    //
+    // Even if the type and value match and the value is not empty, an
+    // additional check for non-empty `mocking::OctetString` messages
+    // (also deemed an invalid construct) is needed but not performed
+    // here.
+    return EnsureAttributeTypeAndSize(
+        populated_value, mocking::IppAttribute::ValueCase::kStringValues,
+        ipp_attribute.string_values().string_values_size());
+  }
+
   switch (declared_type) {
-    case (mocking::IppAttribute::UNSPECIFIED):
-      return populated_value == mocking::IppAttribute::ValueCase::VALUE_NOT_SET
-                 ? ProtobufValidationResult{}
-                 : ProtobufValidationResult{
-                       "IppAttribute with unset type but populated value "
-                       "field"};
     case (mocking::IppAttribute::INTEGER):
     case (mocking::IppAttribute::BOOLEAN):
     case (mocking::IppAttribute::ENUM):
       return EnsureAttributeTypeAndSize(
           populated_value, mocking::IppAttribute::ValueCase::kIntValues,
           ipp_attribute.int_values().int_values_size());
-    case (mocking::IppAttribute::OCTET_STRING):
-    case (mocking::IppAttribute::TEXT_WITH_LANGUAGE):
-    case (mocking::IppAttribute::NAME_WITH_LANGUAGE):
-    case (mocking::IppAttribute::TEXT_WITHOUT_LANGUAGE):
-    case (mocking::IppAttribute::NAME_WITHOUT_LANGUAGE):
-    case (mocking::IppAttribute::KEYWORD):
-    case (mocking::IppAttribute::URI):
-    case (mocking::IppAttribute::URI_SCHEME):
-    case (mocking::IppAttribute::CHARSET):
-    case (mocking::IppAttribute::NATURAL_LANGUAGE):
-    case (mocking::IppAttribute::MIME_MEDIA_TYPE):
-    case (mocking::IppAttribute::MEMBER_ATTRIBUTE_NAME): {
-      const auto type_check = EnsureAttributeTypeAndSize(
-          populated_value, mocking::IppAttribute::ValueCase::kStringValues,
-          ipp_attribute.string_values().string_values_size());
-      // `EnsureAttributeTypeAndSize()` only checks that the oneof
-      // `value` is either unset or contains a non-empty
-      // `RepeatedStringValues` message.
-      //
-      // We need to ensure that the `OctetString` messages are not empty,
-      // since that's also an invalid construct.
-      if (!type_check.IsValid() ||
-          populated_value == mocking::IppAttribute::ValueCase::VALUE_NOT_SET) {
-        return type_check;
-      }
-      const auto emptiness_check =
-          EnsureOctetStringsArePopulated(ipp_attribute.string_values());
-      if (!emptiness_check.IsValid()) {
-        return emptiness_check;
-      }
-      return EnsureLanguageSetting(declared_type,
-                                   ipp_attribute.string_values());
-    }
     case (mocking::IppAttribute::RESOLUTION):
       return EnsureAttributeTypeAndSize(
           populated_value, mocking::IppAttribute::ValueCase::kResolutions,
@@ -222,11 +218,29 @@ ProtobufValidationResult ValidateIppAttribute(
     return ProtobufValidationResult{"IppAttribute with empty name"};
   }
 
+  // If no value is provided, there's nothing to validate; the mock
+  // attribute becomes a wildcard matcher whose type (if given) and
+  // name are the only things that matter.
+  if (ipp_attribute.value_case() ==
+      mocking::IppAttribute::ValueCase::VALUE_NOT_SET) {
+    return ProtobufValidationResult{};
+  }
+
   // Ensures that the declared type (if given) matches the populated
   // value.
   const auto result = EnsureAttributeValueMatchesType(ipp_attribute);
   if (!result.IsValid()) {
     return result;
+  }
+
+  if (IsStringType(ipp_attribute.type())) {
+    const auto emptiness_check =
+        EnsureOctetStringsArePopulated(ipp_attribute.string_values());
+    if (!emptiness_check.IsValid()) {
+      return emptiness_check;
+    }
+    return EnsureLanguageSetting(ipp_attribute.type(),
+                                 ipp_attribute.string_values());
   }
 
   switch (ipp_attribute.type()) {
