@@ -309,10 +309,11 @@ ProtobufValidationResult ValidateIppMessage(
     const mocking::IppMessage& ipp_message) {
   // Operation IDs may be [1, 2**31 - 1]; see
   // https://tools.ietf.org/html/rfc8011#section-4.1.2
-  if (ipp_message.operation_id() <= 0) {
-    return ProtobufValidationResult{
-        base::StringPrintf("IppMessage has invalid operation_id: ``%d''",
-                           ipp_message.operation_id())};
+  //
+  // This really only catches empty values; there might be invalid ones
+  // that we simply won't understand.
+  if (!ipp_message.operation_id()) {
+    return ProtobufValidationResult{"IppMessage has no operation_id"};
   }
 
   if (ipp_message.groups_size() < 1) {

@@ -28,9 +28,9 @@ message Resolution {
   }
 
   // Required.
-  int32 xres = 1;
+  uint32 xres = 1;
   // Required.
-  int32 yres = 2;
+  uint32 yres = 2;
   // Required.
   Units units = 3;
 }
@@ -43,9 +43,9 @@ message DateTime {
     MINUS = 2;
   }
 
-  int32 year = 1;
-  int32 month = 2;
-  int32 day = 3;
+  uint32 year = 1;
+  uint32 month = 2;
+  uint32 day = 3;
 
   // Fields from here can contain zero values. Since a zero value is
   // indistinguishable with an unspecified value, test authors should
@@ -216,10 +216,10 @@ message IppGroup {
 message IppMessage {
   // Optional; defaults to whatever we implement in
   // virtual-usb-printer.
-  int32 version_number = 1;
+  uint32 version_number = 1;
 
   // Required.
-  int32 operation_id = 2;
+  uint32 operation_id = 2;
 
   // Required.
   repeated IppGroup groups = 3;
