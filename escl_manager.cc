@@ -69,6 +69,16 @@ base::Optional<std::string> ExtractString(const base::Value& root,
   return value->GetString();
 }
 
+base::Optional<int> ExtractInt(const base::Value& root,
+                               const std::string& config_name) {
+  const base::Value* value =
+      root.FindKeyOfType(config_name, base::Value::Type::INTEGER);
+  if (!value) {
+    return base::nullopt;
+  }
+  return value->GetInt();
+}
+
 base::Optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
     const base::Value& config) {
   if (!config.is_dict()) {
@@ -77,6 +87,9 @@ base::Optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
   }
 
   SourceCapabilities result;
+  result.max_width = ExtractInt(config, "MaxWidth");
+  result.max_height = ExtractInt(config, "MaxHeight");
+
   base::Optional<std::vector<std::string>> color_modes =
       ExtractStringList(config, "ColorModes");
   if (!color_modes) {

@@ -58,6 +58,9 @@ Value CreateCapabilitiesJson() {
   dict.SetKey("SerialNumber", Value("Test Serial"));
 
   Value platen(Value::Type::DICTIONARY);
+  platen.SetKey("MaxWidth", Value(3660));
+  platen.SetKey("MaxHeight", Value(5160));
+
   Value::ListStorage platen_color_modes;
   platen_color_modes.push_back(Value("RGB24"));
   platen_color_modes.push_back(Value("Grayscale8"));
@@ -76,6 +79,9 @@ Value CreateCapabilitiesJson() {
   dict.SetKey("Platen", std::move(platen));
 
   Value adf(Value::Type::DICTIONARY);
+  adf.SetKey("MaxWidth", Value(3660));
+  adf.SetKey("MaxHeight", Value(5160));
+
   Value::ListStorage adf_color_modes;
   adf_color_modes.push_back(Value("BlackAndWhite1"));
   adf_color_modes.push_back(Value("Grayscale8"));
@@ -131,9 +137,13 @@ TEST(ScannerCapabilities, Initialize) {
   EXPECT_EQ(caps.serial_number, "Test Serial");
   EXPECT_THAT(caps.platen_capabilities.color_modes,
               ElementsAre("RGB24", "Grayscale8"));
+  EXPECT_EQ(caps.platen_capabilities.max_width, 3660);
+  EXPECT_EQ(caps.platen_capabilities.max_height, 5160);
   EXPECT_THAT(caps.platen_capabilities.formats, ElementsAre("application/pdf"));
   EXPECT_THAT(caps.platen_capabilities.resolutions, ElementsAre(100, 200, 300));
   ASSERT_TRUE(caps.adf_capabilities.has_value());
+  EXPECT_EQ(caps.adf_capabilities.value().max_width, 3660);
+  EXPECT_EQ(caps.adf_capabilities.value().max_height, 5160);
   EXPECT_THAT(caps.adf_capabilities.value().color_modes,
               ElementsAre("BlackAndWhite1", "Grayscale8"));
   EXPECT_THAT(caps.adf_capabilities.value().formats, ElementsAre("image/jpeg"));
@@ -196,6 +206,20 @@ TEST(ScannerCapabilities, InitializeFailMissingPlatenSection) {
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
+TEST(ScannerCapabilities, InitializePassMissingMaxWidth) {
+  Value json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.RemovePath("Platen.MaxWidth"));
+  EXPECT_TRUE(json.RemovePath("ADF.MaxWidth"));
+  EXPECT_TRUE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+}
+
+TEST(ScannerCapabilities, InitializePassMissingMaxHeight) {
+  Value json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.RemovePath("Platen.MaxHeight"));
+  EXPECT_TRUE(json.RemovePath("ADF.MaxHeight"));
+  EXPECT_TRUE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+}
+
 TEST(ScannerCapabilities, InitializePassMissingJustification) {
   Value json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemovePath("ADF.XJustification"));
@@ -245,11 +269,16 @@ TEST(ScannerCapabilities, AsXml) {
                       {"Test Serial"});
 
   // Ensure that the reported Platen capabilities are:
+  // MaxWidth: 3660
+  // MaxHeight: 5160
   // Color modes: Grayscale8, RGB24
   // Document formats: application/pdf
   // Discrete Resolutions: 100, 200, 300
   const std::string platen_caps =
       "/scan:ScannerCapabilities/scan:Platen/scan:PlatenInputCaps";
+  HasPathWithContents(doc, platen_caps + "/scan:MaxWidth", {"3660"});
+  HasPathWithContents(doc, platen_caps + "/scan:MaxHeight", {"5160"});
+
   const std::string profiles = "/scan:SettingProfiles/scan:SettingProfile";
   HasPathWithContents(
       doc, platen_caps + profiles + "/scan:ColorModes/scan:ColorMode",
@@ -264,12 +293,17 @@ TEST(ScannerCapabilities, AsXml) {
                       {"100", "200", "300"});
 
   // Ensure that the reported ADF simplex capabilities are:
+  // MaxWidth: 3660
+  // MaxHeight: 5160
   // Color modes: BlackAndWhite1, Grayscale8
   // Document formats: image/jpeg
   // Discrete Resolutions: 75, 150, 600
   // X Justification: Right
   const std::string adf_simplex_caps =
       "/scan:ScannerCapabilities/scan:Adf/scan:AdfSimplexInputCaps";
+  HasPathWithContents(doc, adf_simplex_caps + "/scan:MaxWidth", {"3660"});
+  HasPathWithContents(doc, adf_simplex_caps + "/scan:MaxHeight", {"5160"});
+
   HasPathWithContents(
       doc, adf_simplex_caps + profiles + "/scan:ColorModes/scan:ColorMode",
       {"BlackAndWhite1", "Grayscale8"});
@@ -289,11 +323,16 @@ TEST(ScannerCapabilities, AsXml) {
                       {"75", "150", "600"});
 
   // Ensure that the reported ADF duplex capabilities are:
+  // MaxWidth: 3660
+  // MaxHeight: 5160
   // Color modes: BlackAndWhite1, Grayscale8
   // Document formats: image/jpeg
   // Discrete Resolutions: 75, 150, 600
   const std::string adf_duplex_caps =
       "/scan:ScannerCapabilities/scan:Adf/scan:AdfDuplexInputCaps";
+  HasPathWithContents(doc, adf_duplex_caps + "/scan:MaxWidth", {"3660"});
+  HasPathWithContents(doc, adf_duplex_caps + "/scan:MaxHeight", {"5160"});
+
   HasPathWithContents(
       doc, adf_duplex_caps + profiles + "/scan:ColorModes/scan:ColorMode",
       {"BlackAndWhite1", "Grayscale8"});

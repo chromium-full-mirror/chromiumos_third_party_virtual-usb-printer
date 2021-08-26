@@ -102,9 +102,19 @@ UniqueXmlNodePtr SourceCapabilitiesAsXml(const SourceCapabilities& caps,
   UniqueXmlNodePtr root(xmlNewNode(scan, XmlCast(name.c_str())));
 
   AddNodeWithContent(root.get(), scan, "MinWidth", "16");
-  AddNodeWithContent(root.get(), scan, "MaxWidth", "2550");
+  if (caps.max_width.has_value()) {
+    AddNodeWithContent(root.get(), scan, "MaxWidth",
+                       std::to_string(caps.max_width.value()));
+  } else {
+    AddNodeWithContent(root.get(), scan, "MaxWidth", "2550");
+  }
   AddNodeWithContent(root.get(), scan, "MinHeight", "16");
-  AddNodeWithContent(root.get(), scan, "MaxHeight", "3507");
+  if (caps.max_height.has_value()) {
+    AddNodeWithContent(root.get(), scan, "MaxHeight",
+                       std::to_string(caps.max_height.value()));
+  } else {
+    AddNodeWithContent(root.get(), scan, "MaxHeight", "3507");
+  }
   AddNodeWithContent(root.get(), scan, "MaxScanRegions", "1");
 
   xmlNode* profiles = AddNode(root.get(), scan, "SettingProfiles");

@@ -18,6 +18,8 @@
 #include "http_util.h"
 
 struct SourceCapabilities {
+  base::Optional<int> max_width;
+  base::Optional<int> max_height;
   std::vector<std::string> color_modes;
   std::vector<std::string> formats;
   std::vector<int> resolutions;

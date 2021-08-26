@@ -1,0 +1,18 @@
+{
+  "MakeAndModel": "Brother HL-L2395DW series",
+  "SerialNumber": "U64968H9N994548",
+  "Platen": {
+    "MaxWidth" : 3660,
+    "MaxHeight" : 5160,
+    "ColorModes": ["BlackAndWhite1", "Grayscale8", "RGB24"],
+    "DocumentFormats": ["application/pdf", "image/jpeg"],
+    "Resolutions": [75, 100, 150, 300, 600, 1200]
+  },
+  "ADF": {
+    "MaxWidth" : 3660,
+    "MaxHeight" : 5160,
+    "ColorModes": ["BlackAndWhite1", "Grayscale8", "RGB24"],
+    "DocumentFormats": ["application/pdf", "image/jpeg"],
+    "Resolutions": [75, 100, 150, 300, 600, 1200]
+  }
+}
