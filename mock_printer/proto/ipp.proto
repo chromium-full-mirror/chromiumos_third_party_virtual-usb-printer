@@ -221,6 +221,16 @@ message IppMessage {
   // Required.
   uint32 operation_id = 2;
 
+  // Optional; only used when building IPP responses.
+  //
+  // RFC 8010 specifies that the response status code occupies the same
+  // field as the request operation ID. However, `libipp` reads the
+  // `operation_id` to construct the appropriately typed
+  // `ipp::Response`. Therefore, we can't just reuse `operation_id` in
+  // our Proto definition, because that would leave us with no way to
+  // specify a status.
+  uint32 status = 4;
+
   // Required.
   repeated IppGroup groups = 3;
 }
