@@ -12,34 +12,24 @@ devices.
 This project was created in order to make on-device tests which check for any
 regressions in the native USB printing system.
 
-## Requirements
-
-+ USBIP - userspace program for binding virtual device to system
-+ USBIP kernel modules:
-  + CONFIG\_USBIP\_CORE
-  + CONFIG\_USBIP\_VHCI\_HCD
-
-In order to actually "connect" the virtual printer to the system the USBIP
-program is used.
-
-USBIP is typically used to export real USB devices over a network so that other
-systems on the network can bind them and treat them as connected devices.
-
-For the purposes of the virtual printer, only the client portion of USBIP is
-required so that the virtual device can be bound to the system.
-
 ## Installation
 
-Currently the USBIP program is only installed by default for the elm and betty
-boards.
+As of https://crrev.com/c/3093381, `virtual-usb-printer` is built and
+installed by default on all test images that support it.
 
-In order to install it on your test image, you need to build an image with the
-`usbip` USE flag enabled. To do this, all you need to to is run `build_packages`
-with the USE flag enabled.
+If for some reason you need to build it yourself, you can `USE=usbip`
+when building packages for your board - i.e.
 
 ```
 USE="usbip" ./build_packages --board=$BOARD
 ```
+
+*** note
+`virtual-usb-printer` relies on `usbip` to manifest as a virtual USB device.
+Most test images seem to come with this built-in by default. If you need
+to build your own kernel with `usbip` support, make sure to build with
+`CONFIG_USBIP_CORE` and `CONFIG_USBIP_VHCI_HCD`.
+***
 
 ## How to Use
 
@@ -50,50 +40,24 @@ USE="usbip" ./build_packages --board=$BOARD
 *   a [scriptable mock printer](./mock_printer/README.md).
 ***
 
-Before the first use you have to load a required kernel module:
+For ease of human operation, start `virtual-usb-printer` via its
+Upstart unit. Pass the appropriate arguments to the invocation
+as needed.
+
+For example, to start and connect the `virtual-usb-printer` as an
+IPP-over-USB printer, issue
 
 ```
-modprobe vhci-hcd
+start virtual-usb-printer USB_DESCRIPTORS=ippusb_printer.json IPP_ATTRIBUTES=ipp_attributes.json
 ```
 
-Run the virtual-usb-printer program:
-
-```
-virtual-usb-printer --descriptors_path=<path>
-```
-
-(*Optional*) Check the list of exported printers with USBIP:
-
-```
-usbip list -r localhost
-```
-
-Should return something like this:
-
-```
-Exportable USB devices
-======================
- - localhost
-        1-1: Canon, Inc. : unknown product (04a9:27e8)
-           : /sys/devices/pci0000:00/0000:00:01.2/usb1/1-1
-           : (Defined at Interface level) (00/00/00)
-           : 0 - Printer / Printer Bidirectional (07/01/02)
-```
-
-Bind the virtual printer to the system:
-
-```
-usbip attach -r localhost -b 1-1
-```
-
-Once the device has been attached it should appear in the list of connected USB
-devices (`lsusb`), and can be used with the native printing system in Chrome OS.
+Consult the
+[Upstart config file](https://source.chromium.org/chromiumos/_/chromium/chromiumos/third_party/virtual-usb-printer/+/e7ce7b7c33c0f748617d321cba7fdc54b848a287:init/virtual-usb-printer.conf;l=19;drc=34ab3e4e2f18b354c998611ddec95cb38623865c)
+to see the arguments understood in this context.
 
 *** note
-While not shown in the `--help` dialogue, the usage of `VLOG()` in some
-source files can be made visible by passing an appropriate `--vmodule=`
-argument. Consult the primary documentation in `base/logging.h` for
-details.
+When managed by Upstart, `virtual-usb-printer` sends its output to the
+system log.
 ***
 
 ## Configuration
