@@ -190,16 +190,19 @@ message IppCollection {
 // Matches an IPP group (of collections).
 message IppGroup {
   enum IppGroupTag {
+    // Note that `0` is a reserved value as per RFC 8010.
     UNSPECIFIED = 0;
-    DOCUMENT_ATTRIBUTES = 1;
-    EVENT_NOTIFICATION_ATTRIBUTES = 2;
-    JOB_ATTRIBUTES = 3;
-    OPERATION_ATTRIBUTES = 4;
-    PRINTER_ATTRIBUTES = 5;
-    RESOURCE_ATTRIBUTES = 6;
-    SUBSCRIPTION_ATTRIBUTES = 7;
-    SYSTEM_ATTRIBUTES = 8;
-    UNSUPPORTED_ATTRIBUTES = 9;
+    OPERATION_ATTRIBUTES = 1;
+    JOB_ATTRIBUTES = 2;
+    // "end-of-attributes" tag is not needed here.
+    reserved 3;
+    PRINTER_ATTRIBUTES = 4;
+    UNSUPPORTED_ATTRIBUTES = 5;
+    SUBSCRIPTION_ATTRIBUTES = 6;
+    EVENT_NOTIFICATION_ATTRIBUTES = 7;
+    RESOURCE_ATTRIBUTES = 8;
+    DOCUMENT_ATTRIBUTES = 9;
+    SYSTEM_ATTRIBUTES = 10;
   }
 
   // Required.
