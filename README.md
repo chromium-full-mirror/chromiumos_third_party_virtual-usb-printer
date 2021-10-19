@@ -52,7 +52,7 @@ start virtual-usb-printer USB_DESCRIPTORS=ippusb_printer.json IPP_ATTRIBUTES=ipp
 ```
 
 Consult the
-[Upstart config file](https://source.chromium.org/chromiumos/_/chromium/chromiumos/third_party/virtual-usb-printer/+/e7ce7b7c33c0f748617d321cba7fdc54b848a287:init/virtual-usb-printer.conf;l=19;drc=34ab3e4e2f18b354c998611ddec95cb38623865c)
+[Upstart config file](https://source.chromium.org/chromiumos/chromiumos/codesearch/+/main:src/third_party/virtual-usb-printer/init/virtual-usb-printer.conf)
 to see the arguments understood in this context.
 
 *** note
