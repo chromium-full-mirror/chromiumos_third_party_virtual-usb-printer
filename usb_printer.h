@@ -12,6 +12,7 @@
 
 #include <base/files/file.h>
 #include <base/files/file_path.h>
+#include <base/optional.h>
 
 #include "device_descriptors.h"
 #include "escl_manager.h"
@@ -37,6 +38,11 @@ class InterfaceManager {
   // Returns the message at the front of |queue_| and removes it. If PopMessage
   // is called when |queue_| is empty then the program will exit.
   SmartBuffer PopMessage();
+
+  // Having just received some HTTP data, returns the message if
+  // it is complete; returns nullopt otherwise.
+  base::Optional<SmartBuffer> AddMessageAndReturnIfComplete(
+      const SmartBuffer& message);
 
   bool receiving_message() const { return receiving_message_; }
   void set_receiving_message(bool b) { receiving_message_ = b; }

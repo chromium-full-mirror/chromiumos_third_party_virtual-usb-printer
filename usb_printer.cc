@@ -18,6 +18,7 @@
 #include <base/check.h>
 #include <base/check_op.h>
 #include <base/logging.h>
+#include <base/optional.h>
 #include <base/strings/string_util.h>
 
 #include "ipp_util.h"
@@ -85,6 +86,29 @@ void InterfaceManager::QueueMessage(const SmartBuffer& message) {
 
 bool InterfaceManager::QueueEmpty() const {
   return queue_.empty();
+}
+
+base::Optional<SmartBuffer> InterfaceManager::AddMessageAndReturnIfComplete(
+    const SmartBuffer& message) {
+  message_.Add(message);
+  const bool complete =
+      receiving_chunked_ ? ContainsFinalChunk(message)
+                         : message_.size() == request_header_.ContentLength();
+  if (!complete) {
+    return base::nullopt;
+  }
+
+  SmartBuffer payload;
+  if (receiving_chunked_) {
+    // Assemble the chunks into the HTTP response body.
+    payload = MergeDocument(&message_);
+  } else {
+    payload = message_;
+    message_.Erase(0, message_.size());
+  }
+
+  receiving_message_ = false;
+  return payload;
 }
 
 SmartBuffer InterfaceManager::PopMessage() {
@@ -217,31 +241,15 @@ void UsbPrinter::HandleHttpData(const UsbipCmdSubmit& usb_request,
     im->set_receiving_chunked(request.IsChunkedMessage());
   }
 
-  im->message()->Add(*message);
-  bool complete = false;
-  if (im->receiving_chunked()) {
-    complete = ContainsFinalChunk(*message);
-  } else {
-    complete = im->message()->size() == im->request_header().ContentLength();
+  base::Optional<SmartBuffer> payload =
+      im->AddMessageAndReturnIfComplete(*message);
+  if (!payload.has_value()) {
+    return;
   }
 
-  if (complete) {
-    SmartBuffer* complete_message = im->message();
-
-    SmartBuffer payload;
-    if (im->receiving_chunked()) {
-      // Assemble the chunks into the HTTP request body
-      payload = MergeDocument(complete_message);
-    } else {
-      payload = *complete_message;
-      complete_message->Erase(0, complete_message->size());
-    }
-
-    im->set_receiving_message(false);
-    HttpResponse response =
-        GenerateHttpResponse(im->request_header(), &payload);
-    QueueHttpResponse(usb_request, response);
-  }
+  HttpResponse response =
+      GenerateHttpResponse(im->request_header(), &payload.value());
+  QueueHttpResponse(usb_request, response);
 }
 
 void UsbPrinter::HandleStandardControl(
