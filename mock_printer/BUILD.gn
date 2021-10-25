@@ -6,11 +6,16 @@ import("//common-mk/pkg_config.gni")
 import("//common-mk/proto_library.gni")
 
 source_set("implementation") {
+  public = [ "mock_printer.h" ]
+  sources = [ "mock_printer.cc" ]
+
+  # Needed to make the `../:smart_buffer` dependency work.
+  configs += [ "//virtual-usb-printer:target_defaults" ]
+
   deps = [
-    ":ipp_matching",
-    ":ipp_matching_validation",
     ":proto_to_libipp",
     ":wrapped_test_case_step",
+    "//virtual-usb-printer:smart_buffer",
   ]
 }
 
