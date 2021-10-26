@@ -15,8 +15,8 @@
 #include <gtest/gtest.h>
 
 #include "parse_textproto.h"
-#include "proto/control_flow.pb.h"
-#include "proto/ipp.pb.h"
+#include "mock_printer/proto/control_flow.pb.h"
+#include "mock_printer/proto/ipp.pb.h"
 #include "wrapped_matcher.h"
 
 // This file provides unit tests for `WrappedTestCaseStep`. Testing

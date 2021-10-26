@@ -13,7 +13,7 @@
 
 #include "argument_variants.h"
 #include "cardinality_helper.h"
-#include "proto/control_flow.pb.h"
+#include "mock_printer/proto/control_flow.pb.h"
 #include "wrapped_matcher.h"
 
 namespace mock_printer {

@@ -6,6 +6,7 @@
 #define USB_PRINTER_H__
 
 #include <map>
+#include <memory>
 #include <queue>
 #include <vector>
 #include <string>
@@ -18,6 +19,7 @@
 #include "escl_manager.h"
 #include "http_util.h"
 #include "ipp_manager.h"
+#include "mock_printer/mock_printer.h"
 #include "smart_buffer.h"
 #include "usbip.h"
 
@@ -137,7 +139,8 @@ class UsbPrinter {
   UsbPrinter(const UsbDescriptors& usb_descriptors,
              const base::FilePath& document_output_path,
              IppManager ipp_manager,
-             EsclManager escl_manager);
+             EsclManager escl_manager,
+             std::unique_ptr<mock_printer::MockPrinter> mock_printer);
 
   const UsbDeviceDescriptor& device_descriptor() const {
     return usb_descriptors_.device_descriptor();
@@ -259,6 +262,7 @@ class UsbPrinter {
 
   IppManager ipp_manager_;
   EsclManager escl_manager_;
+  std::unique_ptr<mock_printer::MockPrinter> mock_printer_;
   std::vector<InterfaceManager> interface_managers_;
 };
 

@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "mock_printer/proto/control_flow.pb.h"
 #include "virtual-usb-printer/smart_buffer.h"
 
 namespace mock_printer {
@@ -14,11 +15,12 @@ namespace mock_printer {
 // Top-level implementation of the mock printer.
 class MockPrinter {
  public:
-  static std::unique_ptr<MockPrinter> Create();
+  static std::unique_ptr<MockPrinter> Create(
+      const mocking::TestCase& test_case);
   virtual ~MockPrinter() = default;
 
   // Uses the `SmartBuffer` to do nothing for the moment.
-  virtual void DoNothing(const SmartBuffer& message) = 0;
+  virtual void ReceiveDataAndReact(const SmartBuffer& message) = 0;
 };
 
 }  // namespace mock_printer

@@ -13,8 +13,8 @@
 #include <base/logging.h>
 #include <base/optional.h>
 
-#include "proto/control_flow.pb.h"
-#include "proto/ipp.pb.h"
+#include "mock_printer/proto/control_flow.pb.h"
+#include "mock_printer/proto/ipp.pb.h"
 
 namespace mock_printer {
 

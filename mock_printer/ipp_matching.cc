@@ -13,7 +13,7 @@
 #include <chromeos/libipp/ipp.h>
 #include <chromeos/libipp/ipp_attribute.h>
 
-#include "proto/ipp.pb.h"
+#include "mock_printer/proto/ipp.pb.h"
 
 // By convention, helper functions that determine whether or not X
 // matches Y actually return

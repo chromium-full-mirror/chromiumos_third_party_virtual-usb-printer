@@ -139,11 +139,13 @@ UsbDescriptors::UsbDescriptors(
 UsbPrinter::UsbPrinter(const UsbDescriptors& usb_descriptors,
                        const base::FilePath& document_output_path,
                        IppManager ipp_manager,
-                       EsclManager escl_manager)
+                       EsclManager escl_manager,
+                       std::unique_ptr<mock_printer::MockPrinter> mock_printer)
     : usb_descriptors_(usb_descriptors),
       document_output_path_(document_output_path),
       ipp_manager_(std::move(ipp_manager)),
       escl_manager_(std::move(escl_manager)),
+      mock_printer_(std::move(mock_printer)),
       interface_managers_(usb_descriptors.interface_descriptors().size()) {}
 
 bool UsbPrinter::IsIppUsb() const {
@@ -245,6 +247,10 @@ void UsbPrinter::HandleHttpData(const UsbipCmdSubmit& usb_request,
       im->AddMessageAndReturnIfComplete(*message);
   if (!payload.has_value()) {
     return;
+  }
+
+  if (mock_printer_) {
+    return mock_printer_->ReceiveDataAndReact(payload.value());
   }
 
   HttpResponse response =

@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-#include "proto/control_flow.pb.h"
+#include "mock_printer/proto/control_flow.pb.h"
 
 namespace mock_printer {
 

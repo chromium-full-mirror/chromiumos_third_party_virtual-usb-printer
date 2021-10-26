@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "parse_textproto.h"
-#include "proto/control_flow.pb.h"
+#include "mock_printer/proto/control_flow.pb.h"
 
 namespace mock_printer {
 namespace {

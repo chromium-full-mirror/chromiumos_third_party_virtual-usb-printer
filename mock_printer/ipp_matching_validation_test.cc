@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "parse_textproto.h"
-#include "proto/ipp.pb.h"
+#include "mock_printer/proto/ipp.pb.h"
 
 namespace mock_printer {
 namespace {

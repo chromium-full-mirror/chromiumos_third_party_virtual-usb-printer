@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "proto/control_flow.pb.h"
+#include "mock_printer/proto/control_flow.pb.h"
 #include "wrapped_matcher.h"
 
 // This header declares the `WrappedTestCaseStep` class.

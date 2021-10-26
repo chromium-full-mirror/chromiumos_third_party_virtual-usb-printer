@@ -10,7 +10,7 @@
 
 #include <chromeos/libipp/ipp.h>
 
-#include "proto/ipp.pb.h"
+#include "mock_printer/proto/ipp.pb.h"
 
 namespace mock_printer {
 

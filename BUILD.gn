@@ -51,6 +51,8 @@ executable("virtual-usb-printer") {
   deps = [
     ":smart_buffer",
     "//virtual-usb-printer/mock_printer:implementation",
+    "//virtual-usb-printer/mock_printer:mocking_protos",
+    "//virtual-usb-printer/mock_printer:parse_textproto",
   ]
 }
 

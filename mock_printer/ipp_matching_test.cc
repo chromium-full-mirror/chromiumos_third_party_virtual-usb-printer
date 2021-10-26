@@ -15,7 +15,7 @@
 #include <gtest/gtest.h>
 
 #include "parse_textproto.h"
-#include "proto/ipp.pb.h"
+#include "mock_printer/proto/ipp.pb.h"
 
 // Note that these unit tests do not exercise cases where the matching
 // Protobufs are malformed. We assume that callers will have validated

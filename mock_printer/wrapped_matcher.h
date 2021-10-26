@@ -10,7 +10,7 @@
 #include <chromeos/libipp/ipp.h>
 
 #include "argument_variants.h"
-#include "proto/ipp.pb.h"
+#include "mock_printer/proto/ipp.pb.h"
 
 // This header declares a trivial wrapper class for matching functions
 // (e.g. ./ipp_matching.h). This is done to ease unit testing where we
