@@ -40,6 +40,7 @@ struct ProgressionResult {
   // `kUnfulfilled`).
   StepStatus step_status;
 
+  // This member is nullptr if `!match_found`.
   const mocking::Response* response;
 };
 
