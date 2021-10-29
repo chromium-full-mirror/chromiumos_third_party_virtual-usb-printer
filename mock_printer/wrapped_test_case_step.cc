@@ -22,8 +22,8 @@ namespace {
 class WrappedIppTestCaseStep : public WrappedTestCaseStep {
  public:
   WrappedIppTestCaseStep(const mocking::TestCaseStep& step,
-                         std::unique_ptr<WrappedMatcher> matcher)
-      : step_(step), matcher_(std::move(matcher)) {
+                         WrappedMatcher* matcher)
+      : step_(step), matcher_(matcher) {
     cardinality_helper_ = CardinalityHelper::Create(
         step.cardinality(), step.expectation_with_response_size());
   }
@@ -71,7 +71,7 @@ class WrappedIppTestCaseStep : public WrappedTestCaseStep {
 
  private:
   const mocking::TestCaseStep step_;
-  std::unique_ptr<WrappedMatcher> matcher_;
+  WrappedMatcher* matcher_;
   std::unique_ptr<CardinalityHelper> cardinality_helper_;
 };
 
@@ -79,9 +79,8 @@ class WrappedIppTestCaseStep : public WrappedTestCaseStep {
 
 // static
 std::unique_ptr<WrappedTestCaseStep> WrappedTestCaseStep::Create(
-    const mocking::TestCaseStep& step,
-    std::unique_ptr<WrappedMatcher> matcher) {
-  return std::make_unique<WrappedIppTestCaseStep>(step, std::move(matcher));
+    const mocking::TestCaseStep& step, WrappedMatcher* matcher) {
+  return std::make_unique<WrappedIppTestCaseStep>(step, matcher);
 }
 
 }  // namespace mock_printer

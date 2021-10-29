@@ -86,8 +86,8 @@ TEST(WrappedTestCaseStep, SingleExpectationSuccess) {
       }
     }
   )pb");
-  auto step = WrappedTestCaseStep::Create(test_case.steps(0),
-                                          FakeWrappedMatcher::Create());
+  auto matcher = FakeWrappedMatcher::Create();
+  auto step = WrappedTestCaseStep::Create(test_case.steps(0), matcher.get());
 
   auto request = MakeRequest(1138);
   InputMessage input(request.get());
@@ -111,8 +111,8 @@ TEST(WrappedTestCaseStep, NoMatchingExpectation) {
       }
     }
   )pb");
-  auto step = WrappedTestCaseStep::Create(test_case.steps(0),
-                                          FakeWrappedMatcher::Create());
+  auto matcher = FakeWrappedMatcher::Create();
+  auto step = WrappedTestCaseStep::Create(test_case.steps(0), matcher.get());
 
   // 0 != 1138; the matcher will not correlate this with the given
   // expectation.
@@ -144,8 +144,8 @@ TEST(WrappedTestCaseStep, MultiExpectationSuccess) {
       }
     }
   )pb");
-  auto step = WrappedTestCaseStep::Create(test_case.steps(0),
-                                          FakeWrappedMatcher::Create());
+  auto matcher = FakeWrappedMatcher::Create();
+  auto step = WrappedTestCaseStep::Create(test_case.steps(0), matcher.get());
 
   // Progress the step by hitting the third ExpectationWithResponse.
   auto first_request = MakeRequest(3038);
@@ -201,8 +201,8 @@ TEST(WrappedTestCaseStep, FulfillWithoutSaturating) {
       }
     }
   )pb");
-  auto step = WrappedTestCaseStep::Create(test_case.steps(0),
-                                          FakeWrappedMatcher::Create());
+  auto matcher = FakeWrappedMatcher::Create();
+  auto step = WrappedTestCaseStep::Create(test_case.steps(0), matcher.get());
 
   // Progress the step by hitting the third ExpectationWithResponse.
   auto first_request = MakeRequest(3038);

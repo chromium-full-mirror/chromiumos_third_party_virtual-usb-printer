@@ -45,9 +45,9 @@ struct ProgressionResult {
 
 class WrappedTestCaseStep {
  public:
+  // Caller must ensure that this does not outlive `matcher`.
   static std::unique_ptr<WrappedTestCaseStep> Create(
-      const mocking::TestCaseStep& step,
-      std::unique_ptr<WrappedMatcher> matcher);
+      const mocking::TestCaseStep& step, WrappedMatcher* matcher);
   virtual ~WrappedTestCaseStep() = default;
 
   // Attempts to make progress on the contained `mocking::TestCaseStep`.
