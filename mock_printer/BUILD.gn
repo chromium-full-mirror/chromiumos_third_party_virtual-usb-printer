@@ -15,6 +15,7 @@ source_set("implementation") {
   deps = [
     ":proto_to_libipp",
     ":test_case_holder",
+    ":wrapped_matcher",
     "//virtual-usb-printer:smart_buffer",
   ]
 }

@@ -249,10 +249,6 @@ void UsbPrinter::HandleHttpData(const UsbipCmdSubmit& usb_request,
     return;
   }
 
-  if (mock_printer_) {
-    return mock_printer_->ReceiveDataAndReact(payload.value());
-  }
-
   HttpResponse response =
       GenerateHttpResponse(im->request_header(), &payload.value());
   QueueHttpResponse(usb_request, response);
@@ -321,30 +317,56 @@ InterfaceManager* UsbPrinter::GetInterfaceManager(int endpoint) {
 
 HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
                                               SmartBuffer* body) {
-  HttpResponse response;
   if (request.method == "POST" && request.uri == "/ipp/print") {
-    base::Optional<IppHeader> ipp_header = IppHeader::Deserialize(body);
-    if (!ipp_header) {
-      LOG(ERROR) << "Request does not contain a valid IPP header.";
-      response.status = "415 Unsupported Media Type";
-      return response;
+    if (!mock_printer_) {
+      return GenerateHttpResponseFromIppManager(body);
     }
-    if (!RemoveIppAttributes(body)) {
-      LOG(ERROR) << "IPP request has malformed attributes section.";
-      response.status = "415 Unsupported Media Type";
-      return response;
-    }
-    response.status = "200 OK";
-    response.headers["Content-Type"] = "application/ipp";
-    response.body = ipp_manager_.HandleIppRequest(ipp_header.value(), *body);
+    return GenerateHttpResponseFromMockPrinter(body);
   } else if (base::StartsWith(request.uri, "/eSCL",
                               base::CompareCase::SENSITIVE)) {
-    response = escl_manager_.HandleEsclRequest(request, *body);
-  } else {
-    LOG(ERROR) << "Invalid method '" << request.method << "' and/or endpoint '"
-               << request.uri << "'";
-    response.status = "404 Not Found";
+    return escl_manager_.HandleEsclRequest(request, *body);
   }
+
+  HttpResponse response;
+  LOG(ERROR) << "Invalid method '" << request.method << "' and/or endpoint '"
+             << request.uri << "'";
+  response.status = "404 Not Found";
+  return response;
+}
+
+HttpResponse UsbPrinter::GenerateHttpResponseFromIppManager(SmartBuffer* body) {
+  HttpResponse response;
+  base::Optional<IppHeader> ipp_header = IppHeader::Deserialize(body);
+  if (!ipp_header) {
+    LOG(ERROR) << "Request does not contain a valid IPP header.";
+    response.status = "415 Unsupported Media Type";
+    return response;
+  }
+  if (!RemoveIppAttributes(body)) {
+    LOG(ERROR) << "IPP request has malformed attributes section.";
+    response.status = "415 Unsupported Media Type";
+    return response;
+  }
+  response.status = "200 OK";
+  response.headers["Content-Type"] = "application/ipp";
+  response.body = ipp_manager_.HandleIppRequest(ipp_header.value(), *body);
+  return response;
+}
+
+HttpResponse UsbPrinter::GenerateHttpResponseFromMockPrinter(
+    SmartBuffer* body) {
+  HttpResponse response;
+  base::Optional<SmartBuffer> buffer =
+      mock_printer_->ReceiveDataAndReact(*body);
+  if (!buffer.has_value()) {
+    LOG(ERROR) << "No response from mock printer.";
+    response.status = "500 Internal Server Error";
+    return response;
+  }
+
+  response.status = "200 OK";
+  response.headers["Content-Type"] = "application/ipp";
+  response.body = buffer.value();
   return response;
 }
 
