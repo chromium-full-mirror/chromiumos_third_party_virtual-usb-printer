@@ -25,18 +25,15 @@ if (use.test) {
     pkg_deps = [ "libchrome-test" ]
   }
 
-  group("unit_tests") {
-    deps = [
-      ":cardinality-helper-testrunner",
-      ":ipp-matching-testrunner",
-      ":ipp-matching-validation-testrunner",
-      ":proto-to-libipp-testrunner",
-      ":wrapped-test-case-step-testrunner",
+  executable("unit_tests") {
+    output_name = "mock-printer-testrunner"
+    sources = [
+      "cardinality_helper_test.cc",
+      "ipp_matching_test.cc",
+      "ipp_matching_validation_test.cc",
+      "proto_to_libipp_test.cc",
+      "wrapped_test_case_step_test.cc",
     ]
-  }
-
-  executable("cardinality-helper-testrunner") {
-    sources = [ "cardinality_helper_test.cc" ]
     configs += [
       "//common-mk:test",
       ":target_defaults",
@@ -44,62 +41,10 @@ if (use.test) {
     ]
     deps = [
       ":cardinality_helper",
-      ":parse_textproto",
-      "//common-mk/testrunner",
-    ]
-  }
-
-  executable("ipp-matching-testrunner") {
-    sources = [ "ipp_matching_test.cc" ]
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
-    deps = [
       ":ipp_matching",
-      ":parse_textproto",
-      "//common-mk/testrunner",
-    ]
-  }
-
-  executable("ipp-matching-validation-testrunner") {
-    sources = [ "ipp_matching_validation_test.cc" ]
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
-    deps = [
       ":ipp_matching_validation",
       ":parse_textproto",
-      "//common-mk/testrunner",
-    ]
-  }
-
-  executable("proto-to-libipp-testrunner") {
-    sources = [ "proto_to_libipp_test.cc" ]
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
-    deps = [
-      ":parse_textproto",
       ":proto_to_libipp",
-      "//common-mk/testrunner",
-    ]
-  }
-
-  executable("wrapped-test-case-step-testrunner") {
-    sources = [ "wrapped_test_case_step_test.cc" ]
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
-    deps = [
-      ":parse_textproto",
       ":wrapped_test_case_step",
       "//common-mk/testrunner",
     ]
