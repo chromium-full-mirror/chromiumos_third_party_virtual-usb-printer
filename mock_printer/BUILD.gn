@@ -13,6 +13,7 @@ source_set("implementation") {
   configs += [ "//virtual-usb-printer:target_defaults" ]
 
   deps = [
+    ":libipp_helper",
     ":proto_to_libipp",
     ":test_case_holder",
     ":wrapped_matcher",
@@ -31,6 +32,7 @@ if (use.test) {
       "cardinality_helper_test.cc",
       "ipp_matching_test.cc",
       "ipp_matching_validation_test.cc",
+      "libipp_helper_test.cc",
       "proto_to_libipp_test.cc",
       "wrapped_test_case_step_test.cc",
     ]
@@ -43,6 +45,7 @@ if (use.test) {
       ":cardinality_helper",
       ":ipp_matching",
       ":ipp_matching_validation",
+      ":libipp_helper",
       ":parse_textproto",
       ":proto_to_libipp",
       ":wrapped_test_case_step",
@@ -137,6 +140,12 @@ source_set("wrapped_test_case_step") {
     ":mocking_protos",
     ":wrapped_matcher",
   ]
+}
+
+source_set("libipp_helper") {
+  sources = [ "libipp_helper.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "libipp_helper.h" ]
 }
 
 source_set("test_case_holder") {
