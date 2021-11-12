@@ -5,12 +5,15 @@
 #include "mock_printer.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <base/check.h>
 #include <base/logging.h>
+#include <base/strings/string_util.h>
 #include <chromeos/libipp/ipp_base.h>
 
+#include "libipp_helper.h"
 #include "proto_to_libipp.h"
 #include "test_case_holder.h"
 #include "wrapped_matcher.h"
@@ -19,12 +22,15 @@ namespace mock_printer {
 
 namespace {
 
-void DumpServerLogs(const std::vector<ipp::Log>& logs) {
-  for (const ipp::Log& log : logs) {
-    LOG(ERROR) << log.message;
-  }
-}
-
+// Verbose logging notes
+//
+// level 1:
+//    * Emits logs for every received `ipp::Request` (contingent on
+//      successful reading and parsing).
+//    * Emits logs for every response sent.
+// level 2:
+//    * Emits logs for any warnings that appear in the `ipp::Server`
+//      log, even if reading and parsing succeed.
 class MockPrinterImpl : public MockPrinter {
  public:
   explicit MockPrinterImpl(const mocking::TestCase& test_case)
@@ -44,18 +50,21 @@ class MockPrinterImpl : public MockPrinter {
 
     if (!server_.ReadRequestFrameFrom(message.contents())) {
       LOG(ERROR) << "BUG: failed to read inbound message";
-      DumpServerLogs(server_.GetErrorLog());
+      JoinServerLogs().LogError();
       return base::nullopt;
     }
+    JoinServerLogs().Vlog(2, "`server_` logs after `ReadRequestFrameFrom()`:");
 
     std::unique_ptr<ipp::Request> request =
         ipp::Request::NewRequest(server_.GetOperationId());
     if (!server_.ParseRequestAndSaveTo(request.get())) {
       LOG(ERROR) << "BUG: failed to parse inbound message";
-      DumpServerLogs(server_.GetErrorLog());
+      JoinServerLogs().LogError();
       return base::nullopt;
     }
+    JoinServerLogs().Vlog(2, "`server_` logs after `ParseRequestAndSaveTo()`:");
 
+    ToString(request.get()).Vlog(1, "received `ipp::Request`:");
     return ProgressAndReact(InputMessage(request.get()));
   }
 
@@ -69,6 +78,8 @@ class MockPrinterImpl : public MockPrinter {
     if (!mock_response) {
       LOG(ERROR) << "Got nullptr from `TestCaseHolder::Progress()`.";
       LOG(ERROR) << "`TestCaseError()`: " << test_case_holder_->TestCaseError();
+      ToString(*std::get_if<const ipp::Request*>(&request))
+          .LogError("last received `ipp::Request`:");
       return base::nullopt;
     }
 
@@ -79,11 +90,22 @@ class MockPrinterImpl : public MockPrinter {
     std::vector<uint8_t> response_buffer;
     if (!server_.WriteResponseFrameTo(&response_buffer)) {
       LOG(ERROR) << "`WriteResponseFrameTo()` failed";
-      DumpServerLogs(server_.GetErrorLog());
+      JoinServerLogs().LogError();
       return base::nullopt;
     }
 
+    VLOG(1) << "Sending response.";
     return SmartBuffer(response_buffer);
+  }
+
+  // Returns logs from `server_`.
+  MultilineLogHolder JoinServerLogs() const {
+    std::vector<std::string> messages;
+    messages.reserve(server_.GetErrorLog().size());
+    for (const ipp::Log& log : server_.GetErrorLog()) {
+      messages.push_back(log.message);
+    }
+    return MultilineLogHolder{.lines = messages};
   }
 
   ipp::Server server_;
