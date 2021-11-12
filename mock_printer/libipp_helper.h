@@ -5,19 +5,40 @@
 #ifndef MOCK_PRINTER_LIBIPP_HELPER_H_
 #define MOCK_PRINTER_LIBIPP_HELPER_H_
 
+#include <ostream>
 #include <string>
 #include <vector>
 
+#include <base/strings/string_piece.h>
 #include <chromeos/libipp/ipp.h>
 
 namespace mock_printer {
+
+// Defines a struct that has a stream operator allowing it to emit
+// multiline logs.
+struct MultilineLogHolder {
+  std::vector<std::string> lines;
+
+  // Emits the `preface` and all `lines` at the ERROR level.
+  //
+  // Does nothing if `lines` is empty.
+  //
+  // You can't parameterize the level here because there's some
+  // preprocessor magic involved in base/logging.h.
+  void LogError(base::StringPiece preface = "") const;
+
+  // `VLOG()`s the `preface` and all `lines` at the specified `level`.
+  //
+  // Does nothing if `lines` is empty.
+  void Vlog(int level, base::StringPiece preface = "") const;
+};
 
 // Returns a vector of lines that form a human-readable string
 // representation of `request`.
 //
 // Note that a more sophisticated version of this function (albeit for
 // `ipp::Response`) exists in `platform2/print_tools`.
-std::vector<std::string> ToString(const ipp::Request* request);
+MultilineLogHolder ToString(const ipp::Request* request);
 
 }  // namespace mock_printer
 

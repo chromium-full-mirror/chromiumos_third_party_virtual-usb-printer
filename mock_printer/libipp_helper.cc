@@ -6,6 +6,7 @@
 
 #include <cstddef>
 
+#include <base/logging.h>
 #include <base/strings/string_piece.h>
 #include <base/strings/stringprintf.h>
 #include <base/format_macros.h>
@@ -137,7 +138,31 @@ void AddGroup(const ipp::Group* group, std::vector<std::string>* lines) {
 
 }  // namespace
 
-std::vector<std::string> ToString(const ipp::Request* request) {
+void MultilineLogHolder::LogError(base::StringPiece preface) const {
+  if (lines.empty()) {
+    return;
+  }
+  if (!preface.empty()) {
+    LOG(ERROR) << preface;
+  }
+  for (const std::string& line : lines) {
+    LOG(ERROR) << line;
+  }
+}
+
+void MultilineLogHolder::Vlog(int level, base::StringPiece preface) const {
+  if (lines.empty()) {
+    return;
+  }
+  if (!preface.empty()) {
+    VLOG(level) << preface;
+  }
+  for (const std::string& line : lines) {
+    VLOG(level) << line;
+  }
+}
+
+MultilineLogHolder ToString(const ipp::Request* request) {
   std::vector<std::string> lines;
   lines.push_back(
       base::StringPrintf("Request (operation ID: 0x%04x; groups: %" PRIuS ")",
@@ -146,7 +171,7 @@ std::vector<std::string> ToString(const ipp::Request* request) {
   for (const ipp::Group* group : request->GetAllGroups()) {
     AddGroup(group, &lines);
   }
-  return lines;
+  return MultilineLogHolder{.lines = lines};
 }
 
 }  // namespace mock_printer

@@ -42,8 +42,8 @@ TEST(ToStringTest, BasicGetPrinterAttributes) {
       "home on the", /*is_a_set=*/false, ipp::AttrType::rangeOfInteger);
   range_attribute->SetValue(ipp::RangeOfInteger(-9, 9001), 0);
 
-  const std::vector<std::string> lines = ToString(request.get());
-  EXPECT_EQ(base::JoinString(lines, "\n"),
+  const MultilineLogHolder holder = ToString(request.get());
+  EXPECT_EQ(base::JoinString(holder.lines, "\n"),
             R"(Request (operation ID: 0x000b; groups: 2)
   Group (tag: 0x0001; collections: 1)
     Collection 0 (6 attributes)
