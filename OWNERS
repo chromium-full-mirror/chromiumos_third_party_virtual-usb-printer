@@ -1,3 +1,1 @@
-valleau@chromium.org
-skau@chromium.org
-kdlee@chromium.org
+include chromiumos/platform2:/cups_proxy/OWNERS
