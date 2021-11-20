@@ -125,11 +125,6 @@ int main(int argc, char* argv[]) {
   DEFINE_string(attributes_path, "", "Path to IPP attributes JSON file");
   DEFINE_string(scanner_capabilities_path, "",
                 "Path to eSCL ScannerCapabilities JSON file");
-  // TODO(b/178419192): Remove this once all tast tests have been updated to no
-  // longer pass this flag.
-  DEFINE_string(scanner_doc_path, "",
-                "Path to file containing data to return from scan jobs");
-
   DEFINE_string(mock_printer_script, "",
                 "Path to `mocking::TestCase` textproto for mock printer");
 
