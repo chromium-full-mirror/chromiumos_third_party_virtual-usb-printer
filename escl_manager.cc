@@ -187,7 +187,7 @@ base::Optional<base::TimeDelta> GetDelayForJob(const ScanSettings& settings) {
   // color and 100 dpi.
   if (settings.input_source == "Platen" && settings.color_mode == kRGB &&
       settings.x_resolution == 100 && settings.y_resolution == 100) {
-    return base::TimeDelta::FromSeconds(45);
+    return base::Seconds(45);
   }
 
   return base::nullopt;
