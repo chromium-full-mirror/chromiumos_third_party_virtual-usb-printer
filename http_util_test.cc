@@ -4,6 +4,7 @@
 
 #include "http_util.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -29,7 +30,7 @@ TEST(HttpRequest, DeserializeNoHeaders) {
 
   SmartBuffer buf;
   buf.Add(http_request);
-  base::Optional<HttpRequest> opt_request = HttpRequest::Deserialize(&buf);
+  std::optional<HttpRequest> opt_request = HttpRequest::Deserialize(&buf);
   EXPECT_TRUE(opt_request.has_value());
   HttpRequest request = opt_request.value();
   EXPECT_EQ(request.method, "GET");
@@ -53,7 +54,7 @@ TEST(HttpRequest, DeserializeChunked) {
   SmartBuffer buf;
   buf.Add(http_request);
 
-  base::Optional<HttpRequest> opt_request = HttpRequest::Deserialize(&buf);
+  std::optional<HttpRequest> opt_request = HttpRequest::Deserialize(&buf);
   EXPECT_TRUE(opt_request.has_value());
   HttpRequest request = opt_request.value();
   EXPECT_EQ(request.method, "POST");

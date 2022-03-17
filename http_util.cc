@@ -5,6 +5,7 @@
 #include "http_util.h"
 
 #include <algorithm>
+#include <optional>
 #include <vector>
 
 #include <base/check.h>
@@ -23,7 +24,7 @@ bool StartsWith(const SmartBuffer& message, const std::string& target) {
   return message.FindFirstOccurrence(target) == 0;
 }
 
-base::Optional<HttpHeaders> ParseHttpHeaders(const std::string& headers) {
+std::optional<HttpHeaders> ParseHttpHeaders(const std::string& headers) {
   std::vector<std::string> lines = base::SplitStringUsingSubstr(
       headers, kHttpLineEnd, base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
@@ -33,7 +34,7 @@ base::Optional<HttpHeaders> ParseHttpHeaders(const std::string& headers) {
     size_t split = line.find(header_split);
     if (split == std::string::npos) {
       LOG(ERROR) << "Malformed header: '" << line << "'";
-      return base::nullopt;
+      return std::nullopt;
     }
 
     parsed_headers.emplace(
@@ -63,22 +64,22 @@ bool ValidateHttpVersion(const std::string& version) {
 }  // namespace
 
 // static
-base::Optional<HttpRequest> HttpRequest::Deserialize(SmartBuffer* message) {
+std::optional<HttpRequest> HttpRequest::Deserialize(SmartBuffer* message) {
   ssize_t request_end = message->FindFirstOccurrence(kHttpRequestEnd);
   if (request_end == -1) {
     LOG(ERROR) << "Message does not contain end of header marker";
-    return base::nullopt;
+    return std::nullopt;
   }
 
   ssize_t request_line_end = message->FindFirstOccurrence(kHttpLineEnd);
   if (request_line_end == -1) {
     LOG(ERROR) << "Message does not contain end of line marker";
-    return base::nullopt;
+    return std::nullopt;
   }
 
   if (request_line_end == 0) {
     LOG(ERROR) << "Request line is empty";
-    return base::nullopt;
+    return std::nullopt;
   }
 
   // First parse the first line of the request, which should look something like
@@ -89,12 +90,12 @@ base::Optional<HttpRequest> HttpRequest::Deserialize(SmartBuffer* message) {
 
   if (request_line_tokens.size() != 3) {
     LOG(ERROR) << "Malformed request line: '" << request_line << "'";
-    return base::nullopt;
+    return std::nullopt;
   }
 
   std::string http_version = request_line_tokens[2];
   if (!ValidateHttpVersion(http_version))
-    return base::nullopt;
+    return std::nullopt;
 
   HttpRequest request;
   request.method = request_line_tokens[0];
@@ -108,10 +109,10 @@ base::Optional<HttpRequest> HttpRequest::Deserialize(SmartBuffer* message) {
       std::min<size_t>(request_line_end + kHttpLineEnd.size(), request_end);
   std::string request_headers(message->data() + headers_start,
                               message->data() + request_end);
-  base::Optional<HttpHeaders> headers = ParseHttpHeaders(request_headers);
+  std::optional<HttpHeaders> headers = ParseHttpHeaders(request_headers);
   if (!headers) {
     LOG(ERROR) << "Failed to parse request headers";
-    return base::nullopt;
+    return std::nullopt;
   }
   request.headers = headers.value();
 

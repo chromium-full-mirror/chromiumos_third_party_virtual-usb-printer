@@ -6,8 +6,7 @@
 #define MOCK_PRINTER_MOCK_PRINTER_H_
 
 #include <memory>
-
-#include <base/optional.h>
+#include <optional>
 
 #include "mock_printer/proto/control_flow.pb.h"
 #include "virtual-usb-printer/smart_buffer.h"
@@ -33,7 +32,7 @@ class MockPrinter {
   // describe all the possible things we might want the mock printer
   // to do (e.g. to stall indefinitely). We'll need to revisit this
   // method to add functionality.
-  virtual base::Optional<SmartBuffer> ReceiveDataAndReact(
+  virtual std::optional<SmartBuffer> ReceiveDataAndReact(
       const SmartBuffer& message) = 0;
 };
 

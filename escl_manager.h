@@ -6,24 +6,24 @@
 #define ESCL_MANAGER_H__
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <base/containers/flat_map.h>
 #include <base/files/file_path.h>
-#include <base/optional.h>
 #include <base/time/time.h>
 #include <base/values.h>
 
 #include "http_util.h"
 
 struct SourceCapabilities {
-  base::Optional<int> max_width;
-  base::Optional<int> max_height;
+  std::optional<int> max_width;
+  std::optional<int> max_height;
   std::vector<std::string> color_modes;
   std::vector<std::string> formats;
   std::vector<int> resolutions;
-  base::Optional<std::string> x_justification;
+  std::optional<std::string> x_justification;
 };
 
 struct ScannerCapabilities {
@@ -34,10 +34,10 @@ struct ScannerCapabilities {
   // We require that a virtual scanner supports the Platen (flatbed) as an input
   // source, but supporting the Automatic Document Feeder (ADF) is optional.
   SourceCapabilities platen_capabilities;
-  base::Optional<SourceCapabilities> adf_capabilities;
+  std::optional<SourceCapabilities> adf_capabilities;
 };
 
-base::Optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
+std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
     const base::Value& config);
 
 // A particular region of a document to return in a scan.
@@ -115,7 +115,7 @@ struct JobInfo {
   // The number of remaining pages for the job.
   uint8_t num_remaining_pages;
   // The delay in providing the job's image, if applicable.
-  base::Optional<base::TimeDelta> delay;
+  std::optional<base::TimeDelta> delay;
 };
 
 struct ScannerStatus {

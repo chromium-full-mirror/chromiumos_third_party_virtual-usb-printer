@@ -7,9 +7,8 @@
 
 #include <stdint.h>
 
+#include <optional>
 #include <vector>
-
-#include <base/optional.h>
 
 #include "escl_manager.h"
 
@@ -22,7 +21,7 @@ std::vector<uint8_t> ScannerCapabilitiesAsXml(const ScannerCapabilities& caps);
 std::vector<uint8_t> ScannerStatusAsXml(const ScannerStatus& status);
 
 // Attempts to parse a ScanSettings object from its xml representation, |xml|.
-base::Optional<ScanSettings> ScanSettingsFromXml(
+std::optional<ScanSettings> ScanSettingsFromXml(
     const std::vector<uint8_t>& xml);
 
 #endif  // __XML_UTIL_H__

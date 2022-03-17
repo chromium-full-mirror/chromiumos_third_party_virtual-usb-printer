@@ -7,6 +7,7 @@
 #include <climits>
 #include <cstdio>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,7 @@ const size_t kMaxStringDescriptorSize = 126;
 
 uint8_t GetByteValue(const base::Value& dict, const std::string& path) {
   CHECK(dict.is_dict()) << "Printer config is not a dictionary";
-  base::Optional<int> val = dict.FindIntPath(path);
+  std::optional<int> val = dict.FindIntPath(path);
   CHECK(val.has_value()) << "Failed to extract path" << path
                          << " from printer config";
   CHECK_LE(*val, UCHAR_MAX)
@@ -40,7 +41,7 @@ uint8_t GetByteValue(const base::Value& dict, const std::string& path) {
 
 uint16_t GetWordValue(const base::Value& dict, const std::string& path) {
   CHECK(dict.is_dict()) << "Printer config is not a dictionary";
-  base::Optional<int> val = dict.FindIntPath(path);
+  std::optional<int> val = dict.FindIntPath(path);
   CHECK(val.has_value()) << "Failed to extract path " << path
                          << " from printer config";
   CHECK_LE(*val, USHRT_MAX)

@@ -5,6 +5,7 @@
 #include "mock_printer.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -40,18 +41,18 @@ class MockPrinterImpl : public MockPrinter {
 
   ~MockPrinterImpl() override = default;
 
-  base::Optional<SmartBuffer> ReceiveDataAndReact(
+  std::optional<SmartBuffer> ReceiveDataAndReact(
       const SmartBuffer& message) override {
     if (test_case_holder_->TestCaseFinished()) {
       LOG(ERROR) << "Received unexpected message; test case is finished";
       LOG(ERROR) << "`TestCaseError()`: " << test_case_holder_->TestCaseError();
-      return base::nullopt;
+      return std::nullopt;
     }
 
     if (!server_.ReadRequestFrameFrom(message.contents())) {
       LOG(ERROR) << "BUG: failed to read inbound message";
       JoinServerLogs().LogError();
-      return base::nullopt;
+      return std::nullopt;
     }
     JoinServerLogs().Vlog(2, "`server_` logs after `ReadRequestFrameFrom()`:");
 
@@ -60,7 +61,7 @@ class MockPrinterImpl : public MockPrinter {
     if (!server_.ParseRequestAndSaveTo(request.get())) {
       LOG(ERROR) << "BUG: failed to parse inbound message";
       JoinServerLogs().LogError();
-      return base::nullopt;
+      return std::nullopt;
     }
     JoinServerLogs().Vlog(2, "`server_` logs after `ParseRequestAndSaveTo()`:");
 
@@ -72,7 +73,7 @@ class MockPrinterImpl : public MockPrinter {
   // Helper function for `ReceiveDataAndReact()`; given a well-formed
   // input `request`, tries to make progress on the test case, returning
   // the appropriate response.
-  base::Optional<SmartBuffer> ProgressAndReact(const InputMessage& request) {
+  std::optional<SmartBuffer> ProgressAndReact(const InputMessage& request) {
     const mocking::Response* mock_response =
         test_case_holder_->Progress(request);
     if (!mock_response) {
@@ -80,7 +81,7 @@ class MockPrinterImpl : public MockPrinter {
       LOG(ERROR) << "`TestCaseError()`: " << test_case_holder_->TestCaseError();
       ToString(*std::get_if<const ipp::Request*>(&request))
           .LogError("last received `ipp::Request`:");
-      return base::nullopt;
+      return std::nullopt;
     }
 
     std::unique_ptr<ipp::Response> response =
@@ -91,7 +92,7 @@ class MockPrinterImpl : public MockPrinter {
     if (!server_.WriteResponseFrameTo(&response_buffer)) {
       LOG(ERROR) << "`WriteResponseFrameTo()` failed";
       JoinServerLogs().LogError();
-      return base::nullopt;
+      return std::nullopt;
     }
 
     VLOG(1) << "Sending response.";

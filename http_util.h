@@ -5,10 +5,10 @@
 #ifndef __HTTP_UTIL_H__
 #define __HTTP_UTIL_H__
 
+#include <optional>
 #include <string>
 
 #include <base/containers/flat_map.h>
-#include <base/optional.h>
 
 #include "smart_buffer.h"
 
@@ -18,7 +18,7 @@ class HttpRequest {
   // Attempts to parse an HttpRequest from the beginning of |message|.
   // If successful, remove the header from |message|, so that it contains only
   // the body of the http request.
-  static base::Optional<HttpRequest> Deserialize(SmartBuffer* message);
+  static std::optional<HttpRequest> Deserialize(SmartBuffer* message);
 
   // Returns true if this header contains a request header indicating a chunked
   // transfer encoding.

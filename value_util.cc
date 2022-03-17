@@ -4,16 +4,16 @@
 
 #include "value_util.h"
 
+#include <optional>
 #include <utility>
 
 #include <base/check.h>
 #include <base/files/file_path.h>
 #include <base/files/file_util.h>
 #include <base/json/json_reader.h>
-#include <base/optional.h>
 #include <base/values.h>
 
-base::Optional<std::string> GetJSONContents(const std::string& file_path) {
+std::optional<std::string> GetJSONContents(const std::string& file_path) {
   std::string json_contents;
   const base::FilePath path(file_path);
   if (!base::ReadFileToString(path, &json_contents)) {
@@ -22,8 +22,8 @@ base::Optional<std::string> GetJSONContents(const std::string& file_path) {
   return json_contents;
 }
 
-base::Optional<base::Value> GetJSONValue(const std::string& json_contents) {
-  base::Optional<base::Value> value = base::JSONReader::Read(json_contents);
+std::optional<base::Value> GetJSONValue(const std::string& json_contents) {
+  std::optional<base::Value> value = base::JSONReader::Read(json_contents);
   CHECK(value) << "Failed to parse JSON string";
   return value;
 }

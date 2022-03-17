@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <map>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -14,7 +15,6 @@
 #include <base/check_op.h>
 #include <base/logging.h>
 #include <base/notreached.h>
-#include <base/optional.h>
 
 #include <jerror.h>
 #include <jpeglib.h>
@@ -158,7 +158,7 @@ bool SetJpegCompressFields(const ScanSettings& settings,
 
 }  // namespace
 
-base::Optional<std::vector<uint8_t>> GenerateJpegFromScanSettings(
+std::optional<std::vector<uint8_t>> GenerateJpegFromScanSettings(
     const ScanSettings& settings) {
   // Allocate and initialize libjpeg objects.
   jpeg_compress_struct cinfo;
@@ -174,7 +174,7 @@ base::Optional<std::vector<uint8_t>> GenerateJpegFromScanSettings(
   jpeg_mem_dest(&cinfo, &jpeg_buffer, &jpeg_size);
 
   if (!SetJpegCompressFields(settings, &cinfo))
-    return base::nullopt;
+    return std::nullopt;
 
   jpeg_set_defaults(&cinfo);
   jpeg_set_quality(&cinfo, 100, TRUE);

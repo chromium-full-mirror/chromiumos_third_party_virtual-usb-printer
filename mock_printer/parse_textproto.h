@@ -5,9 +5,8 @@
 #ifndef MOCK_PRINTER_PARSE_TEXTPROTO_H_
 #define MOCK_PRINTER_PARSE_TEXTPROTO_H_
 
+#include <optional>
 #include <string>
-
-#include <base/optional.h>
 
 #include "mock_printer/proto/control_flow.pb.h"
 #include "mock_printer/proto/ipp.pb.h"
@@ -15,8 +14,8 @@
 namespace mock_printer {
 
 // Returns a `mocking::TestCase` parsed from `textproto`. Returns
-// base::nullopt if parsing fails.
-base::Optional<mocking::TestCase> ParseTestCase(const std::string& textproto);
+// std::nullopt if parsing fails.
+std::optional<mocking::TestCase> ParseTestCase(const std::string& textproto);
 
 // Returns a `mocking::TestCase` parsed from `textproto`. Aborts
 // the program if parsing fails.

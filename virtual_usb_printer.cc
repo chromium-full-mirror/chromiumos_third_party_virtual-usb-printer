@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -14,7 +15,6 @@
 #include <base/json/json_reader.h>
 #include <base/check.h>
 #include <base/logging.h>
-#include <base/optional.h>
 #include <base/strings/stringprintf.h>
 #include <base/values.h>
 #include <brillo/flag_helper.h>
@@ -65,7 +65,7 @@ UsbDescriptors CreateUsbDescriptors(const base::Value& printer_config) {
 // Attempts to initialize an EsclManager.
 // Parses |capabilities_path| into a JSON object in order to do so, returning
 // nullopt if that parsing fails.
-base::Optional<EsclManager> InitializeEsclManager(
+std::optional<EsclManager> InitializeEsclManager(
     const std::string& capabilities_path, base::FilePath log_dir) {
   if (capabilities_path.empty()) {
     return EsclManager();
@@ -75,21 +75,21 @@ base::Optional<EsclManager> InitializeEsclManager(
   if (!base::ReadFileToString(base::FilePath(capabilities_path),
                               &capabilities_string)) {
     LOG(ERROR) << "Failed to read " << capabilities_path;
-    return base::nullopt;
+    return std::nullopt;
   }
 
-  base::Optional<base::Value> capabilities_json =
+  std::optional<base::Value> capabilities_json =
       base::JSONReader::Read(capabilities_string);
   if (!capabilities_json) {
     LOG(ERROR) << "Failed to parse capabilities as JSON";
-    return base::nullopt;
+    return std::nullopt;
   }
 
-  base::Optional<ScannerCapabilities> capabilities =
+  std::optional<ScannerCapabilities> capabilities =
       CreateScannerCapabilitiesFromConfig(*capabilities_json);
   if (!capabilities) {
     LOG(ERROR) << "Failed to initialize ScannerCapabilities";
-    return base::nullopt;
+    return std::nullopt;
   }
 
   return EsclManager(std::move(capabilities.value()), log_dir);
@@ -107,7 +107,7 @@ std::unique_ptr<mock_printer::MockPrinter> InitializeMockPrinter(
     return nullptr;
   }
 
-  base::Optional<mocking::TestCase> script =
+  std::optional<mocking::TestCase> script =
       mock_printer::ParseTestCase(textproto);
   if (!script.has_value()) {
     LOG(ERROR) << "Failed to parse `mocking::TestCase` from " << script_path;
@@ -139,14 +139,14 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  base::Optional<std::string> descriptors_contents =
+  std::optional<std::string> descriptors_contents =
       GetJSONContents(FLAGS_descriptors_path);
   if (!descriptors_contents.has_value()) {
     LOG(ERROR) << "Failed to load file contents for " << FLAGS_descriptors_path;
     return 1;
   }
 
-  base::Optional<base::Value> descriptors =
+  std::optional<base::Value> descriptors =
       base::JSONReader::Read(*descriptors_contents);
   if (!descriptors) {
     LOG(ERROR) << "Failed to parse " << FLAGS_descriptors_path;
@@ -173,9 +173,9 @@ int main(int argc, char* argv[]) {
 
   IppManager ipp_manager;
   // Load ipp attributes if |FLAGS_attributes_path| is set.
-  base::Optional<base::Value> result;
+  std::optional<base::Value> result;
   if (!FLAGS_attributes_path.empty()) {
-    base::Optional<std::string> attributes_contents =
+    std::optional<std::string> attributes_contents =
         GetJSONContents(FLAGS_attributes_path);
     if (!attributes_contents.has_value()) {
       LOG(ERROR) << "Failed to load file contents for "
@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
     log_dir = base::FilePath();
   }
 
-  base::Optional<EsclManager> escl_manager =
+  std::optional<EsclManager> escl_manager =
       InitializeEsclManager(FLAGS_scanner_capabilities_path, log_dir);
   if (!escl_manager.has_value())
     return 1;

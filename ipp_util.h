@@ -6,6 +6,7 @@
 #define IPP_UTIL_H__
 
 #include <cstring>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -96,7 +97,7 @@ class IppHeader {
   // If successful, removes the header from |message|, so that it contains only
   // the body of the ipp request.
   // If unsuccessful, does not modify |message|.
-  static base::Optional<IppHeader> Deserialize(SmartBuffer* message);
+  static std::optional<IppHeader> Deserialize(SmartBuffer* message);
 
   // Append this IppHeader to |buf|.
   void Serialize(SmartBuffer* buf);

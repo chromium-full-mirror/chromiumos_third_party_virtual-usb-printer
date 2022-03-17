@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -263,7 +264,7 @@ class JpegUtilsTest : public testing::Test,
 // that the image has the correct number of pixels, and that 99% or more of each
 // pixel in 99% or more of each row is approximately the correct value.
 TEST_P(JpegUtilsTest, GenerateJpegFromScanSettings) {
-  base::Optional<std::vector<uint8_t>> jpeg =
+  std::optional<std::vector<uint8_t>> jpeg =
       GenerateJpegFromScanSettings(settings());
   ASSERT_TRUE(jpeg.has_value());
   std::vector<std::vector<uint8_t>> bitmap = GetBitmapFromJpeg(jpeg.value());

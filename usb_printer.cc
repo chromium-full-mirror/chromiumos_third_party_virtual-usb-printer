@@ -13,12 +13,12 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include <base/check.h>
 #include <base/check_op.h>
 #include <base/logging.h>
-#include <base/optional.h>
 #include <base/strings/string_util.h>
 
 #include "ipp_util.h"
@@ -88,14 +88,14 @@ bool InterfaceManager::QueueEmpty() const {
   return queue_.empty();
 }
 
-base::Optional<SmartBuffer> InterfaceManager::AddMessageAndReturnIfComplete(
+std::optional<SmartBuffer> InterfaceManager::AddMessageAndReturnIfComplete(
     const SmartBuffer& message) {
   message_.Add(message);
   const bool complete =
       receiving_chunked_ ? ContainsFinalChunk(message)
                          : message_.size() == request_header_.ContentLength();
   if (!complete) {
-    return base::nullopt;
+    return std::nullopt;
   }
 
   SmartBuffer payload;
@@ -232,7 +232,7 @@ void UsbPrinter::HandleHttpData(const UsbipCmdSubmit& usb_request,
   if (!im->receiving_message()) {
     // If we're not currently receiving, |message| must be the start of a new
     // HTTP message. Parse the header and setup some fields to track state.
-    base::Optional<HttpRequest> opt_request = HttpRequest::Deserialize(message);
+    std::optional<HttpRequest> opt_request = HttpRequest::Deserialize(message);
     if (!opt_request.has_value()) {
       LOG(ERROR) << "Incoming message is not valid HTTP; ignoring";
       return;
@@ -243,7 +243,7 @@ void UsbPrinter::HandleHttpData(const UsbipCmdSubmit& usb_request,
     im->set_receiving_chunked(request.IsChunkedMessage());
   }
 
-  base::Optional<SmartBuffer> payload =
+  std::optional<SmartBuffer> payload =
       im->AddMessageAndReturnIfComplete(*message);
   if (!payload.has_value()) {
     return;
@@ -336,7 +336,7 @@ HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
 
 HttpResponse UsbPrinter::GenerateHttpResponseFromIppManager(SmartBuffer* body) {
   HttpResponse response;
-  base::Optional<IppHeader> ipp_header = IppHeader::Deserialize(body);
+  std::optional<IppHeader> ipp_header = IppHeader::Deserialize(body);
   if (!ipp_header) {
     LOG(ERROR) << "Request does not contain a valid IPP header.";
     response.status = "415 Unsupported Media Type";
@@ -356,8 +356,7 @@ HttpResponse UsbPrinter::GenerateHttpResponseFromIppManager(SmartBuffer* body) {
 HttpResponse UsbPrinter::GenerateHttpResponseFromMockPrinter(
     SmartBuffer* body) {
   HttpResponse response;
-  base::Optional<SmartBuffer> buffer =
-      mock_printer_->ReceiveDataAndReact(*body);
+  std::optional<SmartBuffer> buffer = mock_printer_->ReceiveDataAndReact(*body);
   if (!buffer.has_value()) {
     LOG(ERROR) << "No response from mock printer.";
     response.status = "500 Internal Server Error";

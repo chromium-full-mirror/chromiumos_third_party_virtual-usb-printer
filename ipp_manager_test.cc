@@ -4,6 +4,7 @@
 
 #include "ipp_manager.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -83,7 +84,7 @@ TEST_F(IppManagerTest, HandleValidateJob) {
   header.operation_id = IPP_VALIDATE_JOB;
 
   SmartBuffer response = ipp_manager_.HandleIppRequest(header, SmartBuffer());
-  base::Optional<IppHeader> response_header = IppHeader::Deserialize(&response);
+  std::optional<IppHeader> response_header = IppHeader::Deserialize(&response);
   EXPECT_TRUE(response_header);
   EXPECT_EQ(response_header.value().operation_id, IppManager::kSuccessStatus);
 
@@ -98,7 +99,7 @@ TEST_F(IppManagerTest, HandleCreateJob) {
   header.operation_id = IPP_CREATE_JOB;
 
   SmartBuffer response = ipp_manager_.HandleIppRequest(header, SmartBuffer());
-  base::Optional<IppHeader> response_header = IppHeader::Deserialize(&response);
+  std::optional<IppHeader> response_header = IppHeader::Deserialize(&response);
   EXPECT_TRUE(response_header);
   EXPECT_EQ(response_header.value().operation_id, IppManager::kSuccessStatus);
 
@@ -114,7 +115,7 @@ TEST_F(IppManagerTest, HandleSendDocument) {
   header.operation_id = IPP_SEND_DOCUMENT;
 
   SmartBuffer response = ipp_manager_.HandleIppRequest(header, SmartBuffer());
-  base::Optional<IppHeader> response_header = IppHeader::Deserialize(&response);
+  std::optional<IppHeader> response_header = IppHeader::Deserialize(&response);
   EXPECT_TRUE(response_header);
   EXPECT_EQ(response_header.value().operation_id, IppManager::kSuccessStatus);
 
@@ -130,7 +131,7 @@ TEST_F(IppManagerTest, HandleGetJobAttributes) {
   header.operation_id = IPP_GET_JOB_ATTRIBUTES;
 
   SmartBuffer response = ipp_manager_.HandleIppRequest(header, SmartBuffer());
-  base::Optional<IppHeader> response_header = IppHeader::Deserialize(&response);
+  std::optional<IppHeader> response_header = IppHeader::Deserialize(&response);
   EXPECT_TRUE(response_header);
   EXPECT_EQ(response_header.value().operation_id, IppManager::kSuccessStatus);
 
@@ -146,7 +147,7 @@ TEST_F(IppManagerTest, HandleGetPrinterAttributes) {
   header.operation_id = IPP_GET_PRINTER_ATTRIBUTES;
 
   SmartBuffer response = ipp_manager_.HandleIppRequest(header, SmartBuffer());
-  base::Optional<IppHeader> response_header = IppHeader::Deserialize(&response);
+  std::optional<IppHeader> response_header = IppHeader::Deserialize(&response);
   EXPECT_TRUE(response_header);
   EXPECT_EQ(response_header.value().operation_id, IppManager::kSuccessStatus);
 

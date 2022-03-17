@@ -4,6 +4,7 @@
 
 #include "parse_textproto.h"
 
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -11,23 +12,22 @@
 
 #include <base/check.h>
 #include <base/logging.h>
-#include <base/optional.h>
 
 #include "mock_printer/proto/control_flow.pb.h"
 #include "mock_printer/proto/ipp.pb.h"
 
 namespace mock_printer {
 
-base::Optional<mocking::TestCase> ParseTestCase(const std::string& textproto) {
+std::optional<mocking::TestCase> ParseTestCase(const std::string& textproto) {
   mocking::TestCase parsed;
   if (!google::protobuf::TextFormat::ParseFromString(textproto, &parsed)) {
-    return base::nullopt;
+    return std::nullopt;
   }
   return parsed;
 }
 
 mocking::TestCase ParseTestCaseOrDie(const std::string& textproto) {
-  base::Optional<mocking::TestCase> result = ParseTestCase(textproto);
+  std::optional<mocking::TestCase> result = ParseTestCase(textproto);
   CHECK(result.has_value()) << "failed to parse `mocking::TestCase`";
   return std::move(result.value());
 }

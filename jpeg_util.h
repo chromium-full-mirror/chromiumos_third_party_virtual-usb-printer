@@ -6,13 +6,12 @@
 #define JPEG_UTIL_H_
 
 #include <cstdint>
+#include <optional>
 #include <vector>
-
-#include <base/optional.h>
 
 #include "escl_manager.h"
 
-// Generates a JPEG image from `settings`. Returns base::nullopt if `settings`
+// Generates a JPEG image from `settings`. Returns std::nullopt if `settings`
 // cannot be parsed, which implies the scan region's units were unknown. The
 // generated image will be four equal quadrants, whose values depend on the
 // request color mode:
@@ -28,7 +27,7 @@
 // RGB:
 // Blue - Green
 // Red - Yellow
-base::Optional<std::vector<uint8_t>> GenerateJpegFromScanSettings(
+std::optional<std::vector<uint8_t>> GenerateJpegFromScanSettings(
     const ScanSettings& settings);
 
 #endif  // JPEG_UTIL_H_

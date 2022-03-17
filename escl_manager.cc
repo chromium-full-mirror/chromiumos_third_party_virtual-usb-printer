@@ -4,6 +4,7 @@
 
 #include "escl_manager.h"
 
+#include <optional>
 #include <utility>
 
 #include <base/containers/contains.h>
@@ -21,97 +22,97 @@
 
 namespace {
 
-base::Optional<std::vector<std::string>> ExtractStringList(
+std::optional<std::vector<std::string>> ExtractStringList(
     const base::Value& root, const std::string& config_name) {
   const base::Value* value =
       root.FindKeyOfType(config_name, base::Value::Type::LIST);
   if (!value) {
     LOG(ERROR) << "Config is missing " << config_name << " settings";
-    return base::nullopt;
+    return std::nullopt;
   }
   std::vector<std::string> config_list;
   for (const base::Value& v : value->GetList()) {
     if (!v.is_string()) {
       LOG(ERROR) << config_name << " value expected string, not " << v.type();
-      return base::nullopt;
+      return std::nullopt;
     }
     config_list.push_back(v.GetString());
   }
   return config_list;
 }
 
-base::Optional<std::vector<int>> ExtractIntList(
-    const base::Value& root, const std::string& config_name) {
+std::optional<std::vector<int>> ExtractIntList(const base::Value& root,
+                                               const std::string& config_name) {
   const base::Value* value =
       root.FindKeyOfType(config_name, base::Value::Type::LIST);
   if (!value) {
     LOG(ERROR) << "Config is missing " << config_name << " settings";
-    return base::nullopt;
+    return std::nullopt;
   }
   std::vector<int> config_list;
   for (const base::Value& v : value->GetList()) {
     if (!v.is_int()) {
       LOG(ERROR) << config_name << " value expected int, not " << v.type();
-      return base::nullopt;
+      return std::nullopt;
     }
     config_list.push_back(v.GetInt());
   }
   return config_list;
 }
 
-base::Optional<std::string> ExtractString(const base::Value& root,
-                                          const std::string& config_name) {
+std::optional<std::string> ExtractString(const base::Value& root,
+                                         const std::string& config_name) {
   const base::Value* value =
       root.FindKeyOfType(config_name, base::Value::Type::STRING);
   if (!value) {
     LOG(ERROR) << "Config is missing " << config_name << " setting";
-    return base::nullopt;
+    return std::nullopt;
   }
   return value->GetString();
 }
 
-base::Optional<int> ExtractInt(const base::Value& root,
-                               const std::string& config_name) {
+std::optional<int> ExtractInt(const base::Value& root,
+                              const std::string& config_name) {
   const base::Value* value =
       root.FindKeyOfType(config_name, base::Value::Type::INTEGER);
   if (!value) {
-    return base::nullopt;
+    return std::nullopt;
   }
   return value->GetInt();
 }
 
-base::Optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
+std::optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
     const base::Value& config) {
   if (!config.is_dict()) {
     LOG(ERROR) << "Cannot initialize SourceCapabilities from non-dict value";
-    return base::nullopt;
+    return std::nullopt;
   }
 
   SourceCapabilities result;
   result.max_width = ExtractInt(config, "MaxWidth");
   result.max_height = ExtractInt(config, "MaxHeight");
 
-  base::Optional<std::vector<std::string>> color_modes =
+  std::optional<std::vector<std::string>> color_modes =
       ExtractStringList(config, "ColorModes");
   if (!color_modes) {
     LOG(ERROR) << "Could not find valid ColorModes config";
-    return base::nullopt;
+    return std::nullopt;
   }
   result.color_modes = color_modes.value();
 
-  base::Optional<std::vector<std::string>> formats =
+  std::optional<std::vector<std::string>> formats =
       ExtractStringList(config, "DocumentFormats");
   if (!formats) {
     LOG(ERROR) << "Could not find valid DocumentFormats config";
-    return base::nullopt;
+    return std::nullopt;
   }
   result.formats = formats.value();
 
-  base::Optional<std::vector<int>> resolutions =
+  std::optional<std::vector<int>> resolutions =
       ExtractIntList(config, "Resolutions");
   if (!resolutions) {
     LOG(ERROR) << "Could not find valid Resolutions config";
-    return base::nullopt;
+    return std::nullopt;
   }
   result.resolutions = resolutions.value();
 
@@ -182,7 +183,7 @@ uint8_t GetTotalPagesForJob(const ScanSettings& settings) {
   return 1;
 }
 
-base::Optional<base::TimeDelta> GetDelayForJob(const ScanSettings& settings) {
+std::optional<base::TimeDelta> GetDelayForJob(const ScanSettings& settings) {
   // The only scan job which sends a delayed response is a Platen scan which is
   // color and 100 dpi.
   if (settings.input_source == "Platen" && settings.color_mode == kRGB &&
@@ -190,16 +191,16 @@ base::Optional<base::TimeDelta> GetDelayForJob(const ScanSettings& settings) {
     return base::Seconds(45);
   }
 
-  return base::nullopt;
+  return std::nullopt;
 }
 
 }  // namespace
 
-base::Optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
+std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
     const base::Value& config) {
   if (!config.is_dict()) {
     LOG(ERROR) << "Cannot initialize ScannerCapabilities from non-dict value";
-    return base::nullopt;
+    return std::nullopt;
   }
 
   ScannerCapabilities result;
@@ -207,38 +208,38 @@ base::Optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
   value = config.FindKeyOfType("MakeAndModel", base::Value::Type::STRING);
   if (!value) {
     LOG(ERROR) << "Config is missing MakeAndModel setting";
-    return base::nullopt;
+    return std::nullopt;
   }
   result.make_and_model = value->GetString();
 
   value = config.FindKeyOfType("SerialNumber", base::Value::Type::STRING);
   if (!value) {
     LOG(ERROR) << "Config is missing SerialNumber setting";
-    return base::nullopt;
+    return std::nullopt;
   }
   result.serial_number = value->GetString();
 
   value = config.FindKeyOfType("Platen", base::Value::Type::DICTIONARY);
   if (!value) {
     LOG(ERROR) << "Config is missing Platen source capabilities";
-    return base::nullopt;
+    return std::nullopt;
   }
 
-  base::Optional<SourceCapabilities> platen_capabilities =
+  std::optional<SourceCapabilities> platen_capabilities =
       CreateSourceCapabilitiesFromConfig(*value);
   if (!platen_capabilities) {
     LOG(ERROR) << "Parsing Platen capabilities failed";
-    return base::nullopt;
+    return std::nullopt;
   }
   result.platen_capabilities = platen_capabilities.value();
 
   value = config.FindKeyOfType("ADF", base::Value::Type::DICTIONARY);
   if (value) {
-    base::Optional<SourceCapabilities> adf_capabilities =
+    std::optional<SourceCapabilities> adf_capabilities =
         CreateSourceCapabilitiesFromConfig(*value);
     if (!adf_capabilities) {
       LOG(ERROR) << "Parsing ADF capabilities failed";
-      return base::nullopt;
+      return std::nullopt;
     }
     result.adf_capabilities = adf_capabilities;
   }
@@ -302,7 +303,7 @@ HttpResponse EsclManager::HandleEsclRequest(const HttpRequest& request,
 HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
   HttpResponse response;
 
-  base::Optional<ScanSettings> settings_opt =
+  std::optional<ScanSettings> settings_opt =
       ScanSettingsFromXml(request_body.contents());
   if (!settings_opt) {
     LOG(ERROR) << "Could not parse ScanSettings from request body";
@@ -417,7 +418,7 @@ HttpResponse EsclManager::HandleGetNextDocument(const std::string& uri) {
       status_.jobs[uuid].num_remaining_pages--;
       if (status_.jobs[uuid].num_remaining_pages == 0)
         status_.jobs[uuid].state = kCompleted;
-      base::Optional<std::vector<uint8_t>> image =
+      std::optional<std::vector<uint8_t>> image =
           GenerateJpegFromScanSettings(info.settings);
       if (!image.has_value()) {
         LOG(ERROR) << "Failed to generate image, sending error response.";

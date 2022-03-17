@@ -4,6 +4,7 @@
 
 #include "escl_manager.h"
 
+#include <optional>
 #include <utility>
 
 #include <base/files/scoped_temp_dir.h>
@@ -128,7 +129,7 @@ std::string GetCapLogStr() {
 }  // namespace
 
 TEST(ScannerCapabilities, Initialize) {
-  base::Optional<ScannerCapabilities> opt_caps =
+  std::optional<ScannerCapabilities> opt_caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(opt_caps);
 
@@ -254,7 +255,7 @@ void HasPathWithContents(xmlDoc* doc,
 }
 
 TEST(ScannerCapabilities, AsXml) {
-  base::Optional<ScannerCapabilities> caps =
+  std::optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   std::vector<uint8_t> xml = ScannerCapabilitiesAsXml(caps.value());
@@ -362,7 +363,7 @@ TEST(ScannerCapabilities, AsXml) {
 // Test that we can properly parse a ScanSettings document.
 TEST(ScanSettings, Parse) {
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
-  base::Optional<ScanSettings> opt_settings = ScanSettingsFromXml(xml);
+  std::optional<ScanSettings> opt_settings = ScanSettingsFromXml(xml);
   EXPECT_TRUE(opt_settings);
   ScanSettings settings = opt_settings.value();
   EXPECT_EQ(settings.document_format, "application/pdf");
@@ -400,7 +401,7 @@ TEST(HandleEsclRequest, ScannerCapabilities) {
   request.method = "GET";
   request.uri = "/eSCL/ScannerCapabilities";
 
-  base::Optional<ScannerCapabilities> caps =
+  std::optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
@@ -441,7 +442,7 @@ TEST(HandleEsclRequest, ScanJobs) {
   request.method = "POST";
   request.uri = "/eSCL/ScanJobs";
 
-  base::Optional<ScannerCapabilities> caps =
+  std::optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
@@ -462,7 +463,7 @@ TEST(HandleEsclRequest, InvalidScanJobs) {
     auto* value = json.FindPath("Platen.DocumentFormats");
     value->EraseListIter(value->GetList().end() - 1);
   }
-  base::Optional<ScannerCapabilities> caps =
+  std::optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(std::move(json));
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
@@ -478,7 +479,7 @@ TEST(HandleEsclRequest, DeleteExistingScanJob) {
   request.method = "POST";
   request.uri = "/eSCL/ScanJobs";
 
-  base::Optional<ScannerCapabilities> caps =
+  std::optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
@@ -516,7 +517,7 @@ TEST(HandleEsclRequest, ScanJobsLogFileProvided) {
   request.method = "POST";
   request.uri = "/eSCL/ScanJobs";
 
-  base::Optional<ScannerCapabilities> caps =
+  std::optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   base::ScopedTempDir temp_dir;

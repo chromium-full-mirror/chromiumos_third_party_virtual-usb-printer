@@ -7,13 +7,13 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <queue>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <base/files/file.h>
 #include <base/files/file_path.h>
-#include <base/optional.h>
 
 #include "device_descriptors.h"
 #include "escl_manager.h"
@@ -43,7 +43,7 @@ class InterfaceManager {
 
   // Having just received some HTTP data, returns the message if
   // it is complete; returns nullopt otherwise.
-  base::Optional<SmartBuffer> AddMessageAndReturnIfComplete(
+  std::optional<SmartBuffer> AddMessageAndReturnIfComplete(
       const SmartBuffer& message);
 
   bool receiving_message() const { return receiving_message_; }
