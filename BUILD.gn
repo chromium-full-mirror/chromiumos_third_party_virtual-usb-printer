@@ -34,7 +34,6 @@ executable("virtual-usb-printer") {
     "cups_constants.cc",
     "device_descriptors.cc",
     "escl_manager.cc",
-    "http_util.cc",
     "ipp_manager.cc",
     "ipp_util.cc",
     "jpeg_util.cc",
@@ -49,11 +48,19 @@ executable("virtual-usb-printer") {
   ]
   configs += [ ":target_defaults" ]
   deps = [
+    ":http_util",
     ":smart_buffer",
     "//virtual-usb-printer/mock_printer:implementation",
     "//virtual-usb-printer/mock_printer:mocking_protos",
     "//virtual-usb-printer/mock_printer:parse_textproto",
   ]
+}
+
+source_set("http_util") {
+  public = [ "http_util.h" ]
+  sources = [ "http_util.cc" ]
+  configs += [ ":target_defaults" ]
+  deps = [ ":smart_buffer" ]
 }
 
 source_set("smart_buffer") {
@@ -88,7 +95,6 @@ if (use.test) {
 
   executable("http-util-testrunner") {
     sources = [
-      "http_util.cc",
       "http_util_test.cc",
       "value_util.cc",
     ]
@@ -100,6 +106,7 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
+      ":http_util",
       ":smart_buffer",
       "//common-mk/testrunner",
     ]
@@ -125,7 +132,6 @@ if (use.test) {
   executable("ipp-util-testrunner") {
     sources = [
       "cups_constants.cc",
-      "http_util.cc",
       "ipp_util.cc",
       "ipp_util_test.cc",
       "value_util.cc",
@@ -138,6 +144,7 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
+      ":http_util",
       ":smart_buffer",
       "//common-mk/testrunner",
     ]
