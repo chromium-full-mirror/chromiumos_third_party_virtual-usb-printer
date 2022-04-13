@@ -1,0 +1,20 @@
+// Copyright 2022 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can
+// be found in the LICENSE file.
+
+// These messages provide a Protobuf representation of HTTP messages.
+
+syntax = "proto3";
+
+package mocking;
+
+// Matches the properties of an HTTP message.
+message HttpProperties {
+  // Defined in RFC 7231, section 6.1.
+  enum StatusCode {
+    UNSPECIFIED = 0;
+    INTERNAL_SERVER_ERROR = 500;
+  }
+
+  StatusCode status_code = 1;
+}

@@ -12,6 +12,7 @@ syntax = "proto3";
 
 package mocking;
 
+import "http.proto";
 import "ipp.proto";
 
 // Describes which among a group of ExpectationWithResponses apply.
@@ -65,6 +66,9 @@ message Response {
   // Causes virtual-usb-printer to respond with the specified
   // IPP message.
   IppMessage ipp_response = 2;
+
+  // Causes virtual-usb-printer to respond with the specified HTTP properties.
+  HttpProperties http_properties = 3;
 }
 
 // An Expectation with an associated Response. Models the statement
