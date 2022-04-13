@@ -14,6 +14,7 @@ source_set("implementation") {
 
   deps = [
     ":libipp_helper",
+    ":proto_to_http",
     ":proto_to_libipp",
     ":test_case_holder",
     ":wrapped_matcher",
@@ -33,6 +34,7 @@ if (use.test) {
       "ipp_matching_test.cc",
       "ipp_matching_validation_test.cc",
       "libipp_helper_test.cc",
+      "proto_to_http_test.cc",
       "proto_to_libipp_test.cc",
       "wrapped_test_case_step_test.cc",
     ]
@@ -47,6 +49,7 @@ if (use.test) {
       ":ipp_matching_validation",
       ":libipp_helper",
       ":parse_textproto",
+      ":proto_to_http",
       ":proto_to_libipp",
       ":wrapped_test_case_step",
       "//common-mk/testrunner",
@@ -100,6 +103,13 @@ source_set("ipp_matching") {
   sources = [ "ipp_matching.cc" ]
   configs += [ ":target_defaults" ]
   public = [ "ipp_matching.h" ]
+  deps = [ ":mocking_protos" ]
+}
+
+source_set("proto_to_http") {
+  sources = [ "proto_to_http.cc" ]
+  configs += [ ":target_defaults" ]
+  public = [ "proto_to_http.h" ]
   deps = [ ":mocking_protos" ]
 }
 

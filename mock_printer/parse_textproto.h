@@ -9,6 +9,7 @@
 #include <string>
 
 #include "mock_printer/proto/control_flow.pb.h"
+#include "mock_printer/proto/http.pb.h"
 #include "mock_printer/proto/ipp.pb.h"
 
 namespace mock_printer {
@@ -23,6 +24,13 @@ std::optional<mocking::TestCase> ParseTestCase(const std::string& textproto);
 // This function is intended for use in unit tests where we don't ever
 // expect a bogus `mocking::TestCase` at all.
 mocking::TestCase ParseTestCaseOrDie(const std::string& textproto);
+
+// Returns a `mocking::HttpProperties` parsed from `textproto`. Aborts the
+// program if parsing fails.
+//
+// This function is intended for use in unit tests, since `virtual-usb-printer`
+// doesn't need to parse `mocking::HttpProperties` in isolation.
+mocking::HttpProperties ParseHttpPropertiesOrDie(const std::string& textproto);
 
 // Returns a `mocking::IppMessage` parsed from `textproto`. Aborts
 // the program if parsing fails.

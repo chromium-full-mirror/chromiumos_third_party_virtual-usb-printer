@@ -32,6 +32,13 @@ mocking::TestCase ParseTestCaseOrDie(const std::string& textproto) {
   return std::move(result.value());
 }
 
+mocking::HttpProperties ParseHttpPropertiesOrDie(const std::string& textproto) {
+  mocking::HttpProperties parsed;
+  CHECK(google::protobuf::TextFormat::ParseFromString(textproto, &parsed))
+      << "failed to parse `mocking::HttpProperties`";
+  return parsed;
+}
+
 mocking::IppMessage ParseIppMessageOrDie(const std::string& textproto) {
   mocking::IppMessage parsed;
   CHECK(google::protobuf::TextFormat::ParseFromString(textproto, &parsed))
