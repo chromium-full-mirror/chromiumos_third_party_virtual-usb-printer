@@ -321,7 +321,7 @@ HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
     if (!mock_printer_) {
       return GenerateHttpResponseFromIppManager(body);
     }
-    return GenerateHttpResponseFromMockPrinter(body);
+    return mock_printer_->GenerateHttpResponse(body);
   } else if (base::StartsWith(request.uri, "/eSCL",
                               base::CompareCase::SENSITIVE)) {
     return escl_manager_.HandleEsclRequest(request, *body);
@@ -350,22 +350,6 @@ HttpResponse UsbPrinter::GenerateHttpResponseFromIppManager(SmartBuffer* body) {
   response.status = "200 OK";
   response.headers["Content-Type"] = "application/ipp";
   response.body = ipp_manager_.HandleIppRequest(ipp_header.value(), *body);
-  return response;
-}
-
-HttpResponse UsbPrinter::GenerateHttpResponseFromMockPrinter(
-    SmartBuffer* body) {
-  HttpResponse response;
-  std::optional<SmartBuffer> buffer = mock_printer_->ReceiveDataAndReact(*body);
-  if (!buffer.has_value()) {
-    LOG(ERROR) << "No response from mock printer.";
-    response.status = "500 Internal Server Error";
-    return response;
-  }
-
-  response.status = "200 OK";
-  response.headers["Content-Type"] = "application/ipp";
-  response.body = buffer.value();
   return response;
 }
 

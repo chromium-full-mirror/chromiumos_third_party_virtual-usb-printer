@@ -15,8 +15,11 @@
 #include <chromeos/libipp/ipp_base.h>
 
 #include "libipp_helper.h"
+#include "mock_printer/proto/http.pb.h"
+#include "proto_to_http.h"
 #include "proto_to_libipp.h"
 #include "test_case_holder.h"
+#include "virtual-usb-printer/smart_buffer.h"
 #include "wrapped_matcher.h"
 
 namespace mock_printer {
@@ -41,18 +44,50 @@ class MockPrinterImpl : public MockPrinter {
 
   ~MockPrinterImpl() override = default;
 
-  std::optional<SmartBuffer> ReceiveDataAndReact(
-      const SmartBuffer& message) override {
+  HttpResponse GenerateHttpResponse(SmartBuffer* body) override {
+    HttpResponse http_response;
+    Response response = ReceiveDataAndReact(*body);
+    if (!response.smart_buffer.has_value()) {
+      LOG(ERROR) << "No smart buffer from mock printer.";
+      http_response.status = "500 Internal Server Error";
+      return http_response;
+    }
+
+    http_response.status = ToHttpStatus(response.http_properties);
+    http_response.headers["Content-Type"] = "application/ipp";
+    http_response.body = response.smart_buffer.value();
+    return http_response;
+  }
+
+ private:
+  // Structured format for the response of the mock printer's internal state
+  // machine.
+  struct Response {
+    // Formatted IPP response.
+    std::optional<SmartBuffer> smart_buffer;
+    // Used to construct the HTTP response enclosing the IPP response.
+    std::optional<mocking::HttpProperties> http_properties;
+  };
+
+  // Reads `message` and matches it against the contained test case, returning
+  // the appropriate response.
+  //
+  // Returns nullopt if no match was found.
+  //
+  // TODO(b/205199712): an optional `SmartBuffer` isn't enough to describe all
+  // the possible things we might want the mock printer to do (e.g. to stall
+  // indefinitely). We'll need to revisit this method to add functionality.
+  Response ReceiveDataAndReact(const SmartBuffer& message) {
     if (test_case_holder_->TestCaseFinished()) {
       LOG(ERROR) << "Received unexpected message; test case is finished";
       LOG(ERROR) << "`TestCaseError()`: " << test_case_holder_->TestCaseError();
-      return std::nullopt;
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
     }
 
     if (!server_.ReadRequestFrameFrom(message.contents())) {
       LOG(ERROR) << "BUG: failed to read inbound message";
       JoinServerLogs().LogError();
-      return std::nullopt;
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
     }
     JoinServerLogs().Vlog(2, "`server_` logs after `ReadRequestFrameFrom()`:");
 
@@ -61,7 +96,7 @@ class MockPrinterImpl : public MockPrinter {
     if (!server_.ParseRequestAndSaveTo(request.get())) {
       LOG(ERROR) << "BUG: failed to parse inbound message";
       JoinServerLogs().LogError();
-      return std::nullopt;
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
     }
     JoinServerLogs().Vlog(2, "`server_` logs after `ParseRequestAndSaveTo()`:");
 
@@ -69,11 +104,10 @@ class MockPrinterImpl : public MockPrinter {
     return ProgressAndReact(InputMessage(request.get()));
   }
 
- private:
   // Helper function for `ReceiveDataAndReact()`; given a well-formed
   // input `request`, tries to make progress on the test case, returning
   // the appropriate response.
-  std::optional<SmartBuffer> ProgressAndReact(const InputMessage& request) {
+  Response ProgressAndReact(const InputMessage& request) {
     const mocking::Response* mock_response =
         test_case_holder_->Progress(request);
     if (!mock_response) {
@@ -81,7 +115,7 @@ class MockPrinterImpl : public MockPrinter {
       LOG(ERROR) << "`TestCaseError()`: " << test_case_holder_->TestCaseError();
       ToString(*std::get_if<const ipp::Request*>(&request))
           .LogError("last received `ipp::Request`:");
-      return std::nullopt;
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
     }
 
     std::unique_ptr<ipp::Response> response =
@@ -92,11 +126,11 @@ class MockPrinterImpl : public MockPrinter {
     if (!server_.WriteResponseFrameTo(&response_buffer)) {
       LOG(ERROR) << "`WriteResponseFrameTo()` failed";
       JoinServerLogs().LogError();
-      return std::nullopt;
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
     }
 
     VLOG(1) << "Sending response.";
-    return SmartBuffer(response_buffer);
+    return {SmartBuffer(response_buffer), mock_response->http_properties()};
   }
 
   // Returns logs from `server_`.

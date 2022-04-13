@@ -210,12 +210,8 @@ class UsbPrinter {
                                     SmartBuffer* body);
 
   // Creates the response for `GenerateHttpResponse()` the "usual" way,
-  // using the IppManager class.
+  // using the IppManager class. The alternative is to use mock_printer.
   HttpResponse GenerateHttpResponseFromIppManager(SmartBuffer* body);
-
-  // Creates the response for `GenerateHttpResponse()` using the mock
-  // printer.
-  HttpResponse GenerateHttpResponseFromMockPrinter(SmartBuffer* body);
 
   void HandleGetStatus(int sockfd,
                        const UsbipCmdSubmit& usb_request,
