@@ -118,15 +118,18 @@ class MockPrinterImpl : public MockPrinter {
       return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
     }
 
+    std::vector<uint8_t> response_buffer;
     std::unique_ptr<ipp::Response> response =
         ToResponse(mock_response->ipp_response());
-    server_.BuildResponseFrom(response.get());
+    if (response) {
+      server_.BuildResponseFrom(response.get());
 
-    std::vector<uint8_t> response_buffer;
-    if (!server_.WriteResponseFrameTo(&response_buffer)) {
-      LOG(ERROR) << "`WriteResponseFrameTo()` failed";
-      JoinServerLogs().LogError();
-      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
+      if (!server_.WriteResponseFrameTo(&response_buffer)) {
+        LOG(ERROR) << "`WriteResponseFrameTo()` failed";
+        JoinServerLogs().LogError();
+        return {/*smart_buffer=*/std::nullopt,
+                /*http_properties=*/std::nullopt};
+      }
     }
 
     VLOG(1) << "Sending response.";
