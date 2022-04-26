@@ -204,7 +204,11 @@ std::unique_ptr<ipp::Response> ToResponse(
     const mocking::IppMessage& mock_response) {
   auto response = ipp::Response::NewResponse(
       static_cast<ipp::Operation>(mock_response.operation_id()));
-  CHECK(response) << "BUG: expected non-nullptr `ipp::Response`";
+  if (!response) {
+    // This happens when `mock_response` is unset, which is possible because it
+    // is an optional field.
+    return response;
+  }
 
   response->StatusCode() = static_cast<ipp::Status>(mock_response.status());
 
