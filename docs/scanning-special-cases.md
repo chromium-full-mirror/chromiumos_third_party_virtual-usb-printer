@@ -15,7 +15,13 @@ This behavior is triggered by the combination of:
 -   `color_mode`: `kGrayscale`
 -   `DPI`: `300`
 
-For scan jobs matching the above combination, two images will be generated for
+or:
+-   `input_source`: `Feeder`
+-   `color_mode`: `kRGB`
+-   `DPI`: `100`
+
+
+For scan jobs matching the above combinations, two images will be generated for
 the scan job instead of one.
 
 ## Delayed Response

@@ -173,10 +173,13 @@ std::string ColorModeAsString(ColorMode mode) {
 }
 
 uint8_t GetTotalPagesForJob(const ScanSettings& settings) {
-  // The only scan job which consists of multiple pages is an ADF scan which is
-  // grayscale and 300 dpi.
-  if (settings.input_source == "Feeder" && settings.color_mode == kGrayscale &&
-      settings.x_resolution == 300 && settings.y_resolution == 300) {
+  // Two scan jobs consist of multiple pages:
+  //   * ADF grayscale 300 dpi.
+  //   * ADF color 100 dpi.
+  if ((settings.input_source == "Feeder" && settings.color_mode == kGrayscale &&
+       settings.x_resolution == 300 && settings.y_resolution == 300) ||
+      (settings.input_source == "Feeder" && settings.color_mode == kRGB &&
+       settings.x_resolution == 100 && settings.y_resolution == 100)) {
     return 2;
   }
 
