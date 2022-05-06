@@ -30,17 +30,17 @@ TEST(ToStringTest, BasicGetPrinterAttributes) {
       ipp::GroupTag::unsupported_attributes, /*is_a_set=*/false);
   group->Resize(1);
   ipp::Collection* collection = group->GetCollection(0);
+  ipp::Attribute* range_attribute = collection->AddUnknownAttribute(
+      "home on the", /*is_a_set=*/false, ipp::AttrType::rangeOfInteger);
+  range_attribute->SetValue(ipp::RangeOfInteger(-9, 9001), 0);
+  ipp::Attribute* boolean_attribute = collection->AddUnknownAttribute(
+      "hark! a boolean", /*is_a_set=*/false, ipp::AttrType::boolean);
+  boolean_attribute->SetValue(1, 0);
   ipp::Attribute* set_attribute = collection->AddUnknownAttribute(
       "set of keywords", /*is_a_set=*/true, ipp::AttrType::keyword);
   set_attribute->SetValue("one", 0);
   set_attribute->SetValue("two", 1);
   set_attribute->SetValue("three", 2);
-  ipp::Attribute* boolean_attribute = collection->AddUnknownAttribute(
-      "hark! a boolean", /*is_a_set=*/false, ipp::AttrType::boolean);
-  boolean_attribute->SetValue(1, 0);
-  ipp::Attribute* range_attribute = collection->AddUnknownAttribute(
-      "home on the", /*is_a_set=*/false, ipp::AttrType::rangeOfInteger);
-  range_attribute->SetValue(ipp::RangeOfInteger(-9, 9001), 0);
 
   const MultilineLogHolder holder = ToString(request.get());
   EXPECT_EQ(base::JoinString(holder.lines, "\n"),
