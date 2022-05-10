@@ -4,6 +4,7 @@
 
 #include "smart_buffer.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
