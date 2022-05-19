@@ -32,11 +32,6 @@ std::unique_ptr<ipp::Request> GetPrinterAttributesRequest() {
   request->operation_attributes->attributes_charset.Set("utf-8");
   request->operation_attributes->attributes_natural_language.Set("en-US");
   request->operation_attributes->printer_uri.Set("ipps://hello-there");
-  request->operation_attributes->requesting_user_name.Set(
-      ipp::StringWithLanguage("general kenobi", "en-US"));
-  request->operation_attributes->requested_attributes.Set(
-      {"one", "two", "three"});
-  request->operation_attributes->document_format.Set("PWG Raster, maybe");
   return request;
 }
 
@@ -95,84 +90,11 @@ TEST(IppMatchingTest, GetPrinterAttributesMatches) {
           type: URI
           string_values { string_values { value: "ipps://hello-there" } }
         }
-        attributes {
-          name: "requesting-user-name"
-          type: NAME_WITH_LANGUAGE
-          string_values {
-            string_values { language: "en-US" value: "general kenobi" }
-          }
-        }
-        attributes {
-          name: "requested-attributes"
-          type: KEYWORD
-          string_values {
-            string_values { value: "one" }
-            string_values { value: "two" }
-            string_values { value: "three" }
-          }
-        }
-        attributes {
-          name: "document-format"
-          type: MIME_MEDIA_TYPE
-          string_values { string_values { value: "PWG Raster, maybe" } }
-        }
       }
     }
   )pb");
 
   EXPECT_TRUE(IppMessageMatches(request.get(), mock_request));
-}
-
-// The same test as `GetPrinterAttributesMatches`, but with the
-// `requesting-user-name` stripped of a language, causing a mismatch.
-TEST(IppMatchingTest, GetPrinterAttributesMatchesWithLanguageMismatch) {
-  const auto request = GetPrinterAttributesRequest();
-  const mocking::IppMessage mock_request = ParseIppMessageOrDie(R"pb(
-    # E_operations_supported::Get_Printer_Attributes
-    operation_id: 0x000b
-
-    groups {
-      tag: OPERATION_ATTRIBUTES
-      collections {
-        attributes {
-          name: "attributes-charset"
-          type: CHARSET
-          string_values { string_values { value: "utf-8" } }
-        }
-        attributes {
-          name: "attributes-natural-language"
-          type: NATURAL_LANGUAGE
-          string_values { string_values { value: "en-US" } }
-        }
-        attributes {
-          name: "printer-uri"
-          type: URI
-          string_values { string_values { value: "ipps://hello-there" } }
-        }
-        attributes {
-          name: "requesting-user-name"
-          type: NAME_WITH_LANGUAGE
-          string_values { string_values { value: "general kenobi" } }
-        }
-        attributes {
-          name: "requested-attributes"
-          type: KEYWORD
-          string_values {
-            string_values { value: "one" }
-            string_values { value: "two" }
-            string_values { value: "three" }
-          }
-        }
-        attributes {
-          name: "document-format"
-          type: MIME_MEDIA_TYPE
-          string_values { string_values { value: "PWG Raster, maybe" } }
-        }
-      }
-    }
-  )pb");
-
-  EXPECT_FALSE(IppMessageMatches(request.get(), mock_request));
 }
 
 // The same trivial test as `GetPrinterAttributesMatches`, but without
@@ -191,9 +113,6 @@ TEST(IppMatchingTest, MatchingNeedNotDependOnAttributeValues) {
         attributes { name: "attributes-charset" }
         attributes { name: "attributes-natural-language" }
         attributes { name: "printer-uri" }
-        attributes { name: "requesting-user-name" }
-        attributes { name: "requested-attributes" }
-        attributes { name: "document-format" }
       }
     }
   )pb");
@@ -216,9 +135,6 @@ TEST(IppMatchingTest, MatchingForbidsExtraIppAttributes) {
         attributes { name: "attributes-charset" }
         attributes { name: "attributes-natural-language" }
         attributes { name: "printer-uri" }
-        attributes { name: "requesting-user-name" }
-        attributes { name: "requested-attributes" }
-        attributes { name: "document-format" }
         attributes { name: "EXTRA-UNEXPECTED-ATTRIBUTE" }
       }
     }
@@ -242,10 +158,7 @@ TEST(IppMatchingTest, MatchingRequiresAllIppAttributes) {
       collections {
         attributes { name: "attributes-charset" }
         attributes { name: "attributes-natural-language" }
-        attributes { name: "printer-uri" }
-        attributes { name: "requesting-user-name" }
-        attributes { name: "requested-attributes" }
-        # the "document-format" attribute would go here.
+        # the "printer-uri" attribute would go here.
       }
     }
   )pb");
@@ -267,11 +180,8 @@ TEST(IppMatchingTest, MatchingDoesNotRequireOrderedIppAttributes) {
       tag: OPERATION_ATTRIBUTES
       collections {
         attributes { name: "printer-uri" }
-        attributes { name: "requesting-user-name" }
         attributes { name: "attributes-natural-language" }
-        attributes { name: "document-format" }
         attributes { name: "attributes-charset" }
-        attributes { name: "requested-attributes" }
       }
     }
   )pb");
@@ -301,11 +211,8 @@ TEST(IppMatchingTest, MatchingAttributesIsTypeSensitive) {
           # mismatch.
           type: INTEGER
         }
-        attributes { name: "requesting-user-name" }
         attributes { name: "attributes-natural-language" }
-        attributes { name: "document-format" }
         attributes { name: "attributes-charset" }
-        attributes { name: "requested-attributes" }
       }
     }
   )pb");
