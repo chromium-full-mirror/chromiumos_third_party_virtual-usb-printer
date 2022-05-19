@@ -23,11 +23,6 @@ TEST(ToStringTest, BasicGetPrinterAttributes) {
   request->operation_attributes->attributes_charset.Set("utf-8");
   request->operation_attributes->attributes_natural_language.Set("en-US");
   request->operation_attributes->printer_uri.Set("ipps://hello-there");
-  request->operation_attributes->requesting_user_name.Set(
-      ipp::StringWithLanguage("general kenobi", "en-US"));
-  request->operation_attributes->requested_attributes.Set(
-      {"one", "two", "three"});
-  request->operation_attributes->document_format.Set("PWG Raster, maybe");
 
   // Adds some extra unknown attributes of different types to exercise
   // some other codepaths outside of the string conversions.
@@ -35,6 +30,11 @@ TEST(ToStringTest, BasicGetPrinterAttributes) {
       ipp::GroupTag::unsupported_attributes, /*is_a_set=*/false);
   group->Resize(1);
   ipp::Collection* collection = group->GetCollection(0);
+  ipp::Attribute* set_attribute = collection->AddUnknownAttribute(
+      "set of keywords", /*is_a_set=*/true, ipp::AttrType::keyword);
+  set_attribute->SetValue("one", 0);
+  set_attribute->SetValue("two", 1);
+  set_attribute->SetValue("three", 2);
   ipp::Attribute* boolean_attribute = collection->AddUnknownAttribute(
       "hark! a boolean", /*is_a_set=*/false, ipp::AttrType::boolean);
   boolean_attribute->SetValue(1, 0);
@@ -46,27 +46,23 @@ TEST(ToStringTest, BasicGetPrinterAttributes) {
   EXPECT_EQ(base::JoinString(holder.lines, "\n"),
             R"(Request (operation ID: 0x000b; groups: 2)
   Group (tag: 0x0001; collections: 1)
-    Collection 0 (6 attributes)
+    Collection 0 (3 attributes)
       Attribute ``attributes-charset'' (charset, 1 values)
         utf-8
       Attribute ``attributes-natural-language'' (naturalLanguage, 1 values)
         en-US
       Attribute ``printer-uri'' (uri, 1 values)
         ipps://hello-there
-      Attribute ``requesting-user-name'' (name, 1 values)
-        general kenobi
-      Attribute ``requested-attributes'' (keyword, 3 values)
-        one
-        two
-        three
-      Attribute ``document-format'' (mimeMediaType, 1 values)
-        PWG Raster, maybe
   Group (tag: 0x0005; collections: 1)
-    Collection 0 (2 attributes)
+    Collection 0 (3 attributes)
       Attribute ``home on the'' (rangeOfInteger, 1 values)
         (-9:9001)
       Attribute ``hark! a boolean'' (boolean, 1 values)
-        true)");
+        true
+      Attribute ``set of keywords'' (keyword, 3 values)
+        one
+        two
+        three)");
 }
 
 }  // namespace
