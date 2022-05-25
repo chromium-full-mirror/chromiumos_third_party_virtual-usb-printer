@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -17,30 +17,22 @@ namespace {
 // Tests `ToString()` for basic functionality.
 TEST(ToStringTest, BasicGetPrinterAttributes) {
   // Creates a canned `get-printer-attributes` request.
-  auto request = std::make_unique<ipp::Request_Get_Printer_Attributes>();
+  auto request =
+      std::make_unique<ipp::Frame>(ipp::Operation::Get_Printer_Attributes);
 
   // Fills in a bunch of string values.
-  request->operation_attributes->attributes_charset.Set("utf-8");
-  request->operation_attributes->attributes_natural_language.Set("en-US");
-  request->operation_attributes->printer_uri.Set("ipps://hello-there");
+  request->GetGroup(ipp::GroupTag::operation_attributes)
+      ->AddAttr("printer-uri", ipp::ValueTag::uri, "ipps://hello-there");
 
   // Adds some extra unknown attributes of different types to exercise
   // some other codepaths outside of the string conversions.
-  ipp::Group* group = request->AddUnknownGroup(
-      ipp::GroupTag::unsupported_attributes, /*is_a_set=*/false);
-  group->Resize(1);
-  ipp::Collection* collection = group->GetCollection(0);
-  ipp::Attribute* range_attribute = collection->AddUnknownAttribute(
-      "home on the", /*is_a_set=*/false, ipp::AttrType::rangeOfInteger);
-  range_attribute->SetValue(ipp::RangeOfInteger(-9, 9001), 0);
-  ipp::Attribute* boolean_attribute = collection->AddUnknownAttribute(
-      "hark! a boolean", /*is_a_set=*/false, ipp::AttrType::boolean);
-  boolean_attribute->SetValue(1, 0);
-  ipp::Attribute* set_attribute = collection->AddUnknownAttribute(
-      "set of keywords", /*is_a_set=*/true, ipp::AttrType::keyword);
-  set_attribute->SetValue("one", 0);
-  set_attribute->SetValue("two", 1);
-  set_attribute->SetValue("three", 2);
+  ipp::Collection* collection;
+  request->AddGroup(ipp::GroupTag::unsupported_attributes, &collection);
+
+  collection->AddAttr("home on the", ipp::RangeOfInteger(-9, 9001));
+  collection->AddAttr("hark! a boolean", true);
+  collection->AddAttr("set of keywords", ipp::ValueTag::keyword,
+                      {"one", "two", "three"});
 
   const MultilineLogHolder holder = ToString(request.get());
   EXPECT_EQ(base::JoinString(holder.lines, "\n"),
@@ -50,7 +42,7 @@ TEST(ToStringTest, BasicGetPrinterAttributes) {
       Attribute ``attributes-charset'' (charset, 1 values)
         utf-8
       Attribute ``attributes-natural-language'' (naturalLanguage, 1 values)
-        en-US
+        en-us
       Attribute ``printer-uri'' (uri, 1 values)
         ipps://hello-there
   Group (tag: 0x0005; collections: 1)

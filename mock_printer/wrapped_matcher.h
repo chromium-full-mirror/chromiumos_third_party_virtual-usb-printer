@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,8 +6,6 @@
 #define MOCK_PRINTER_WRAPPED_MATCHER_H_
 
 #include <memory>
-
-#include <chromeos/libipp/ipp.h>
 
 #include "argument_variants.h"
 #include "mock_printer/proto/ipp.pb.h"

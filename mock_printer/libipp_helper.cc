@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -24,7 +24,7 @@ constexpr base::StringPiece kUnknownValue = "        [unknown value]";
 template <typename T>
 void AddAttributeValues(const ipp::Attribute* attribute,
                         std::vector<std::string>* lines) {
-  for (size_t i = 0; i < attribute->GetSize(); ++i) {
+  for (size_t i = 0; i < attribute->Size(); ++i) {
     T value;
     if (attribute->GetValue(&value, i)) {
       lines->push_back(
@@ -39,7 +39,7 @@ void AddAttributeValues(const ipp::Attribute* attribute,
 // have no need (and no way) to call `ipp::ToString()`.
 void AddAttributeStringValues(const ipp::Attribute* attribute,
                               std::vector<std::string>* lines) {
-  for (size_t i = 0; i < attribute->GetSize(); ++i) {
+  for (size_t i = 0; i < attribute->Size(); ++i) {
     std::string value;
     if (attribute->GetValue(&value, i)) {
       lines->push_back(base::StringPrintf("        %s", value.c_str()));
@@ -53,7 +53,7 @@ void AddAttributeStringValues(const ipp::Attribute* attribute,
 // the simple template.
 void AddAttributeBooleanValues(const ipp::Attribute* attribute,
                                std::vector<std::string>* lines) {
-  for (size_t i = 0; i < attribute->GetSize(); ++i) {
+  for (size_t i = 0; i < attribute->Size(); ++i) {
     // libipp uses an `int` to store the boolean type.
     int value;
     if (attribute->GetValue(&value, i)) {
@@ -74,35 +74,38 @@ void AddAttributeBooleanValues(const ipp::Attribute* attribute,
 // Attributes are indented thrice and their contents four times.
 void AddAttribute(const ipp::Attribute* attribute,
                   std::vector<std::string>* lines) {
-  lines->push_back(base::StringPrintf(
-      "      Attribute ``%s'' (%s, %" PRIuS " values)",
-      attribute->GetName().c_str(), ipp::ToString(attribute->GetType()).c_str(),
-      attribute->GetSize()));
-  if (!attribute->GetSize()) {
+  lines->push_back(
+      base::StringPrintf("      Attribute ``%s'' (%s, %" PRIuS " values)",
+                         std::string(attribute->Name()).c_str(),
+                         std::string(ipp::ToStrView(attribute->Tag())).c_str(),
+                         attribute->Size()));
+  if (!attribute->Size()) {
     return;
   }
 
-  switch (attribute->GetType()) {
-    case ipp::AttrType::integer:
-    case ipp::AttrType::enum_:
+  switch (attribute->Tag()) {
+    case ipp::ValueTag::integer:
+    case ipp::ValueTag::enum_:
       return AddAttributeValues<int>(attribute, lines);
-    case ipp::AttrType::boolean:
+    case ipp::ValueTag::boolean:
       return AddAttributeBooleanValues(attribute, lines);
-    case ipp::AttrType::octetString:
-    case ipp::AttrType::text:
-    case ipp::AttrType::name:
-    case ipp::AttrType::keyword:
-    case ipp::AttrType::uri:
-    case ipp::AttrType::uriScheme:
-    case ipp::AttrType::charset:
-    case ipp::AttrType::naturalLanguage:
-    case ipp::AttrType::mimeMediaType:
+    case ipp::ValueTag::octetString:
+    case ipp::ValueTag::textWithLanguage:
+    case ipp::ValueTag::textWithoutLanguage:
+    case ipp::ValueTag::nameWithLanguage:
+    case ipp::ValueTag::nameWithoutLanguage:
+    case ipp::ValueTag::keyword:
+    case ipp::ValueTag::uri:
+    case ipp::ValueTag::uriScheme:
+    case ipp::ValueTag::charset:
+    case ipp::ValueTag::naturalLanguage:
+    case ipp::ValueTag::mimeMediaType:
       return AddAttributeStringValues(attribute, lines);
-    case ipp::AttrType::dateTime:
+    case ipp::ValueTag::dateTime:
       return AddAttributeValues<ipp::DateTime>(attribute, lines);
-    case ipp::AttrType::resolution:
+    case ipp::ValueTag::resolution:
       return AddAttributeValues<ipp::Resolution>(attribute, lines);
-    case ipp::AttrType::rangeOfInteger:
+    case ipp::ValueTag::rangeOfInteger:
       return AddAttributeValues<ipp::RangeOfInteger>(attribute, lines);
     default:
       lines->push_back("        [unsupported type]");
@@ -127,12 +130,17 @@ void AddCollection(const ipp::Collection* collection,
 // Adds the string representation of `group` to `lines`.
 //
 // Groups are indented once.
-void AddGroup(const ipp::Group* group, std::vector<std::string>* lines) {
-  lines->push_back(base::StringPrintf(
-      "  Group (tag: 0x%04x; collections: %" PRIuS ")",
-      static_cast<unsigned int>(group->GetName()), group->GetSize()));
-  for (size_t i = 0; i < group->GetSize(); ++i) {
-    AddCollection(group->GetCollection(i), i, lines);
+void AddGroup(const ipp::GroupTag tag,
+              const std::vector<const ipp::Collection*>& groups,
+              std::vector<std::string>* lines) {
+  if (groups.empty()) {
+    return;
+  }
+  lines->push_back(
+      base::StringPrintf("  Group (tag: 0x%04x; collections: %" PRIuS ")",
+                         static_cast<unsigned int>(tag), groups.size()));
+  for (size_t i = 0; i < groups.size(); ++i) {
+    AddCollection(groups[i], i, lines);
   }
 }
 
@@ -162,14 +170,17 @@ void MultilineLogHolder::Vlog(int level, base::StringPiece preface) const {
   }
 }
 
-MultilineLogHolder ToString(const ipp::Request* request) {
+MultilineLogHolder ToString(const ipp::Frame* request) {
   std::vector<std::string> lines;
-  lines.push_back(
-      base::StringPrintf("Request (operation ID: 0x%04x; groups: %" PRIuS ")",
-                         static_cast<unsigned int>(request->GetOperationId()),
-                         request->GetAllGroups().size()));
-  for (const ipp::Group* group : request->GetAllGroups()) {
-    AddGroup(group, &lines);
+  size_t groups_count = 0;
+  for (ipp::GroupTag tag : ipp::kGroupTags) {
+    groups_count += request->GetGroups(tag).size();
+  }
+  lines.push_back(base::StringPrintf(
+      "Request (operation ID: 0x%04x; groups: %" PRIuS ")",
+      static_cast<unsigned int>(request->OperationId()), groups_count));
+  for (ipp::GroupTag tag : ipp::kGroupTags) {
+    AddGroup(tag, request->GetGroups(tag), &lines);
   }
   return MultilineLogHolder{.lines = lines};
 }

@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,14 +10,13 @@
 
 #include <memory>
 
-#include <chromeos/libipp/ipp.h>
-#include <chromeos/libipp/ipp_base.h>
+#include <chromeos/libipp/frame.h>
 
 #include "mock_printer/proto/ipp.pb.h"
 
 namespace mock_printer {
 
-std::unique_ptr<ipp::Response> ToResponse(
+std::unique_ptr<ipp::Frame> ToResponse(
     const mocking::IppMessage& mock_response);
 
 }  // namespace mock_printer

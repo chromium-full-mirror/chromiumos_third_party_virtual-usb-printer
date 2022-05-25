@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,8 +8,8 @@
 #include <utility>
 
 #include <base/check.h>
-#include <chromeos/libipp/ipp.h>
-#include <chromeos/libipp/ipp_operations.h>
+#include <chromeos/libipp/attribute.h>
+#include <chromeos/libipp/frame.h>
 #include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
@@ -40,9 +40,12 @@ using ::testing::IsNull;
 using ::testing::NotNull;
 
 // Convenience function that builds test data.
-std::unique_ptr<ipp::Request> MakeRequest(int value) {
-  auto request = std::make_unique<ipp::Request_Get_Job_Attributes>();
-  request->operation_attributes->job_id.Set(value);
+std::unique_ptr<ipp::Frame> MakeRequest(int value) {
+  auto request =
+      std::make_unique<ipp::Frame>(ipp::Operation::Get_Job_Attributes);
+  auto coll = request->GetGroup(ipp::GroupTag::operation_attributes);
+  CHECK(coll);
+  CHECK(coll->AddAttr("job-id", value) == ipp::Code::kOK);
   return request;
 }
 
@@ -63,13 +66,11 @@ class FakeWrappedMatcher : public WrappedMatcher {
 
     int job_id = 0;
 
-    // const_cast needed because `TCollection* operator->()` is not
-    // marked const.
-    auto* request = const_cast<ipp::Request_Get_Job_Attributes*>(
-        dynamic_cast<const ipp::Request_Get_Job_Attributes*>(
-            ipp_data->ipp_request));
-    CHECK(request->operation_attributes->job_id.GetValue(&job_id))
-        << "BUG: failed to get job_id";
+    auto* request = ipp_data->ipp_request;
+    auto* attr = request->GetGroup(ipp::GroupTag::operation_attributes)
+                     ->GetAttribute("job-id");
+    CHECK(attr) << "BUG: failed to get job_id";
+    CHECK(attr->GetValue(&job_id)) << "BUG: invalid type of job_id";
     return job_id == ipp_data->mock_ipp_request.version_number();
   }
 };

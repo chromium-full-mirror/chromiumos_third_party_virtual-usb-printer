@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,7 +7,7 @@
 
 #include <variant>
 
-#include <chromeos/libipp/ipp.h>
+#include <chromeos/libipp/frame.h>
 
 #include "mock_printer/proto/ipp.pb.h"
 #include "mock_printer/proto/control_flow.pb.h"
@@ -30,11 +30,11 @@ namespace mock_printer {
 // *  a real IPP message to be matched and
 // *  a mock IPP message to be matched against.
 struct MatchableIppData {
-  MatchableIppData(const ipp::Request* message,
+  MatchableIppData(const ipp::Frame* message,
                    const mocking::IppMessage& mock_message);
   ~MatchableIppData();
 
-  const ipp::Request* ipp_request;
+  const ipp::Frame* ipp_request;
   const mocking::IppMessage& mock_ipp_request;
 };
 
@@ -44,7 +44,7 @@ using MatchableData = std::variant<MatchableIppData>;
 
 // Counterpart to `MatchableData` exposed by `WrappedTestCaseStep`,
 // omitting the mock Protobuf.
-using InputMessage = std::variant<const ipp::Request*>;
+using InputMessage = std::variant<const ipp::Frame*>;
 
 // CHECK()s that `message` contains the IPP variant.
 MatchableData GetAsIpp(const InputMessage message,

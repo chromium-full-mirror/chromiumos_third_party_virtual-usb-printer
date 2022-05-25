@@ -1,10 +1,11 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "proto_to_libipp.h"
 
 #include <string>
+#include <vector>
 #include <cstddef>
 
 #include <base/check.h>
@@ -20,126 +21,93 @@ namespace {
 void CopyAttributes(const mocking::IppCollection& mock_collection,
                     ipp::Collection* collection);
 
-int AttributeSize(const mocking::IppAttribute& mock_attribute) {
-  switch (mock_attribute.value_case()) {
-    case mocking::IppAttribute::ValueCase::kCollections:
-      return mock_attribute.collections().collections_size();
-    case mocking::IppAttribute::ValueCase::kIntValues:
-      return mock_attribute.int_values().int_values_size();
-    case mocking::IppAttribute::ValueCase::kStringValues:
-      return mock_attribute.string_values().string_values_size();
-    case mocking::IppAttribute::ValueCase::kIntRanges:
-      return mock_attribute.int_ranges().int_ranges_size();
-    case mocking::IppAttribute::ValueCase::kResolutions:
-      return mock_attribute.resolutions().resolutions_size();
-    case mocking::IppAttribute::ValueCase::kDateTimes:
-      return mock_attribute.date_times().date_times_size();
-    default:
-      NOTREACHED() << "BUG: unhandled `mocking::IppAttribute` value case";
-  }
-  return -1;  // not reached
-}
-
-// Adds a nested collection full of attributes from `mock_attribute`
-// into `attribute`.
-//
-// Do not confuse this function for adding IPP collections into
-// IPP groups: because of the way libipp is structured, such a function
-// is unnecessary in this context.
-void CopyCollections(const mocking::IppAttribute& mock_attribute,
-                     ipp::Attribute* attribute) {
-  std::size_t i = 0;
-  for (const mocking::IppCollection& mock_collection :
-       mock_attribute.collections().collections()) {
-    ipp::Collection* collection = attribute->GetCollection(i);
-    CopyAttributes(mock_collection, collection);
-    ++i;
-  }
-}
-
-// Populates `attribute` with the integer values from `mock_attribute`.
-void CopyInts(const mocking::IppAttribute& mock_attribute,
-              ipp::Attribute* attribute) {
-  std::size_t i = 0;
+// Returns the integer values from `mock_attribute`.
+std::vector<int32_t> CopyInts(const mocking::IppAttribute& mock_attribute) {
+  std::vector<int32_t> values;
+  values.reserve(mock_attribute.int_values().int_values_size());
   for (const int32_t mock_int : mock_attribute.int_values().int_values()) {
-    attribute->SetValue(mock_int, i++);
+    values.push_back(mock_int);
   }
+  return values;
 }
 
-// Populates `attribute` with the string values from `mock_attribute`.
-void CopyStrings(const mocking::IppAttribute& mock_attribute,
-                 ipp::Attribute* attribute) {
-  std::size_t i = 0;
-  switch (mock_attribute.type()) {
-    case mocking::IppAttribute::TEXT_WITH_LANGUAGE:
-    case mocking::IppAttribute::NAME_WITH_LANGUAGE:
-      for (const mocking::OctetString& mock_string :
-           mock_attribute.string_values().string_values()) {
-        CHECK(
-            attribute->SetValue(ipp::StringWithLanguage(mock_string.language(),
-                                                        mock_string.value()),
-                                i++));
-      }
-      break;
-    default:
-      for (const mocking::OctetString& mock_string :
-           mock_attribute.string_values().string_values()) {
-        CHECK(attribute->SetValue(mock_string.value(), i++));
-      }
-      break;
+// Returns the string values from `mock_attribute`.
+std::vector<std::string> CopyStrings(
+    const mocking::IppAttribute& mock_attribute) {
+  std::vector<std::string> values;
+  values.reserve(mock_attribute.string_values().string_values_size());
+  for (const mocking::OctetString& mock_string :
+       mock_attribute.string_values().string_values()) {
+    values.push_back(mock_string.value());
   }
+  return values;
 }
 
-// Populates `attribute` with the integer ranges from `mock_attribute`.
-void CopyIntRanges(const mocking::IppAttribute& mock_attribute,
-                   ipp::Attribute* attribute) {
-  std::size_t i = 0;
+// Returns the string-with-language values from `mock_attribute`.
+std::vector<ipp::StringWithLanguage> CopyStringsWithLanguage(
+    const mocking::IppAttribute& mock_attribute) {
+  std::vector<ipp::StringWithLanguage> values;
+  values.reserve(mock_attribute.string_values().string_values_size());
+  for (const mocking::OctetString& mock_string :
+       mock_attribute.string_values().string_values()) {
+    values.push_back(
+        ipp::StringWithLanguage(mock_string.language(), mock_string.value()));
+  }
+  return values;
+}
+
+// Returns the integer ranges from `mock_attribute`.
+std::vector<ipp::RangeOfInteger> CopyIntRanges(
+    const mocking::IppAttribute& mock_attribute) {
+  std::vector<ipp::RangeOfInteger> values;
+  values.reserve(mock_attribute.int_ranges().int_ranges_size());
   for (const mocking::IntegerRange& mock_range :
        mock_attribute.int_ranges().int_ranges()) {
-    attribute->SetValue(
-        ipp::RangeOfInteger(mock_range.minimum(), mock_range.maximum()), i++);
+    values.push_back(
+        ipp::RangeOfInteger(mock_range.minimum(), mock_range.maximum()));
   }
+  return values;
 }
 
-// Populates `attribute` with the resolutions from `mock_attribute`.
-void CopyResolutions(const mocking::IppAttribute& mock_attribute,
-                     ipp::Attribute* attribute) {
-  std::size_t i = 0;
+// Returns the resolutions from `mock_attribute`.
+std::vector<ipp::Resolution> CopyResolutions(
+    const mocking::IppAttribute& mock_attribute) {
+  std::vector<ipp::Resolution> values;
+  values.reserve(mock_attribute.resolutions().resolutions_size());
   for (const mocking::Resolution& mock_resolution :
        mock_attribute.resolutions().resolutions()) {
-    attribute->SetValue(
-        ipp::Resolution(
-            mock_resolution.xres(), mock_resolution.yres(),
-            mock_resolution.units() == mocking::Resolution::DOTS_PER_CENTIMETER
-                ? ipp::Resolution::Units::kDotsPerCentimeter
-                : ipp::Resolution::Units::kDotsPerInch),
-        i++);
+    values.push_back(ipp::Resolution(
+        mock_resolution.xres(), mock_resolution.yres(),
+        mock_resolution.units() == mocking::Resolution::DOTS_PER_CENTIMETER
+            ? ipp::Resolution::Units::kDotsPerCentimeter
+            : ipp::Resolution::Units::kDotsPerInch));
   }
+  return values;
 }
 
-// Populates `attribute` with the datetime objects from `mock_attribute`.
-void CopyDateTimes(const mocking::IppAttribute& mock_attribute,
-                   ipp::Attribute* attribute) {
-  std::size_t i = 0;
+// Returns the datetime objects from `mock_attribute`.
+std::vector<ipp::DateTime> CopyDateTimes(
+    const mocking::IppAttribute& mock_attribute) {
+  std::vector<ipp::DateTime> values;
+  values.reserve(mock_attribute.date_times().date_times_size());
   for (const mocking::DateTime& mock_datetime :
        mock_attribute.date_times().date_times()) {
-    attribute->SetValue(
-        ipp::DateTime{
-            .year = static_cast<uint16_t>(mock_datetime.year()),
-            .month = static_cast<uint8_t>(mock_datetime.month()),
-            .day = static_cast<uint8_t>(mock_datetime.day()),
-            .hour = static_cast<uint8_t>(mock_datetime.hour()),
-            .minutes = static_cast<uint8_t>(mock_datetime.minutes()),
-            .seconds = static_cast<uint8_t>(mock_datetime.seconds()),
-            .deci_seconds = static_cast<uint8_t>(mock_datetime.deciseconds()),
-            .UTC_direction =
-                mock_datetime.utc_direction() == mocking::DateTime::PLUS
-                    ? static_cast<uint8_t>('+')
-                    : static_cast<uint8_t>('-'),
-            .UTC_hours = static_cast<uint8_t>(mock_datetime.utc_hours()),
-            .UTC_minutes = static_cast<uint8_t>(mock_datetime.utc_minutes())},
-        i++);
+    values.push_back(ipp::DateTime{
+        .year = static_cast<uint16_t>(mock_datetime.year()),
+        .month = static_cast<uint8_t>(mock_datetime.month()),
+        .day = static_cast<uint8_t>(mock_datetime.day()),
+        .hour = static_cast<uint8_t>(mock_datetime.hour()),
+        .minutes = static_cast<uint8_t>(mock_datetime.minutes()),
+        .seconds = static_cast<uint8_t>(mock_datetime.seconds()),
+        .deci_seconds = static_cast<uint8_t>(mock_datetime.deciseconds()),
+        .UTC_direction =
+            mock_datetime.utc_direction() == mocking::DateTime::PLUS
+                ? static_cast<uint8_t>('+')
+                : static_cast<uint8_t>('-'),
+        .UTC_hours = static_cast<uint8_t>(mock_datetime.utc_hours()),
+        .UTC_minutes = static_cast<uint8_t>(mock_datetime.utc_minutes())});
   }
+  return values;
 }
 
 // Iterates over `mock_collection` and adds all attributes to
@@ -147,28 +115,45 @@ void CopyDateTimes(const mocking::IppAttribute& mock_attribute,
 void CopyAttributes(const mocking::IppCollection& mock_collection,
                     ipp::Collection* collection) {
   for (const auto& mock_attribute : mock_collection.attributes()) {
-    ipp::Attribute* attribute = collection->GetAttribute(mock_attribute.name());
-    if (!attribute) {
-      attribute = collection->AddUnknownAttribute(
-          mock_attribute.name(), /*is_a_set=*/AttributeSize(mock_attribute) > 1,
-          static_cast<ipp::AttrType>(mock_attribute.type()));
-    }
-    CHECK(attribute) << "BUG: expected `ipp::Attribute*` here";
-    attribute->Resize(AttributeSize(mock_attribute));
-
     switch (mock_attribute.value_case()) {
-      case mocking::IppAttribute::ValueCase::kCollections:
-        return CopyCollections(mock_attribute, attribute);
+      case mocking::IppAttribute::ValueCase::kCollections: {
+        size_t n = mock_attribute.collections().collections().size();
+        std::vector<ipp::Collection*> new_colls(n);
+        collection->AddAttr(mock_attribute.name(), new_colls);
+        for (size_t i = 0; i < n; ++i) {
+          CopyAttributes(mock_attribute.collections().collections()[i],
+                         new_colls[i]);
+        }
+      } break;
       case mocking::IppAttribute::ValueCase::kIntValues:
-        return CopyInts(mock_attribute, attribute);
+        collection->AddAttr(mock_attribute.name(), CopyInts(mock_attribute));
+        break;
       case mocking::IppAttribute::ValueCase::kStringValues:
-        return CopyStrings(mock_attribute, attribute);
+        if (mock_attribute.type() ==
+                mocking::IppAttribute::TEXT_WITH_LANGUAGE ||
+            mock_attribute.type() ==
+                mocking::IppAttribute::NAME_WITH_LANGUAGE) {
+          collection->AddAttr(mock_attribute.name(),
+                              static_cast<ipp::ValueTag>(mock_attribute.type()),
+                              CopyStringsWithLanguage(mock_attribute));
+        } else {
+          collection->AddAttr(mock_attribute.name(),
+                              static_cast<ipp::ValueTag>(mock_attribute.type()),
+                              CopyStrings(mock_attribute));
+        }
+        break;
       case mocking::IppAttribute::ValueCase::kIntRanges:
-        return CopyIntRanges(mock_attribute, attribute);
+        collection->AddAttr(mock_attribute.name(),
+                            CopyIntRanges(mock_attribute));
+        break;
       case mocking::IppAttribute::ValueCase::kResolutions:
-        return CopyResolutions(mock_attribute, attribute);
+        collection->AddAttr(mock_attribute.name(),
+                            CopyResolutions(mock_attribute));
+        break;
       case mocking::IppAttribute::ValueCase::kDateTimes:
-        return CopyDateTimes(mock_attribute, attribute);
+        collection->AddAttr(mock_attribute.name(),
+                            CopyDateTimes(mock_attribute));
+        break;
       default:
         NOTREACHED() << "BUG: unhandled `mocking::IppAttribute` value case";
     }
@@ -176,41 +161,36 @@ void CopyAttributes(const mocking::IppCollection& mock_collection,
 }
 
 // Populates `response` with the contents of `mock_group`.
-void CopyGroup(const mocking::IppGroup& mock_group, ipp::Response* response) {
-  const bool is_a_set = mock_group.collections_size() > 1;
+void CopyGroup(const mocking::IppGroup& mock_group, ipp::Frame* response) {
   const auto tag = mock_group.tag();
 
   CHECK_GE(tag, 0) << "group tag " << tag << " < 0";
   CHECK_LE(tag, 0x0f) << "group tag " << tag << " > 0x0f";
 
-  ipp::Group* group = response->GetGroup(static_cast<ipp::GroupTag>(tag));
-  if (!group) {
-    group =
-        response->AddUnknownGroup(static_cast<ipp::GroupTag>(tag), is_a_set);
-  }
-  CHECK(group) << "BUG: expected a group here";
-
-  group->Resize(mock_group.collections_size());
-
   std::size_t i = 0;
   for (const auto& mock_collection : mock_group.collections()) {
-    CopyAttributes(mock_collection, group->GetCollection(i++));
+    ipp::Collection* group =
+        response->GetGroup(static_cast<ipp::GroupTag>(tag), i++);
+    if (!group) {
+      response->AddGroup(static_cast<ipp::GroupTag>(tag), &group);
+    }
+    CHECK(group) << "BUG: expected a group here";
+    CopyAttributes(mock_collection, group);
   }
 }
 
 }  // namespace
 
-std::unique_ptr<ipp::Response> ToResponse(
+std::unique_ptr<ipp::Frame> ToResponse(
     const mocking::IppMessage& mock_response) {
-  auto response = ipp::Response::NewResponse(
-      static_cast<ipp::Operation>(mock_response.operation_id()));
-  if (!response) {
+  if (mock_response.operation_id() == 0) {
     // This happens when `mock_response` is unset, which is possible because it
     // is an optional field.
-    return response;
+    return nullptr;
   }
 
-  response->StatusCode() = static_cast<ipp::Status>(mock_response.status());
+  auto response = std::make_unique<ipp::Frame>(
+      static_cast<ipp::Status>(mock_response.status()));
 
   // TODO(b/178649877): libipp only offers version number manipulation
   // at the level of either the `Client` or the `Server`. We can't

@@ -1,17 +1,19 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "ipp_matching.h"
 
 #include <cstdint>
+#include <set>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 #include <base/check.h>
 #include <base/notreached.h>
-#include <chromeos/libipp/ipp.h>
-#include <chromeos/libipp/ipp_attribute.h>
+#include <chromeos/libipp/attribute.h>
+#include <chromeos/libipp/frame.h>
 
 #include "mock_printer/proto/ipp.pb.h"
 
@@ -86,7 +88,7 @@ bool DateTimeMatches(const ipp::DateTime& date_time,
 
 bool EmbeddedCollectionsMatch(const ipp::Attribute* const attribute,
                               const mocking::IppAttribute& mock_attribute) {
-  if (mock_attribute.collections().collections_size() != attribute->GetSize()) {
+  if (mock_attribute.collections().collections_size() != attribute->Size()) {
     return false;
   }
   std::size_t index = 0;
@@ -104,7 +106,7 @@ bool EmbeddedCollectionsMatch(const ipp::Attribute* const attribute,
 
 bool IntValuesMatch(const ipp::Attribute* const attribute,
                     const mocking::IppAttribute& mock_attribute) {
-  if (mock_attribute.int_values().int_values_size() != attribute->GetSize()) {
+  if (mock_attribute.int_values().int_values_size() != attribute->Size()) {
     return false;
   }
   std::size_t index = 0;
@@ -124,21 +126,21 @@ bool StringValuesMatch(const ipp::Attribute* const attribute,
                        const mocking::IppAttribute& mock_attribute) {
   // We allow string-coercible types to pass onto actual matching.
   // We bail out here if it's not a string-ish type.
-  switch (attribute->GetType()) {
-    case (ipp::AttrType::text):
-    case (ipp::AttrType::name):
-    case (ipp::AttrType::keyword):
-    case (ipp::AttrType::uri):
-    case (ipp::AttrType::uriScheme):
-    case (ipp::AttrType::charset):
-    case (ipp::AttrType::naturalLanguage):
-    case (ipp::AttrType::mimeMediaType):
+  switch (attribute->Tag()) {
+    case (ipp::ValueTag::textWithoutLanguage):
+    case (ipp::ValueTag::nameWithoutLanguage):
+    case (ipp::ValueTag::keyword):
+    case (ipp::ValueTag::uri):
+    case (ipp::ValueTag::uriScheme):
+    case (ipp::ValueTag::charset):
+    case (ipp::ValueTag::naturalLanguage):
+    case (ipp::ValueTag::mimeMediaType):
       break;
     default:
       return false;
   }
   if (mock_attribute.string_values().string_values_size() !=
-      attribute->GetSize()) {
+      attribute->Size()) {
     return false;
   }
 
@@ -159,7 +161,7 @@ bool StringValuesMatch(const ipp::Attribute* const attribute,
 
 bool IntRangesMatch(const ipp::Attribute* const attribute,
                     const mocking::IppAttribute& mock_attribute) {
-  if (attribute->GetSize() != mock_attribute.int_ranges().int_ranges_size()) {
+  if (attribute->Size() != mock_attribute.int_ranges().int_ranges_size()) {
     return false;
   }
   std::size_t index = 0;
@@ -179,7 +181,7 @@ bool IntRangesMatch(const ipp::Attribute* const attribute,
 
 bool ResolutionsMatch(const ipp::Attribute* const attribute,
                       const mocking::IppAttribute& mock_attribute) {
-  if (attribute->GetSize() != mock_attribute.resolutions().resolutions_size()) {
+  if (attribute->Size() != mock_attribute.resolutions().resolutions_size()) {
     return false;
   }
   std::size_t index = 0;
@@ -198,7 +200,7 @@ bool ResolutionsMatch(const ipp::Attribute* const attribute,
 
 bool DateTimesMatch(const ipp::Attribute* const attribute,
                     const mocking::IppAttribute& mock_attribute) {
-  if (attribute->GetSize() != mock_attribute.date_times().date_times_size()) {
+  if (attribute->Size() != mock_attribute.date_times().date_times_size()) {
     return false;
   }
   std::size_t index = 0;
@@ -220,50 +222,47 @@ bool AttributeTypeMatches(const ipp::Attribute* const attribute,
   if (mock_attribute.type() == mocking::IppAttribute::UNSPECIFIED) {
     return true;
   }
-  switch (attribute->GetType()) {
-    case (ipp::AttrType::integer):
+  switch (attribute->Tag()) {
+    case (ipp::ValueTag::integer):
       return mock_attribute.type() == mocking::IppAttribute::INTEGER;
-    case (ipp::AttrType::boolean):
+    case (ipp::ValueTag::boolean):
       return mock_attribute.type() == mocking::IppAttribute::BOOLEAN;
-    case (ipp::AttrType::enum_):
+    case (ipp::ValueTag::enum_):
       return mock_attribute.type() == mocking::IppAttribute::ENUM;
-    case (ipp::AttrType::octetString):
+    case (ipp::ValueTag::octetString):
       return mock_attribute.type() == mocking::IppAttribute::OCTET_STRING;
-    case (ipp::AttrType::dateTime):
+    case (ipp::ValueTag::dateTime):
       return mock_attribute.type() == mocking::IppAttribute::DATETIME;
-    case (ipp::AttrType::resolution):
+    case (ipp::ValueTag::resolution):
       return mock_attribute.type() == mocking::IppAttribute::RESOLUTION;
-    case (ipp::AttrType::rangeOfInteger):
+    case (ipp::ValueTag::rangeOfInteger):
       return mock_attribute.type() == mocking::IppAttribute::RANGE_OF_INTEGER;
-    case (ipp::AttrType::collection):
+    case (ipp::ValueTag::collection):
       return mock_attribute.type() == mocking::IppAttribute::BEGIN_COLLECTION;
-    // libipp does not provide `AttrType` variants for text / names
-    // with(out) language. Even if we can't catch a mismatch right
-    // here, the value check later on can.
-    case (ipp::AttrType::text):
+    case (ipp::ValueTag::textWithLanguage):
+      return mock_attribute.type() == mocking::IppAttribute::TEXT_WITH_LANGUAGE;
+    case (ipp::ValueTag::textWithoutLanguage):
       return mock_attribute.type() ==
-                 mocking::IppAttribute::TEXT_WITH_LANGUAGE ||
-             mock_attribute.type() ==
-                 mocking::IppAttribute::TEXT_WITHOUT_LANGUAGE;
-    case (ipp::AttrType::name):
+             mocking::IppAttribute::TEXT_WITHOUT_LANGUAGE;
+    case (ipp::ValueTag::nameWithLanguage):
+      return mock_attribute.type() == mocking::IppAttribute::NAME_WITH_LANGUAGE;
+    case (ipp::ValueTag::nameWithoutLanguage):
       return mock_attribute.type() ==
-                 mocking::IppAttribute::NAME_WITH_LANGUAGE ||
-             mock_attribute.type() ==
-                 mocking::IppAttribute::NAME_WITHOUT_LANGUAGE;
-    case (ipp::AttrType::keyword):
+             mocking::IppAttribute::NAME_WITHOUT_LANGUAGE;
+    case (ipp::ValueTag::keyword):
       return mock_attribute.type() == mocking::IppAttribute::KEYWORD;
-    case (ipp::AttrType::uri):
+    case (ipp::ValueTag::uri):
       return mock_attribute.type() == mocking::IppAttribute::URI;
-    case (ipp::AttrType::uriScheme):
+    case (ipp::ValueTag::uriScheme):
       return mock_attribute.type() == mocking::IppAttribute::URI_SCHEME;
-    case (ipp::AttrType::charset):
+    case (ipp::ValueTag::charset):
       return mock_attribute.type() == mocking::IppAttribute::CHARSET;
-    case (ipp::AttrType::naturalLanguage):
+    case (ipp::ValueTag::naturalLanguage):
       return mock_attribute.type() == mocking::IppAttribute::NATURAL_LANGUAGE;
-    case (ipp::AttrType::mimeMediaType):
+    case (ipp::ValueTag::mimeMediaType):
       return mock_attribute.type() == mocking::IppAttribute::MIME_MEDIA_TYPE;
     default:
-      NOTREACHED() << "BUG: unhandled `ipp::AttrType`";
+      NOTREACHED() << "BUG: unhandled `ipp::ValueTag`";
       return false;
   }
 }
@@ -342,7 +341,7 @@ ipp::GroupTag TagFromProtobuf(const mocking::IppGroup& mock_group) {
   }
 }
 
-bool IppGroupMatches(const ipp::Group* const group,
+bool IppGroupMatches(const std::vector<const ipp::Collection*>& group,
                      const mocking::IppGroup& mock_group) {
   // Collections are optional.
   if (!mock_group.collections_size()) {
@@ -350,18 +349,13 @@ bool IppGroupMatches(const ipp::Group* const group,
   }
 
   // ... but if collections are specified, they need to match exactly.
-  if (group->GetSize() != mock_group.collections_size()) {
+  if (group.size() != mock_group.collections_size()) {
     return false;
   }
 
   std::size_t collection_index = 0;
   for (const auto& mock_collection : mock_group.collections()) {
-    const ipp::Collection* const collection =
-        group->GetCollection(collection_index);
-    if (!collection) {
-      return false;
-    }
-    if (!IppCollectionMatches(collection, mock_collection)) {
+    if (!IppCollectionMatches(group[collection_index], mock_collection)) {
       return false;
     }
     collection_index++;
@@ -371,32 +365,34 @@ bool IppGroupMatches(const ipp::Group* const group,
 
 }  // namespace
 
-bool IppMessageMatches(const ipp::Request* const message,
+bool IppMessageMatches(const ipp::Frame* const message,
                        const mocking::IppMessage& mock_message) {
   if (static_cast<std::underlying_type_t<ipp::Operation>>(
-          message->GetOperationId()) != mock_message.operation_id()) {
+          message->OperationId()) != mock_message.operation_id()) {
     return false;
   }
 
-  // Groups must be written out in full to match. If the number of
-  // groups doesn't match, then that definitely negates any chance at a
-  // match overall.
-  const size_t num_groups = message->GetAllGroups().size();
-  if (num_groups != mock_message.groups_size()) {
-    return false;
+  // Save all GroupTags that have at least one group (collection).
+  std::set<ipp::GroupTag> group_tags_to_match;
+  for (const ipp::GroupTag tag : ipp::kGroupTags) {
+    if (!message->GetGroups(tag).empty()) {
+      group_tags_to_match.insert(tag);
+    }
   }
 
   for (const auto& mock_group : mock_message.groups()) {
-    const ipp::Group* const group =
-        message->GetGroup(TagFromProtobuf(mock_group));
-    if (!group) {
-      return false;
-    }
+    const ipp::GroupTag tag = TagFromProtobuf(mock_group);
+    group_tags_to_match.erase(tag);
+    const std::vector<const ipp::Collection*> group = message->GetGroups(tag);
     if (!IppGroupMatches(group, mock_group)) {
       return false;
     }
   }
-  return true;
+
+  // We reach this point <=> all groups from `mock_message` were matched
+  // successfully. Now, we have to only check if all groups from `message` were
+  // matched.
+  return group_tags_to_match.empty();
 }
 
 }  // namespace mock_printer

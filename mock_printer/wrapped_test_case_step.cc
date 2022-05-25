@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -49,11 +49,10 @@ class WrappedIppTestCaseStep : public WrappedTestCaseStep {
       }
 
       cardinality_helper_->MarkIndexVisited(index);
-      StepStatus status = cardinality_helper_->Saturated()
-                              ? StepStatus::kSaturated
-                              : cardinality_helper_->Fulfilled()
-                                    ? StepStatus::kFulfilled
-                                    : StepStatus::kUnfulfilled;
+      StepStatus status =
+          cardinality_helper_->Saturated()   ? StepStatus::kSaturated
+          : cardinality_helper_->Fulfilled() ? StepStatus::kFulfilled
+                                             : StepStatus::kUnfulfilled;
       if (proto.has_response()) {
         return {/*match_found=*/true, status, &proto.response()};
       }

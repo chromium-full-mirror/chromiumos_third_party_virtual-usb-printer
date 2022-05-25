@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,7 +10,7 @@
 #include <vector>
 
 #include <base/strings/string_piece.h>
-#include <chromeos/libipp/ipp.h>
+#include <chromeos/libipp/frame.h>
 
 namespace mock_printer {
 
@@ -38,7 +38,7 @@ struct MultilineLogHolder {
 //
 // Note that a more sophisticated version of this function (albeit for
 // `ipp::Response`) exists in `platform2/print_tools`.
-MultilineLogHolder ToString(const ipp::Request* request);
+MultilineLogHolder ToString(const ipp::Frame* request);
 
 }  // namespace mock_printer
 

@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium OS Authors. All rights reserved.
+// Copyright 2021 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,7 +12,7 @@
 #include <base/check.h>
 #include <base/logging.h>
 #include <base/strings/string_util.h>
-#include <chromeos/libipp/ipp_base.h>
+#include <chromeos/libipp/frame.h>
 
 #include "libipp_helper.h"
 #include "mock_printer/proto/http.pb.h"
@@ -38,8 +38,7 @@ namespace {
 class MockPrinterImpl : public MockPrinter {
  public:
   explicit MockPrinterImpl(const mocking::TestCase& test_case)
-      : server_(),
-        test_case_holder_(
+      : test_case_holder_(
             TestCaseHolder::Create(test_case, WrappedMatcher::Create())) {}
 
   ~MockPrinterImpl() override = default;
@@ -91,25 +90,18 @@ class MockPrinterImpl : public MockPrinter {
               /*default_response=*/false};
     }
 
-    if (!server_.ReadRequestFrameFrom(message.contents())) {
+    ipp::ParsingResults logs;
+    std::unique_ptr<ipp::Frame> request =
+        std::make_unique<ipp::Frame>(message.data(), message.size(), &logs);
+    if (!logs.whole_buffer_was_parsed) {
       LOG(ERROR) << "BUG: failed to read inbound message";
-      JoinServerLogs().LogError();
+      JoinServerLogs(logs).LogError();
       return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
               /*default_response=*/false};
     }
-    JoinServerLogs().Vlog(2, "`server_` logs after `ReadRequestFrameFrom()`:");
+    JoinServerLogs(logs).Vlog(2, "message parsed by `ipp::Frame`:");
 
-    std::unique_ptr<ipp::Request> request =
-        ipp::Request::NewRequest(server_.GetOperationId());
-    if (!server_.ParseRequestAndSaveTo(request.get())) {
-      LOG(ERROR) << "BUG: failed to parse inbound message";
-      JoinServerLogs().LogError();
-      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
-              /*default_response=*/false};
-    }
-    JoinServerLogs().Vlog(2, "`server_` logs after `ParseRequestAndSaveTo()`:");
-
-    ToString(request.get()).Vlog(1, "received `ipp::Request`:");
+    ToString(request.get()).Vlog(1, "received `ipp::Frame`:");
     return ProgressAndReact(InputMessage(request.get()));
   }
 
@@ -122,8 +114,7 @@ class MockPrinterImpl : public MockPrinter {
     if (!mock_response) {
       LOG(ERROR) << "Got nullptr from `TestCaseHolder::Progress()`.";
       LOG(ERROR) << "`TestCaseError()`: " << test_case_holder_->TestCaseError();
-      ToString(*std::get_if<const ipp::Request*>(&request))
-          .LogError("last received `ipp::Request`:");
+      ToString(std::get<0>(request)).LogError("last received `ipp::Request`:");
       return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
               /*default_response=*/false};
     }
@@ -134,36 +125,26 @@ class MockPrinterImpl : public MockPrinter {
     }
 
     std::vector<uint8_t> response_buffer;
-    std::unique_ptr<ipp::Response> response =
+    std::unique_ptr<ipp::Frame> response =
         ToResponse(mock_response->ipp_response());
-    if (response) {
-      server_.BuildResponseFrom(response.get());
-
-      if (!server_.WriteResponseFrameTo(&response_buffer)) {
-        LOG(ERROR) << "`WriteResponseFrameTo()` failed";
-        JoinServerLogs().LogError();
-        return {/*smart_buffer=*/std::nullopt,
-                /*http_properties=*/std::nullopt,
-                /*default_response=*/false};
-      }
-    }
+    if (response)
+      response_buffer = response->SaveToBuffer();
 
     VLOG(1) << "Sending response.";
     return {SmartBuffer(response_buffer), mock_response->http_properties(),
             false};
   }
 
-  // Returns logs from `server_`.
-  MultilineLogHolder JoinServerLogs() const {
+  // Returns logs from parsing.
+  MultilineLogHolder JoinServerLogs(const ipp::ParsingResults& logs) const {
     std::vector<std::string> messages;
-    messages.reserve(server_.GetErrorLog().size());
-    for (const ipp::Log& log : server_.GetErrorLog()) {
+    messages.reserve(logs.errors.size());
+    for (const ipp::Log& log : logs.errors) {
       messages.push_back(log.message);
     }
     return MultilineLogHolder{.lines = messages};
   }
 
-  ipp::Server server_;
   std::unique_ptr<TestCaseHolder> test_case_holder_;
 };
 
