@@ -49,10 +49,10 @@ TEST(Add, AddString) {
 }
 
 TEST(Add, AddDeviceDescriptor) {
-  UsbDeviceDescriptor dev_dsc(18, 1, 272, 0, 0, 0, 8, 1193, 10216, 0, 1, 2, 1,
-                              1);
-  std::vector<uint8_t> expected = {18, 1,   16, 1, 0, 0, 0, 8, 169,
-                                   4,  232, 39, 0, 0, 1, 2, 1, 1};
+  UsbDeviceDescriptor dev_dsc(18, 1, 272, 0, 0, 0, 8, 0x18d1, 0x505e, 0, 1, 2,
+                              1, 1);
+  std::vector<uint8_t> expected = {18,   1,    16,   1, 0, 0, 0, 8, 0xd1,
+                                   0x18, 0x5e, 0x50, 0, 0, 1, 2, 1, 1};
   SmartBuffer buf1(sizeof(dev_dsc));
   buf1.Add(&dev_dsc, sizeof(dev_dsc));
   EXPECT_EQ(expected, buf1.contents());

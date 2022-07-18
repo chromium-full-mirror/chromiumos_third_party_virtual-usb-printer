@@ -105,7 +105,7 @@ TEST(RemoveAttributes, HasEndTag) {
       "\x45\x00\x0b"
       "printer-uri"
       "\x00\x19"
-      "ipp://04a9_27e8/ipp/print\x03"
+      "ipp://18d1_505e/ipp/print\x03"
       // Body
       "test image data"s;
 

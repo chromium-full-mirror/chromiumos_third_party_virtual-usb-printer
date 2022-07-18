@@ -112,8 +112,8 @@ TEST(GetDeviceDescriptor, ValidDescriptor) {
         "bDeviceSubClass": 0,
         "bDeviceProtocol": 0,
         "bMaxPacketSize0": 8,
-        "idVendor": 1193,
-        "idProduct": 10216,
+        "idVendor": 6353,
+        "idProduct": 20574,
         "bcdDevice": 0,
         "iManufacturer": 1,
         "iProduct": 2,
@@ -125,8 +125,8 @@ TEST(GetDeviceDescriptor, ValidDescriptor) {
   std::optional<base::Value> value = GetJSONValue(json_contents);
   ASSERT_TRUE(value->is_dict()) << "Failed to extract value of type "
                                 << value->type() << " as dictionary";
-  const UsbDeviceDescriptor expected(18, 1, 272, 0, 0, 0, 8, 1193, 10216, 0, 1,
-                                     2, 1, 1);
+  const UsbDeviceDescriptor expected(18, 1, 272, 0, 0, 0, 8, 0x18d1, 0x505e, 0,
+                                     1, 2, 1, 1);
   EXPECT_EQ(GetDeviceDescriptor(*value), expected);
 }
 
@@ -141,8 +141,8 @@ TEST(GetDeviceDescriptor, InvalidBLength) {
         "bDeviceSubClass": 0,
         "bDeviceProtocol": 0,
         "bMaxPacketSize0": 8,
-        "idVendor": 1193,
-        "idProduct": 10216,
+        "idVendor": 6353,
+        "idProduct": 20574,
         "bcdDevice": 0,
         "iManufacturer": 1,
         "iProduct": 2,

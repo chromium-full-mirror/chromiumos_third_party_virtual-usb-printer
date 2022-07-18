@@ -469,7 +469,7 @@
   }, {
       "type": "textWithoutLanguage",
       "name": "printer-device-id",
-      "value": "MFG:Canon;CMD:JPG,URF,PDF;MDL:D570;CLS:PRINTER;DES:;"
+      "value": "MFG:Google;CMD:JPG,URF,PDF;MDL:Virtual USB Printer;CLS:PRINTER;DES:;"
   }, {
       "type": "uri",
       "name": "printer-geo-location",
@@ -481,7 +481,7 @@
   }, {
       "type": "textWithoutLanguage",
       "name": "printer-info",
-      "value": "Canon D570"
+      "value": "Google Virtual USB Printer"
   }, {
       "type": "octetString",
       "name": "printer-input-tray",
@@ -690,7 +690,7 @@
   }, {
       "type": "nameWithoutLanguage",
       "name": "printer-dns-sd-name",
-      "value": "Canon D570"
+      "value": "Google Virtual USB Printer"
   }, {
       "type": "nameWithoutLanguage",
       "name": "printer-firmware-name",
