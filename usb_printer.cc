@@ -506,7 +506,7 @@ void UsbPrinter::HandleGetStatus(
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetStatus " << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
-  uint16_t status = 0;
+  uint16_t status = 0x1;  // Self-powered.
   SmartBuffer response(sizeof(status));
   response.Add(&status, sizeof(status));
   SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
@@ -531,8 +531,10 @@ void UsbPrinter::HandleGetDescriptor(
       HandleGetStringDescriptor(sockfd, usb_request, control_request);
       break;
     case USB_DESCRIPTOR_INTERFACE:
-      break;
     case USB_DESCRIPTOR_ENDPOINT:
+    case USB_DESCRIPTOR_DEBUG:
+      // Types that are known and not handled.
+      HandleUnsupportedRequest(sockfd, usb_request, control_request);
       break;
     case USB_DESCRIPTOR_DEVICE_QUALIFIER:
       HandleGetDeviceQualifierDescriptor(sockfd, usb_request, control_request);
@@ -540,6 +542,7 @@ void UsbPrinter::HandleGetDescriptor(
     default:
       LOG(ERROR) << "Unknown descriptor type request: "
                  << unsigned{control_request.wValue1};
+      HandleUnsupportedRequest(sockfd, usb_request, control_request);
   }
 }
 
@@ -633,6 +636,7 @@ void UsbPrinter::HandleGetStringDescriptor(
 
   int index = control_request.wValue0;
   const auto& strings = string_descriptors();
+  CHECK(index < strings.size());
   SmartBuffer response(strings[index][0]);
   response.Add(strings[index].data(), strings[index][0]);
   SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
