@@ -224,6 +224,7 @@ bool Server::HandleUsbRequest(const base::ScopedFD& connection) {
       ReceiveBuffer(connection.get(), sizeof(UsbipCmdSubmit));
   UsbipCmdSubmit command = UnpackUsbipCmdSubmit(&received);
   if (command.header.command == COMMAND_USBIP_CMD_SUBMIT) {
+    PrintUsbipCmdSubmit(command);
     printer_.HandleUsbRequest(connection.get(), command);
     return true;
   } else if (command.header.command == COMMAND_USBIP_CMD_UNLINK) {

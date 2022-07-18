@@ -19,7 +19,9 @@
 #include <base/check.h>
 #include <base/check_op.h>
 #include <base/logging.h>
+#include <base/notreached.h>
 #include <base/strings/string_util.h>
+#include <base/strings/stringprintf.h>
 
 #include "ipp_util.h"
 #include "server.h"
@@ -37,6 +39,12 @@ const uint64_t INDEX_0_MASK{0xFFUL << 24};
 const uint64_t INDEX_1_MASK{0xFFUL << 16};
 const uint64_t LENGTH_MASK{0xFFFFUL};
 
+// Returns the numeric value of the "direction" bit within |bmRequestType|.
+int GetControlDirection(uint8_t bmRequestType) {
+  // Data transfer direction is bit 7.
+  return (bmRequestType >> 7) & 0x01;
+}
+
 // Returns the numeric value of the "type" stored within the |bmRequestType|
 // bitmap.
 int GetControlType(uint8_t bmRequestType) {
@@ -45,6 +53,127 @@ int GetControlType(uint8_t bmRequestType) {
   // bitwise AND operation in order to clear any other bits and return strictly
   // the number value of the type bits.
   return (bmRequestType >> 5) & 3;
+}
+
+// Returns the numeric value of the "recipient" stored within |bmRequestType|.
+int GetControlRecipient(uint8_t bmRequestType) {
+  // The "recipient" of the request is stored in bits 0..4, so we just need to
+  // mask it off.
+  return bmRequestType & 0x1f;
+}
+
+// Bit 7 indicates the data transfer direction:
+//   0 = Host to Device
+//   1 = Device to Host
+std::string RequestDirectionString(uint8_t bmRequestType) {
+  return GetControlDirection(bmRequestType) ? "To host" : "To device";
+}
+
+std::string RequestTypeString(uint8_t bmRequestType) {
+  switch (GetControlType(bmRequestType)) {
+    case STANDARD_TYPE:
+      return "Standard";
+    case CLASS_TYPE:
+      return "Class";
+    case VENDOR_TYPE:
+      return "Vendor";
+    case RESERVED_TYPE:
+      return "Reserved";
+    default:
+      NOTREACHED();
+  }
+
+  return "Invalid";
+}
+
+std::string RequestRecipientString(uint8_t bmRequestType) {
+  switch (GetControlRecipient(bmRequestType)) {
+    case RECIPIENT_DEVICE:
+      return "Device";
+    case RECIPIENT_INTERFACE:
+      return "Interface";
+    case RECIPIENT_ENDPOINT:
+      return "Endpoint";
+    case RECIPIENT_OTHER:
+      return "Other";
+    default:
+      return "Reserved";
+  }
+}
+
+std::string StandardDeviceRequestString(uint8_t bRequest) {
+  switch (bRequest) {
+    case GET_STATUS:
+      return "GET_STATUS";
+    case CLEAR_FEATURE:
+      return "CLEAR_FEATURE";
+    case SET_FEATURE:
+      return "SET_FEATURE";
+    case SET_ADDRESS:
+      return "SET_ADDRESS";
+    case GET_DESCRIPTOR:
+      return "GET_DESCRIPTOR";
+    case SET_DESCRIPTOR:
+      return "SET_DESCRIPTOR";
+    case GET_CONFIGURATION:
+      return "GET_CONFIGURATION";
+    case SET_CONFIGURATION:
+      return "SET_CONFIGURATION";
+    case GET_INTERFACE:
+      return "GET_INTERFACE";
+    case SET_INTERFACE:
+      return "SET_INTERFACE";
+    case SET_FRAME:
+      return "SET_FRAME";
+    default:
+      LOG(ERROR) << "Unknown standard device bRequest value "
+                 << base::StringPrintf("0x%02X", bRequest);
+      return base::StringPrintf("BREQUEST_RAW_%02X", bRequest);
+  }
+}
+
+std::string RequestNameString(uint8_t bmRequestType, uint8_t bRequest) {
+  if (GetControlType(bmRequestType) == STANDARD_TYPE) {
+    switch (GetControlRecipient(bmRequestType)) {
+      case RECIPIENT_DEVICE:
+        return StandardDeviceRequestString(bRequest);
+
+        // TODO(b/238353195): Add mappings for known device class requests.
+    }
+  }
+
+  LOG(ERROR) << "No mapping defined for bmRequestType "
+             << base::StringPrintf("0x%02X", bmRequestType);
+  return base::StringPrintf("%02X", bRequest);
+}
+
+std::string DescriptorTypeString(uint8_t wValue) {
+  switch (wValue) {
+    case USB_DESCRIPTOR_DEVICE:
+      return "USB_DESCRIPTOR_DEVICE";
+    case USB_DESCRIPTOR_CONFIGURATION:
+      return "USB_DESCRIPTOR_CONFIGURATION";
+    case USB_DESCRIPTOR_STRING:
+      return "USB_DESCRIPTOR_STRING";
+    case USB_DESCRIPTOR_INTERFACE:
+      return "USB_DESCRIPTOR_INTERFACE";
+    case USB_DESCRIPTOR_ENDPOINT:
+      return "USB_DESCRIPTOR_ENDPOINT";
+    case USB_DESCRIPTOR_DEVICE_QUALIFIER:
+      return "USB_DESCRIPTOR_DEVICE_QUALIFIER";
+    case USB_DESCRIPTOR_OTHER_SPEED:
+      return "USB_DESCRIPTOR_OTHER_SPEED";
+    case USB_DESCRIPTOR_INTERFACE_POWER:
+      return "USB_DESCRIPTOR_INTERFACE_POWER";
+    case USB_DESCRIPTOR_OTG:
+      return "USB_DESCRIPTOR_OTG";
+    case USB_DESCRIPTOR_DEBUG:
+      return "USB_DESCRIPTOR_DEBUG";
+    default:
+      LOG(ERROR) << "Unknown descriptor type request: "
+                 << base::StringPrintf("0x%02X", wValue);
+      return base::StringPrintf("USB_DESCRIPTOR_RAW_%02X", wValue);
+  }
 }
 
 // Unpacks the standard USB SETUP packet contained within |setup| into a
@@ -58,6 +187,23 @@ UsbControlRequest CreateUsbControlRequest(int64_t setup) {
   request.wIndex0 = (setup & INDEX_0_MASK) >> 24;
   request.wIndex1 = (setup & INDEX_1_MASK) >> 16;
   request.wLength = ntohs(setup & LENGTH_MASK);
+
+  VLOG(2) << "bmRequestType "
+          << base::StringPrintf("0x%02X", request.bmRequestType);
+  VLOG(2) << "  direction   " << GetControlDirection(request.bmRequestType)
+          << " " << RequestDirectionString(request.bmRequestType);
+  VLOG(2) << "  type        " << GetControlType(request.bmRequestType) << " "
+          << RequestTypeString(request.bmRequestType);
+  VLOG(2) << "  recipient   " << GetControlRecipient(request.bmRequestType)
+          << " " << RequestRecipientString(request.bmRequestType);
+  VLOG(2) << "bRequest      " << base::StringPrintf("0x%02X", request.bRequest)
+          << " " << RequestNameString(request.bmRequestType, request.bRequest);
+  VLOG(2) << "wValue0       " << base::StringPrintf("0x%02X", request.wValue0);
+  VLOG(2) << "wValue1       " << base::StringPrintf("0x%02X", request.wValue1);
+  VLOG(2) << "wIndex0       " << base::StringPrintf("0x%02X", request.wIndex0);
+  VLOG(2) << "wIndex1       " << base::StringPrintf("0x%02X", request.wIndex1);
+  VLOG(2) << "wLength       " << unsigned{request.wLength};
+
   return request;
 }
 
@@ -280,7 +426,7 @@ void UsbPrinter::HandleStandardControl(
       break;
     default:
       LOG(ERROR) << "Received unknown control request "
-                 << control_request.bRequest;
+                 << unsigned{control_request.bRequest};
       break;
   }
 }
@@ -298,7 +444,8 @@ void UsbPrinter::HandlePrinterControl(
     case SOFT_RESET:
       break;
     default:
-      LOG(ERROR) << "Unkown printer class request " << control_request.bRequest;
+      LOG(ERROR) << "Unknown printer class request "
+                 << unsigned{control_request.bRequest};
   }
 }
 
@@ -357,7 +504,7 @@ void UsbPrinter::HandleGetStatus(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  VLOG(2) << "HandleGetStatus " << unsigned{control_request.wValue1} << "["
+  VLOG(1) << "HandleGetStatus " << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
   uint16_t status = 0;
   SmartBuffer response(sizeof(status));
@@ -369,7 +516,8 @@ void UsbPrinter::HandleGetDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  VLOG(2) << "HandleGetDescriptor " << unsigned{control_request.wValue1} << "["
+  VLOG(1) << "HandleGetDescriptor "
+          << DescriptorTypeString(control_request.wValue1) << "["
           << unsigned{control_request.wValue0} << "]";
 
   switch (control_request.wValue1) {
@@ -391,7 +539,7 @@ void UsbPrinter::HandleGetDescriptor(
       break;
     default:
       LOG(ERROR) << "Unknown descriptor type request: "
-                 << control_request.wValue1;
+                 << unsigned{control_request.wValue1};
   }
 }
 
@@ -399,8 +547,9 @@ void UsbPrinter::HandleGetDeviceDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  VLOG(2) << "HandleGetDeviceDescriptor " << unsigned{control_request.wValue1}
-          << "[" << unsigned{control_request.wValue0} << "]";
+  VLOG(1) << "HandleGetDeviceDescriptor "
+          << DescriptorTypeString(control_request.wValue1) << "["
+          << unsigned{control_request.wValue0} << "]";
 
   SmartBuffer response(sizeof(device_descriptor()));
   const UsbDeviceDescriptor& dev = device_descriptor();
@@ -420,8 +569,8 @@ void UsbPrinter::HandleGetConfigurationDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  VLOG(2) << "HandleGetConfigurationDescriptor "
-          << unsigned{control_request.wValue1} << "["
+  VLOG(1) << "HandleGetConfigurationDescriptor "
+          << DescriptorTypeString(control_request.wValue1) << "["
           << unsigned{control_request.wValue0} << "]";
 
   SmartBuffer response(control_request.wLength);
@@ -429,7 +578,7 @@ void UsbPrinter::HandleGetConfigurationDescriptor(
 
   if (control_request.wLength == sizeof(configuration_descriptor())) {
     // Only the configuration descriptor itself has been requested.
-    VLOG(2) << "Only configuration descriptor requested";
+    VLOG(1) << "Only configuration descriptor requested";
     SendUsbControlResponse(sockfd, usb_request, response.data(),
                            response.size());
     return;
@@ -446,7 +595,7 @@ void UsbPrinter::HandleGetConfigurationDescriptor(
     auto iter = endpoints.find(interface.bInterfaceNumber);
     if (iter == endpoints.end()) {
       LOG(ERROR) << "Unable to find endpoints for interface "
-                 << interface.bInterfaceNumber;
+                 << unsigned{interface.bInterfaceNumber};
       exit(1);
     }
     for (const auto& endpoint : iter->second) {
@@ -465,8 +614,8 @@ void UsbPrinter::HandleGetDeviceQualifierDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  VLOG(2) << "HandleGetDeviceQualifierDescriptor "
-          << unsigned{control_request.wValue1} << "["
+  VLOG(1) << "HandleGetDeviceQualifierDescriptor "
+          << DescriptorTypeString(control_request.wValue1) << "["
           << unsigned{control_request.wValue0} << "]";
 
   SmartBuffer response(sizeof(qualifier_descriptor()));
@@ -478,8 +627,9 @@ void UsbPrinter::HandleGetStringDescriptor(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  VLOG(2) << "HandleGetStringDescriptor " << unsigned{control_request.wValue1}
-          << "[" << unsigned{control_request.wValue0} << "]";
+  VLOG(1) << "HandleGetStringDescriptor "
+          << DescriptorTypeString(control_request.wValue1) << "["
+          << unsigned{control_request.wValue0} << "]";
 
   int index = control_request.wValue0;
   const auto& strings = string_descriptors();
@@ -492,7 +642,7 @@ void UsbPrinter::HandleGetConfiguration(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  VLOG(2) << "HandleGetConfiguration " << unsigned{control_request.wValue1}
+  VLOG(1) << "HandleGetConfiguration " << unsigned{control_request.wValue1}
           << "[" << unsigned{control_request.wValue0} << "]";
 
   // Note: For now we only have one configuration set, so we just respond with
@@ -508,8 +658,9 @@ void UsbPrinter::HandleUnsupportedRequest(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  VLOG(2) << "HandleUnsupportedRequest " << unsigned{control_request.bRequest}
-          << ": " << unsigned{control_request.wValue1} << "["
+  VLOG(1) << "HandleUnsupportedRequest "
+          << StandardDeviceRequestString(control_request.bRequest) << ": "
+          << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
   SendUsbControlResponse(sockfd, usb_request, 0, 0);
 }
@@ -518,7 +669,7 @@ void UsbPrinter::HandleGetDeviceId(
     int sockfd,
     const UsbipCmdSubmit& usb_request,
     const UsbControlRequest& control_request) const {
-  VLOG(2) << "HandleGetDeviceId " << unsigned{control_request.wValue1} << "["
+  VLOG(1) << "HandleGetDeviceId " << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
 
   SmartBuffer response(ieee_device_id().size());

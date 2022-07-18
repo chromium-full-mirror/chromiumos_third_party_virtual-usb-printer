@@ -5,18 +5,27 @@
 #ifndef USBIP_CONSTANTS_H__
 #define USBIP_CONSTANTS_H__
 
-// USB Decriptor Type Constants.
+// USB Descriptor Type Constants.
 #define USB_DESCRIPTOR_DEVICE 0x01            // Device Descriptor.
 #define USB_DESCRIPTOR_CONFIGURATION 0x02     // Configuration Descriptor.
 #define USB_DESCRIPTOR_STRING 0x03            // String Descriptor.
 #define USB_DESCRIPTOR_INTERFACE 0x04         // Interface Descriptor.
 #define USB_DESCRIPTOR_ENDPOINT 0x05          // Endpoint Descriptor.
 #define USB_DESCRIPTOR_DEVICE_QUALIFIER 0x06  // Device Qualifier.
+#define USB_DESCRIPTOR_OTHER_SPEED 0x07       // Other speed configuration.
+#define USB_DESCRIPTOR_INTERFACE_POWER 0x08   // Interface power descriptor.
+#define USB_DESCRIPTOR_OTG 0x09               // USB on-the-go descriptor.
+#define USB_DESCRIPTOR_DEBUG 0x0A             // Debug descriptor.
 
 #define STANDARD_TYPE 0  // Standard USB Request.
 #define CLASS_TYPE 1     // Class-specific USB Request.
 #define VENDOR_TYPE 2    // Vendor-specific USB Request.
 #define RESERVED_TYPE 3  // Reserved.
+
+#define RECIPIENT_DEVICE 0x00     // Request directed at whole device.
+#define RECIPIENT_INTERFACE 0x01  // Request directed at specific interface.
+#define RECIPIENT_ENDPOINT 0x02   // Request directed at specific endpoint.
+#define RECIPIENT_OTHER 0x03      // Request directed somewhere else.
 
 // USB "bRequest" Constants.
 // These represent the possible values contained within a USB SETUP packet which

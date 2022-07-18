@@ -14,6 +14,7 @@
 
 #include <base/check.h>
 #include <base/logging.h>
+#include <base/strings/stringprintf.h>
 
 SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply) {
   SmartBuffer serialized;
@@ -63,21 +64,26 @@ void PrintUsbipHeaderBasic(const UsbipHeaderBasic& header) {
 }
 
 void PrintUsbipCmdSubmit(const UsbipCmdSubmit& command) {
+  VLOG(2) << "== START CMD ==";
   PrintUsbipHeaderBasic(command.header);
   VLOG(2) << "usbip flags " << command.transfer_flags;
   VLOG(2) << "usbip number of packets " << command.number_of_packets;
   VLOG(2) << "usbip interval " << command.interval;
-  VLOG(2) << "usbip setup " << command.setup;
+  VLOG(2) << "usbip setup "
+          << base::StringPrintf("0x%016" PRIX64, command.setup);
   VLOG(2) << "usbip buffer length " << command.transfer_buffer_length;
+  VLOG(2) << "== END CMD ==";
 }
 
 void PrintUsbipRetSubmit(const UsbipRetSubmit& response) {
+  VLOG(2) << "== START RET ==";
   PrintUsbipHeaderBasic(response.header);
   VLOG(2) << "usbip status " << response.status;
   VLOG(2) << "usbip actual_length " << response.actual_length;
   VLOG(2) << "usbip start_frame " << response.start_frame;
   VLOG(2) << "usbip number_of_packets " << response.number_of_packets;
   VLOG(2) << "usbip error_count " << response.error_count;
+  VLOG(2) << "== END RET ==";
 }
 
 void PrintUsbControlRequest(const UsbControlRequest& request) {
