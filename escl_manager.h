@@ -146,7 +146,7 @@ class EsclManager {
   HttpResponse HandleDeleteJob(const std::string& uri);
 
   bool LogSettings(const ScanSettings& settings);
-  base::Value SettingsToDict(const ScanSettings& settings);
+  base::Value::Dict SettingsToDict(const ScanSettings& settings);
 
   ScannerCapabilities scanner_capabilities_;
   ScannerStatus status_;

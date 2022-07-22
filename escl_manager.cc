@@ -469,7 +469,7 @@ bool EsclManager::LogSettings(const ScanSettings& settings) {
   if (output_log_dir_.empty())
     return true;
 
-  base::Value settings_dict = SettingsToDict(settings);
+  base::Value::Dict settings_dict = SettingsToDict(settings);
   std::string json_settings;
   if (!base::JSONWriter::Write(settings_dict, &json_settings)) {
     LOG(ERROR) << "Failed to write settings in json format.";
@@ -486,24 +486,24 @@ bool EsclManager::LogSettings(const ScanSettings& settings) {
   return true;
 }
 
-base::Value EsclManager::SettingsToDict(const ScanSettings& settings) {
-  base::flat_map<std::string, base::Value> dict;
-  dict["DocumentFormat"] = base::Value(settings.document_format);
-  dict["ColorMode"] = base::Value(settings.color_mode);
-  dict["InputSource"] = base::Value(settings.input_source);
-  dict["XResolution"] = base::Value(settings.x_resolution);
-  dict["YResolution"] = base::Value(settings.y_resolution);
-  std::vector<base::Value> regions;
+base::Value::Dict EsclManager::SettingsToDict(const ScanSettings& settings) {
+  base::Value::Dict dict;
+  dict.Set("DocumentFormat", settings.document_format);
+  dict.Set("ColorMode", settings.color_mode);
+  dict.Set("InputSource", settings.input_source);
+  dict.Set("XResolution", settings.x_resolution);
+  dict.Set("YResolution", settings.y_resolution);
+  base::Value::List regions;
   for (const ScanRegion& r : settings.regions) {
-    base::flat_map<std::string, base::Value> region_dict;
-    region_dict["Units"] = base::Value(r.units);
-    region_dict["Height"] = base::Value(r.height);
-    region_dict["Width"] = base::Value(r.width);
-    region_dict["XOffset"] = base::Value(r.x_offset);
-    region_dict["YOffset"] = base::Value(r.y_offset);
-    regions.push_back(base::Value(region_dict));
+    base::Value::Dict region_dict;
+    region_dict.Set("Units", r.units);
+    region_dict.Set("Height", r.height);
+    region_dict.Set("Width", r.width);
+    region_dict.Set("XOffset", r.x_offset);
+    region_dict.Set("YOffset", r.y_offset);
+    regions.Append(std::move(region_dict));
   }
-  dict["Regions"] = base::Value(regions);
+  dict.Set("Regions", std::move(regions));
 
-  return base::Value(dict);
+  return dict;
 }
