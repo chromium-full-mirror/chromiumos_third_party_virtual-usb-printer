@@ -606,7 +606,7 @@ steps {
               type: TEXT_WITHOUT_LANGUAGE
               string_values {
                 string_values {
-                  value: "MFG:Canon;CMD:JPG,URF,PDF;MDL:D570;CLS:PRINTER;DES:;"
+                  value: "MFG:Google;CMD:JPG,URF,PDF;MDL:Virtual USB Printer;CLS:PRINTER;DES:;"
                 }
               }
             }
@@ -633,7 +633,7 @@ steps {
               type: TEXT_WITHOUT_LANGUAGE
               string_values {
                 string_values {
-                  value: "Canon D570"
+                  value: "Google Virtual USB Printer"
                 }
               }
             }
@@ -1067,7 +1067,7 @@ steps {
               type: NAME_WITHOUT_LANGUAGE
               string_values {
                 string_values {
-                  value: "Canon D570"
+                  value: "Google Virtual USB Printer"
                 }
               }
             }
