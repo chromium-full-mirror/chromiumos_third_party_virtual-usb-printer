@@ -41,6 +41,7 @@ constexpr char kUsage[] =
     "    [--attributes_path=<path>]\n"
     "    [--scanner_capabilities_path=<path>]\n"
     "    [--mock_printer_script=<path>]\n"
+    "    [--http_header_output_dir=<path>]\n"
     "    [--output_log_directory=<path>]";
 
 // Create a new UsbDescriptors object using the USB descriptors defined in
@@ -127,7 +128,8 @@ int main(int argc, char* argv[]) {
                 "Path to eSCL ScannerCapabilities JSON file");
   DEFINE_string(mock_printer_script, "",
                 "Path to `mocking::TestCase` textproto for mock printer");
-
+  DEFINE_string(http_header_output_dir, "",
+                "Path to the directory for writing out http header info");
   DEFINE_string(output_log_dir, "",
                 "Path to the directory for writing out log info");
 
@@ -214,12 +216,22 @@ int main(int argc, char* argv[]) {
     log_dir = base::FilePath();
   }
 
+  base::FilePath http_log_dir;
+  if (!FLAGS_http_header_output_dir.empty()) {
+    base::FilePath http_output_log_path(FLAGS_http_header_output_dir);
+    if (!base::DirectoryExists(http_output_log_path)) {
+      LOG(ERROR) << "Directory doesn't exist: " << http_output_log_path;
+      return 1;
+    }
+    http_log_dir = http_output_log_path;
+  }
+
   std::optional<EsclManager> escl_manager =
       InitializeEsclManager(FLAGS_scanner_capabilities_path, log_dir);
   if (!escl_manager.has_value())
     return 1;
 
-  UsbPrinter printer(usb_descriptors, document_output_path,
+  UsbPrinter printer(usb_descriptors, document_output_path, http_log_dir,
                      std::move(ipp_manager), std::move(escl_manager.value()),
                      std::move(mock_printer));
 

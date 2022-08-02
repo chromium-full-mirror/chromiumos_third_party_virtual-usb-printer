@@ -138,6 +138,7 @@ class UsbPrinter {
  public:
   UsbPrinter(const UsbDescriptors& usb_descriptors,
              const base::FilePath& document_output_path,
+             const base::FilePath& http_output_dir,
              IppManager ipp_manager,
              EsclManager escl_manager,
              std::unique_ptr<mock_printer::MockPrinter> mock_printer);
@@ -174,6 +175,10 @@ class UsbPrinter {
   // Determines whether |usb_request| is either a control or data request and
   // defers to the corresponding function.
   void HandleUsbRequest(int sockfd, const UsbipCmdSubmit& usb_request);
+
+  // If desired (by a non-empty http_output_dir_), this will create a file and
+  // log the HTTP info to this file.
+  void LogHttpHeaders(const HttpRequest& request);
 
  private:
   // Returns true if this printer supports ipp-over-usb. An ippusb printer must
@@ -263,6 +268,7 @@ class UsbPrinter {
 
   UsbDescriptors usb_descriptors_;
   base::FilePath document_output_path_;
+  base::FilePath http_output_dir_;
 
   IppManager ipp_manager_;
   EsclManager escl_manager_;

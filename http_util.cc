@@ -98,6 +98,7 @@ std::optional<HttpRequest> HttpRequest::Deserialize(SmartBuffer* message) {
     return std::nullopt;
 
   HttpRequest request;
+  request.request_line = request_line;
   request.method = request_line_tokens[0];
   request.uri = request_line_tokens[1];
 

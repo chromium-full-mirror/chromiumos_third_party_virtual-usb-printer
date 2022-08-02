@@ -284,11 +284,13 @@ UsbDescriptors::UsbDescriptors(
 
 UsbPrinter::UsbPrinter(const UsbDescriptors& usb_descriptors,
                        const base::FilePath& document_output_path,
+                       const base::FilePath& http_output_dir,
                        IppManager ipp_manager,
                        EsclManager escl_manager,
                        std::unique_ptr<mock_printer::MockPrinter> mock_printer)
     : usb_descriptors_(usb_descriptors),
       document_output_path_(document_output_path),
+      http_output_dir_(http_output_dir),
       ipp_manager_(std::move(ipp_manager)),
       escl_manager_(std::move(escl_manager)),
       mock_printer_(std::move(mock_printer)),
@@ -395,6 +397,7 @@ void UsbPrinter::HandleHttpData(const UsbipCmdSubmit& usb_request,
     return;
   }
 
+  LogHttpHeaders(im->request_header());
   HttpResponse response =
       GenerateHttpResponse(im->request_header(), &payload.value());
   QueueHttpResponse(usb_request, response);
@@ -460,6 +463,42 @@ InterfaceManager* UsbPrinter::GetInterfaceManager(int endpoint) {
   CHECK_LT(index, interface_managers_.size())
       << "Received request on an invalid endpoint";
   return &interface_managers_[index];
+}
+
+void UsbPrinter::LogHttpHeaders(const HttpRequest& request) {
+  if (http_output_dir_.empty()) {
+    return;
+  }
+
+  static int counter = 0;
+  const std::string filename =
+      base::StringPrintf("http-header-%04d.txt", ++counter);
+  const base::FilePath filePath = http_output_dir_.Append(filename);
+  base::File file(filePath,
+                  base::File::FLAG_OPEN_ALWAYS | base::File::FLAG_WRITE);
+  if (!file.IsValid()) {
+    LOG(ERROR) << "Failed to open/create file at " << filePath;
+    return;
+  }
+
+  const std::string msg =
+      base::StringPrintf("%s\n", request.request_line.c_str());
+  const int written = file.WriteAtCurrentPos(msg.c_str(), msg.length());
+  if (written != msg.length()) {
+    PLOG(ERROR) << "Failed to write HTTP request line to file at " << filePath;
+    return;
+  }
+
+  const HttpHeaders& headers = request.headers;
+  for (auto it = headers.begin(); it != headers.end(); ++it) {
+    const std::string msg =
+        base::StringPrintf("%s: %s\n", it->first.c_str(), it->second.c_str());
+    const int written = file.WriteAtCurrentPos(msg.c_str(), msg.length());
+    if (written != msg.length()) {
+      PLOG(ERROR) << "Failed to write http headers to file at " << filePath;
+      return;
+    }
+  }
 }
 
 HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,

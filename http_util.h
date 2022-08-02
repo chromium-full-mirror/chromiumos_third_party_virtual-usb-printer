@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __HTTP_UTIL_H__
-#define __HTTP_UTIL_H__
+#ifndef HTTP_UTIL_H_
+#define HTTP_UTIL_H_
 
 #include <optional>
 #include <string>
@@ -29,6 +29,7 @@ class HttpRequest {
   // length of the request body will be 0).
   size_t ContentLength() const;
 
+  std::string request_line;
   std::string method;
   std::string uri;
   HttpHeaders headers;
@@ -69,4 +70,4 @@ SmartBuffer ExtractIppMessage(SmartBuffer* message);
 // document file.
 SmartBuffer MergeDocument(SmartBuffer* message);
 
-#endif  // __HTTP_UTIL_H__
+#endif  // HTTP_UTIL_H_
