@@ -44,25 +44,6 @@ constexpr char kUsage[] =
     "    [--http_header_output_dir=<path>]\n"
     "    [--output_log_directory=<path>]";
 
-// Create a new UsbDescriptors object using the USB descriptors defined in
-// |printer_config|.
-UsbDescriptors CreateUsbDescriptors(const base::Value& printer_config) {
-  UsbDeviceDescriptor device = GetDeviceDescriptor(printer_config);
-  UsbConfigurationDescriptor configuration =
-      GetConfigurationDescriptor(printer_config);
-  UsbDeviceQualifierDescriptor qualifier =
-      GetDeviceQualifierDescriptor(printer_config);
-  std::vector<UsbInterfaceDescriptor> interfaces =
-      GetInterfaceDescriptors(printer_config);
-  std::map<uint8_t, std::vector<UsbEndpointDescriptor>> endpoint_map =
-      GetEndpointDescriptorMap(printer_config);
-  std::vector<std::vector<char>> strings = GetStringDescriptors(printer_config);
-  std::vector<char> ieee_device_id = GetIEEEDeviceId(printer_config);
-
-  return UsbDescriptors(device, configuration, qualifier, strings,
-                        ieee_device_id, interfaces, endpoint_map);
-}
-
 // Attempts to initialize an EsclManager.
 // Parses |capabilities_path| into a JSON object in order to do so, returning
 // nullopt if that parsing fails.
@@ -141,26 +122,13 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::optional<std::string> descriptors_contents =
-      GetJSONContents(FLAGS_descriptors_path);
-  if (!descriptors_contents.has_value()) {
-    LOG(ERROR) << "Failed to load file contents for " << FLAGS_descriptors_path;
+  std::optional<UsbDescriptors> usb_descriptors =
+      UsbDescriptors::Create(FLAGS_descriptors_path);
+  if (!usb_descriptors.has_value()) {
+    LOG(ERROR) << "Unable to create USB descriptors from file "
+               << FLAGS_descriptors_path;
     return 1;
   }
-
-  std::optional<base::Value> descriptors =
-      base::JSONReader::Read(*descriptors_contents);
-  if (!descriptors) {
-    LOG(ERROR) << "Failed to parse " << FLAGS_descriptors_path;
-    return 1;
-  }
-
-  if (!descriptors->is_dict()) {
-    LOG(ERROR) << "Failed to extract printer configuration as dictionary";
-    return 1;
-  }
-
-  UsbDescriptors usb_descriptors = CreateUsbDescriptors(*descriptors);
 
   std::unique_ptr<mock_printer::MockPrinter> mock_printer;
   if (!FLAGS_mock_printer_script.empty()) {
@@ -231,9 +199,9 @@ int main(int argc, char* argv[]) {
   if (!escl_manager.has_value())
     return 1;
 
-  UsbPrinter printer(usb_descriptors, document_output_path, http_log_dir,
-                     std::move(ipp_manager), std::move(escl_manager.value()),
-                     std::move(mock_printer));
+  UsbPrinter printer(usb_descriptors.value(), document_output_path,
+                     http_log_dir, std::move(ipp_manager),
+                     std::move(escl_manager.value()), std::move(mock_printer));
 
   Server server(std::move(printer));
   server.Run();

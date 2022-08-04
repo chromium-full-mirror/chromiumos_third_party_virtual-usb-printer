@@ -71,14 +71,10 @@ class InterfaceManager {
 // A grouping of the descriptors for a USB device.
 class UsbDescriptors {
  public:
-  explicit UsbDescriptors(
-      const UsbDeviceDescriptor& device_descriptor,
-      const UsbConfigurationDescriptor& configuration_descriptor,
-      const UsbDeviceQualifierDescriptor& qualifier_descriptor,
-      const std::vector<std::vector<char>>& string_descriptors,
-      const std::vector<char>& ieee_device_id,
-      const std::vector<UsbInterfaceDescriptor>& interfaces,
-      const std::map<uint8_t, std::vector<UsbEndpointDescriptor>>& endpoints);
+  // Create a new UsbDescriptors object using the USB descriptors defined in
+  // json format in the file located at `descriptor_file`.
+  static std::optional<UsbDescriptors> Create(
+      const std::string& descriptor_file);
 
   const UsbDeviceDescriptor& device_descriptor() const {
     return device_descriptor_;
@@ -108,6 +104,15 @@ class UsbDescriptors {
   }
 
  private:
+  explicit UsbDescriptors(
+      const UsbDeviceDescriptor& device_descriptor,
+      const UsbConfigurationDescriptor& configuration_descriptor,
+      const UsbDeviceQualifierDescriptor& qualifier_descriptor,
+      const std::vector<std::vector<char>>& string_descriptors,
+      const std::vector<char>& ieee_device_id,
+      const std::vector<UsbInterfaceDescriptor>& interfaces,
+      const std::map<uint8_t, std::vector<UsbEndpointDescriptor>>& endpoints);
+
   UsbDeviceDescriptor device_descriptor_;
   UsbConfigurationDescriptor configuration_descriptor_;
   UsbDeviceQualifierDescriptor qualifier_descriptor_;

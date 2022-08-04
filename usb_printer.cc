@@ -26,6 +26,8 @@
 #include "ipp_util.h"
 #include "server.h"
 #include "usbip_constants.h"
+#include "value_util.h"
+#include "load_config.h"
 
 namespace {
 
@@ -281,6 +283,43 @@ UsbDescriptors::UsbDescriptors(
       ieee_device_id_(ieee_device_id),
       interface_descriptors_(interface_descriptors),
       endpoint_descriptors_(endpoint_descriptors) {}
+
+std::optional<UsbDescriptors> UsbDescriptors::Create(
+    const std::string& descriptor_file) {
+  std::optional<std::string> descriptors_contents =
+      GetJSONContents(descriptor_file);
+  if (!descriptors_contents.has_value()) {
+    LOG(ERROR) << "Failed to load file contents for " << descriptor_file;
+    return std::nullopt;
+  }
+
+  std::optional<base::Value> descriptors =
+      base::JSONReader::Read(*descriptors_contents);
+  if (!descriptors) {
+    LOG(ERROR) << "Failed to parse " << descriptor_file;
+    return std::nullopt;
+  }
+
+  if (!descriptors->is_dict()) {
+    LOG(ERROR) << "Failed to extract printer configuration as dictionary";
+    return std::nullopt;
+  }
+
+  UsbDeviceDescriptor device = GetDeviceDescriptor(*descriptors);
+  UsbConfigurationDescriptor configuration =
+      GetConfigurationDescriptor(*descriptors);
+  UsbDeviceQualifierDescriptor qualifier =
+      GetDeviceQualifierDescriptor(*descriptors);
+  std::vector<UsbInterfaceDescriptor> interfaces =
+      GetInterfaceDescriptors(*descriptors);
+  std::map<uint8_t, std::vector<UsbEndpointDescriptor>> endpoint_map =
+      GetEndpointDescriptorMap(*descriptors);
+  std::vector<std::vector<char>> strings = GetStringDescriptors(*descriptors);
+  std::vector<char> ieee_device_id = GetIEEEDeviceId(*descriptors);
+
+  return UsbDescriptors(device, configuration, qualifier, strings,
+                        ieee_device_id, interfaces, endpoint_map);
+}
 
 UsbPrinter::UsbPrinter(const UsbDescriptors& usb_descriptors,
                        const base::FilePath& document_output_path,
