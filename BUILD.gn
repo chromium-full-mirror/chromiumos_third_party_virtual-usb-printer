@@ -15,6 +15,7 @@ group("all") {
       ":jpeg-util-testrunner",
       ":load-config-testrunner",
       ":smart-buffer-testrunner",
+      ":usb-printer-testrunner",
       "//virtual-usb-printer/mock_printer:unit_tests",
     ]
   }
@@ -192,5 +193,32 @@ if (use.test) {
       ":test_config",
     ]
     deps = [ "//common-mk/testrunner" ]
+  }
+
+  executable("usb-printer-testrunner") {
+    sources = [
+      "escl_manager.cc",
+      "ipp_manager.cc",
+      "ipp_util.cc",
+      "jpeg_util.cc",
+      "load_config.cc",
+      "op_commands.cc",
+      "server.cc",
+      "usb_printer.cc",
+      "usb_printer_test.cc",
+      "usbip.cc",
+      "value_util.cc",
+      "xml_util.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":http_util",
+      ":smart_buffer",
+      "//common-mk/testrunner",
+    ]
   }
 }
