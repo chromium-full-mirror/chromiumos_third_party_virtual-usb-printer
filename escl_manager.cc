@@ -23,15 +23,14 @@
 namespace {
 
 std::optional<std::vector<std::string>> ExtractStringList(
-    const base::Value& root, const std::string& config_name) {
-  const base::Value* value =
-      root.FindKeyOfType(config_name, base::Value::Type::LIST);
+    const base::Value::Dict& root, const std::string& config_name) {
+  const base::Value::List* value = root.FindList(config_name);
   if (!value) {
     LOG(ERROR) << "Config is missing " << config_name << " settings";
     return std::nullopt;
   }
   std::vector<std::string> config_list;
-  for (const base::Value& v : value->GetList()) {
+  for (const base::Value& v : *value) {
     if (!v.is_string()) {
       LOG(ERROR) << config_name << " value expected string, not " << v.type();
       return std::nullopt;
@@ -41,16 +40,15 @@ std::optional<std::vector<std::string>> ExtractStringList(
   return config_list;
 }
 
-std::optional<std::vector<int>> ExtractIntList(const base::Value& root,
+std::optional<std::vector<int>> ExtractIntList(const base::Value::Dict& root,
                                                const std::string& config_name) {
-  const base::Value* value =
-      root.FindKeyOfType(config_name, base::Value::Type::LIST);
+  const base::Value::List* value = root.FindList(config_name);
   if (!value) {
     LOG(ERROR) << "Config is missing " << config_name << " settings";
     return std::nullopt;
   }
   std::vector<int> config_list;
-  for (const base::Value& v : value->GetList()) {
+  for (const base::Value& v : *value) {
     if (!v.is_int()) {
       LOG(ERROR) << config_name << " value expected int, not " << v.type();
       return std::nullopt;
@@ -60,37 +58,11 @@ std::optional<std::vector<int>> ExtractIntList(const base::Value& root,
   return config_list;
 }
 
-std::optional<std::string> ExtractString(const base::Value& root,
-                                         const std::string& config_name) {
-  const base::Value* value =
-      root.FindKeyOfType(config_name, base::Value::Type::STRING);
-  if (!value) {
-    LOG(ERROR) << "Config is missing " << config_name << " setting";
-    return std::nullopt;
-  }
-  return value->GetString();
-}
-
-std::optional<int> ExtractInt(const base::Value& root,
-                              const std::string& config_name) {
-  const base::Value* value =
-      root.FindKeyOfType(config_name, base::Value::Type::INTEGER);
-  if (!value) {
-    return std::nullopt;
-  }
-  return value->GetInt();
-}
-
 std::optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
-    const base::Value& config) {
-  if (!config.is_dict()) {
-    LOG(ERROR) << "Cannot initialize SourceCapabilities from non-dict value";
-    return std::nullopt;
-  }
-
+    const base::Value::Dict& config) {
   SourceCapabilities result;
-  result.max_width = ExtractInt(config, "MaxWidth");
-  result.max_height = ExtractInt(config, "MaxHeight");
+  result.max_width = config.FindInt("MaxWidth");
+  result.max_height = config.FindInt("MaxHeight");
 
   std::optional<std::vector<std::string>> color_modes =
       ExtractStringList(config, "ColorModes");
@@ -116,7 +88,11 @@ std::optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
   }
   result.resolutions = resolutions.value();
 
-  result.x_justification = ExtractString(config, "XJustification");
+  const std::string* x_justification = config.FindString("XJustification");
+  if (!x_justification)
+    LOG(ERROR) << "Config is missing XJustification setting";
+  result.x_justification =
+      x_justification ? std::make_optional(*x_justification) : std::nullopt;
 
   return result;
 }
@@ -200,46 +176,40 @@ std::optional<base::TimeDelta> GetDelayForJob(const ScanSettings& settings) {
 }  // namespace
 
 std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
-    const base::Value& config) {
-  if (!config.is_dict()) {
-    LOG(ERROR) << "Cannot initialize ScannerCapabilities from non-dict value";
-    return std::nullopt;
-  }
-
+    const base::Value::Dict& config) {
   ScannerCapabilities result;
-  const base::Value* value = nullptr;
-  value = config.FindKeyOfType("MakeAndModel", base::Value::Type::STRING);
-  if (!value) {
+  const std::string* make_and_model = config.FindString("MakeAndModel");
+  if (!make_and_model) {
     LOG(ERROR) << "Config is missing MakeAndModel setting";
     return std::nullopt;
   }
-  result.make_and_model = value->GetString();
+  result.make_and_model = *make_and_model;
 
-  value = config.FindKeyOfType("SerialNumber", base::Value::Type::STRING);
-  if (!value) {
+  const std::string* serial_number = config.FindString("SerialNumber");
+  if (!serial_number) {
     LOG(ERROR) << "Config is missing SerialNumber setting";
     return std::nullopt;
   }
-  result.serial_number = value->GetString();
+  result.serial_number = *serial_number;
 
-  value = config.FindKeyOfType("Platen", base::Value::Type::DICTIONARY);
-  if (!value) {
+  const base::Value::Dict* platen = config.FindDict("Platen");
+  if (!platen) {
     LOG(ERROR) << "Config is missing Platen source capabilities";
     return std::nullopt;
   }
 
   std::optional<SourceCapabilities> platen_capabilities =
-      CreateSourceCapabilitiesFromConfig(*value);
+      CreateSourceCapabilitiesFromConfig(*platen);
   if (!platen_capabilities) {
     LOG(ERROR) << "Parsing Platen capabilities failed";
     return std::nullopt;
   }
   result.platen_capabilities = platen_capabilities.value();
 
-  value = config.FindKeyOfType("ADF", base::Value::Type::DICTIONARY);
-  if (value) {
+  const base::Value::Dict* adf = config.FindDict("ADF");
+  if (adf) {
     std::optional<SourceCapabilities> adf_capabilities =
-        CreateSourceCapabilitiesFromConfig(*value);
+        CreateSourceCapabilitiesFromConfig(*adf);
     if (!adf_capabilities) {
       LOG(ERROR) << "Parsing ADF capabilities failed";
       return std::nullopt;

@@ -237,33 +237,29 @@ TEST(GetAttribute, ValidAttributes) {
   std::optional<base::Value> actual_value = GetJSONValue("1834787");
   IppAttribute expected("integer", "printer-config-change-time",
                         &(actual_value.value()));
-  EXPECT_EQ(GetAttribute(*value), expected);
+  EXPECT_EQ(GetAttribute(value->GetDict()), expected);
 }
 
 TEST(GetAttribute, InvalidAttributes) {
-  const std::string json_contents1 = "123";
-  std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  EXPECT_DEATH(GetAttribute(*value1), "Failed to retrieve dictionary");
-
-  const std::string json_contents2 = R"(
+  const std::string json_contents1 = R"(
     {
       "type": 123,
       "name": "printer-config-change-time",
       "value": ""
     }
   )";
-  std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  EXPECT_DEATH(GetAttribute(*value2), "Failed to retrieve type");
+  std::optional<base::Value> value1 = GetJSONValue(json_contents1);
+  EXPECT_DEATH(GetAttribute(value1->GetDict()), "Failed to retrieve type");
 
-  const std::string json_contents3 = R"(
+  const std::string json_contents2 = R"(
     {
       "type": "keyword",
       "name": [ "hello" ],
       "value": ""
     }
   )";
-  std::optional<base::Value> value3 = GetJSONValue(json_contents3);
-  EXPECT_DEATH(GetAttribute(*value3), "Failed to retrieve name");
+  std::optional<base::Value> value2 = GetJSONValue(json_contents2);
+  EXPECT_DEATH(GetAttribute(value2->GetDict()), "Failed to retrieve name");
 }
 
 TEST(GetAttributes, ValidAttributes) {
@@ -290,37 +286,31 @@ TEST(GetAttributes, ValidAttributes) {
       IppAttribute("naturalLanguage", "attributes-natural-language",
                    &(actual_value2.value()))};
 
-  std::vector<IppAttribute> actual =
-      GetAttributes(*operation_attributes_value, "operation_attributes");
+  std::vector<IppAttribute> actual = GetAttributes(
+      operation_attributes_value->GetDict(), "operation_attributes");
 
   EXPECT_EQ(actual, expected);
 }
 
 TEST(GetAttributes, InvalidAttributes) {
-  // We expect this case to fail because the JSON value can't be interpreted as
-  // a dictionary.
-  const std::string json_contents1 = "123";
-  std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  EXPECT_DEATH(GetAttributes(*value1, ""), "Failed to retrieve dictionary");
-
   // We expect this case to fail because the there is no attributes list for the
   // provided key.
-  const std::string json_contents2 = R"(
+  const std::string json_contents1 = R"(
     {
       "printer_attributes": [
         { "type": "charset", "name": "charset-configured", "value": "utf-8" }
       ]
     }
   )";
-  std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  EXPECT_DEATH(GetAttributes(*value2, "operation_attributes"),
+  std::optional<base::Value> value1 = GetJSONValue(json_contents1);
+  EXPECT_DEATH(GetAttributes(value1->GetDict(), "operation_attributes"),
                "Failed to extract attributes list for key");
 
-  const std::string json_contents3 = R"(
+  const std::string json_contents2 = R"(
     { "printer_attributes": "not a list" }
   )";
-  std::optional<base::Value> value3 = GetJSONValue(json_contents3);
-  EXPECT_DEATH(GetAttributes(*value3, "printer_attributes"),
+  std::optional<base::Value> value2 = GetJSONValue(json_contents2);
+  EXPECT_DEATH(GetAttributes(value2->GetDict(), "printer_attributes"),
                "Failed to extract attributes list for key");
 }
 
@@ -329,14 +319,14 @@ TEST(IppAttributeGetBool, ValidAttributes) {
     { "type": "boolean", "name": "color-supported", "value": false }
   )";
   std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  IppAttribute attribute1 = GetAttribute(*value1);
+  IppAttribute attribute1 = GetAttribute(value1->GetDict());
   EXPECT_EQ(attribute1.GetBool(), false);
 
   const std::string json_contents2 = R"(
     { "type": "boolean", "name": "color-supported", "value": true }
   )";
   std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  IppAttribute attribute2 = GetAttribute(*value2);
+  IppAttribute attribute2 = GetAttribute(value2->GetDict());
   EXPECT_EQ(attribute2.GetBool(), true);
 }
 
@@ -347,14 +337,14 @@ TEST(IppAttributeGetBool, InvalidAttributes) {
     { "type": "boolean", "name": "color-supported", "value": 0 }
   )";
   std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  IppAttribute attribute1 = GetAttribute(*value1);
+  IppAttribute attribute1 = GetAttribute(value1->GetDict());
   EXPECT_DEATH(attribute1.GetBool(), "Failed to retrieve boolean");
 
   const std::string json_contents2 = R"(
     { "type": "boolean", "name": "color-supported", "value": 0 }
   )";
   std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  IppAttribute attribute2 = GetAttribute(*value2);
+  IppAttribute attribute2 = GetAttribute(value2->GetDict());
   EXPECT_DEATH(attribute2.GetBool(), "Failed to retrieve boolean");
 }
 
@@ -367,7 +357,7 @@ TEST(IppAttributeGetBools, ValidAttributes) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
   std::vector<bool> expected = {false, true, true, false};
   EXPECT_EQ(attribute.GetBools(), expected);
 }
@@ -383,7 +373,7 @@ TEST(IppAttributeGetBools, InvalidAttributes) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
   EXPECT_DEATH(attribute.GetBools(), "Failed to retrieve boolean");
 }
 
@@ -392,14 +382,14 @@ TEST(IppAttributeGetInt, ValidAttributes) {
     { "type": "integer", "name": "copies-default", "value": 1 }
   )";
   std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  IppAttribute attribute1 = GetAttribute(*value1);
+  IppAttribute attribute1 = GetAttribute(value1->GetDict());
   EXPECT_EQ(attribute1.GetInt(), 1);
 
   const std::string json_contents2 = R"(
     { "type": "integer", "name": "pages-per-minute", "value": 27 }
   )";
   std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  IppAttribute attribute2 = GetAttribute(*value2);
+  IppAttribute attribute2 = GetAttribute(value2->GetDict());
   EXPECT_EQ(attribute2.GetInt(), 27);
 }
 
@@ -410,14 +400,14 @@ TEST(IppAttributeGetInt, InvalidAttributes) {
     { "type": "integer", "name": "copies-default", "value": 1.33 }
   )";
   std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  IppAttribute attribute1 = GetAttribute(*value1);
+  IppAttribute attribute1 = GetAttribute(value1->GetDict());
   EXPECT_DEATH(attribute1.GetInt(), "Failed to retrieve integer");
 
   const std::string json_contents2 = R"(
     { "type": "integer", "name": "pages-per-minute", "value": "invalid" }
   )";
   std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  IppAttribute attribute2 = GetAttribute(*value2);
+  IppAttribute attribute2 = GetAttribute(value2->GetDict());
   EXPECT_DEATH(attribute2.GetInt(), "Failed to retrieve integer");
 }
 
@@ -430,7 +420,7 @@ TEST(IppAttributeGetInts, ValidAttributes) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
   std::vector<int> expected = {511, 1023};
   EXPECT_EQ(attribute.GetInts(), expected);
 }
@@ -446,7 +436,7 @@ TEST(IppAttributeGetInts, InvalidAttributes) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
   EXPECT_DEATH(attribute.GetInts(), "Failed to retrieve integer");
 }
 
@@ -455,14 +445,14 @@ TEST(IppAttributeGetString, ValidAttributes) {
     { "type": "charset", "name": "attributes-charset", "value": "utf-8" }
   )";
   std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  IppAttribute attribute1 = GetAttribute(*value1);
+  IppAttribute attribute1 = GetAttribute(value1->GetDict());
   EXPECT_EQ(attribute1.GetString(), "utf-8");
 
   const std::string json_contents2 = R"(
     { "type": "keyword", "name": "compression-supported", "value": "none" }
   )";
   std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  IppAttribute attribute2 = GetAttribute(*value2);
+  IppAttribute attribute2 = GetAttribute(value2->GetDict());
   EXPECT_EQ(attribute2.GetString(), "none");
 }
 
@@ -473,14 +463,14 @@ TEST(IppAttributeGetString, InvalidAttributes) {
     { "type": "charset", "name": "attributes-charset", "value": false }
   )";
   std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  IppAttribute attribute1 = GetAttribute(*value1);
+  IppAttribute attribute1 = GetAttribute(value1->GetDict());
   EXPECT_DEATH(attribute1.GetString(), "Failed to retrieve string");
 
   const std::string json_contents2 = R"(
     { "type": "keyword", "name": "compression-supported", "value": 123 }
   )";
   std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  IppAttribute attribute2 = GetAttribute(*value2);
+  IppAttribute attribute2 = GetAttribute(value2->GetDict());
   EXPECT_DEATH(attribute2.GetString(), "Failed to retrieve string");
 }
 
@@ -493,7 +483,7 @@ TEST(IppAttributeGetStrings, ValidAttributes) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
   std::vector<std::string> expected = {"completed", "not-completed"};
   EXPECT_EQ(attribute.GetStrings(), expected);
 }
@@ -509,7 +499,7 @@ TEST(IppAttributeGetStrings, InvalidAttributes) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
   EXPECT_DEATH(attribute.GetStrings(), "Failed to retrieve string");
 }
 
@@ -522,7 +512,7 @@ TEST(IppAttributeGetBytes, ValidAttributes) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
   std::vector<uint8_t> expected = {7, 255, 8, 20, 15, 49, 49, 0, 45, 8, 0};
   EXPECT_EQ(attribute.GetBytes(), expected);
 }
@@ -536,7 +526,7 @@ TEST(IppAttributeGetBytes, InvalidAttributes) {
     }
   )";
   std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  IppAttribute attribute1 = GetAttribute(*value1);
+  IppAttribute attribute1 = GetAttribute(value1->GetDict());
   EXPECT_DEATH(attribute1.GetBytes(), "Failed to retrieve byte value");
 
   const std::string json_contents2 = R"(
@@ -547,7 +537,7 @@ TEST(IppAttributeGetBytes, InvalidAttributes) {
     }
   )";
   std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  IppAttribute attribute2 = GetAttribute(*value2);
+  IppAttribute attribute2 = GetAttribute(value2->GetDict());
   EXPECT_DEATH(attribute2.GetBytes(), "Retrieved byte value is negative");
 
   const std::string json_contents3 = R"(
@@ -558,7 +548,7 @@ TEST(IppAttributeGetBytes, InvalidAttributes) {
     }
   )";
   std::optional<base::Value> value3 = GetJSONValue(json_contents3);
-  IppAttribute attribute3 = GetAttribute(*value3);
+  IppAttribute attribute3 = GetAttribute(value3->GetDict());
   EXPECT_DEATH(attribute3.GetBytes(), "Retrieved byte value is too large");
 }
 
@@ -577,7 +567,7 @@ TEST(AddPrinterAttributes, ValidAttributes) {
   })";
   std::optional<base::Value> value = GetJSONValue(json_contents);
   std::vector<IppAttribute> attributes =
-      GetAttributes(*value, kOperationAttributes);
+      GetAttributes(value->GetDict(), kOperationAttributes);
 
   const std::string expected_string =
       "\x01"                         // Tag for operation-attributes.
@@ -603,7 +593,7 @@ TEST(AddBoolean, SingleValue) {
     { "type": "boolean", "name": "color-supported", "value": false }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x22"             // Type specifier for boolean.
@@ -627,7 +617,7 @@ TEST(AddBoolean, MultipleValues) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x22"                  // Type specifier for boolean.
@@ -653,7 +643,7 @@ TEST(AddInteger, SingleValue) {
     { "type": "integer", "name": "copies-default", "value": 1 }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x21"                // Type specifier for integer.
@@ -677,7 +667,7 @@ TEST(AddInteger, MultipleValues) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x21"                        // Type specifier for integer.
@@ -699,7 +689,7 @@ TEST(AddString, SingleValue) {
     { "type": "keyword", "name": "compression-supported", "value": "none" }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x44"                   // Type specifier for keyword.
@@ -723,7 +713,7 @@ TEST(AddString, MultipleValues) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x44"                        // Type specifier for keyword.
@@ -751,7 +741,7 @@ TEST(AddDate, ValidDate) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x31"                             // Type specifier for dateTime.
@@ -777,7 +767,7 @@ TEST(AddDate, InvalidDate) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
   SmartBuffer result(0);
   EXPECT_DEATH(AddDate(attribute, &result),
                "Date value is in an incorrect format");
@@ -792,7 +782,7 @@ TEST(AddOctetString, StringValue) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x30"                // Type specifier for octetString.
@@ -817,7 +807,7 @@ TEST(AddOctetString, BytesValue) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x30"                      // Type specifier for octetString.
@@ -841,7 +831,7 @@ TEST(AddRange, ValidRange) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x33"                // Type specifier for range.
@@ -869,7 +859,7 @@ TEST(AddRange, InvalidRange) {
   )";
   SmartBuffer result(0);
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
   EXPECT_DEATH(AddRange(attribute, &result),
                "Range value is in an incorrect format");
 }
@@ -883,7 +873,7 @@ TEST(AddResolution, ValidResolution) {
     }
   )";
   std::optional<base::Value> value = GetJSONValue(json_contents);
-  IppAttribute attribute = GetAttribute(*value);
+  IppAttribute attribute = GetAttribute(value->GetDict());
 
   const std::string expected_string =
       "\x32"                        // Type specifier for resolution.
@@ -911,7 +901,7 @@ TEST(AddResolution, InvalidResolution) {
     }
   )";
   std::optional<base::Value> value1 = GetJSONValue(json_contents1);
-  IppAttribute attribute1 = GetAttribute(*value1);
+  IppAttribute attribute1 = GetAttribute(value1->GetDict());
   SmartBuffer result(0);
   EXPECT_DEATH(AddResolution(attribute1, &result),
                "Resolution value is in an incorrect format");
@@ -926,7 +916,7 @@ TEST(AddResolution, InvalidResolution) {
     }
   )";
   std::optional<base::Value> value2 = GetJSONValue(json_contents2);
-  IppAttribute attribute2 = GetAttribute(*value2);
+  IppAttribute attribute2 = GetAttribute(value2->GetDict());
   EXPECT_DEATH(AddResolution(attribute2, &result),
                "Resolution list is an invalid size");
 }

@@ -53,54 +53,54 @@ constexpr char kNewScan[] =
    "</scan:ScanSettings>";
 // clang-format on
 
-Value CreateCapabilitiesJson() {
-  Value dict(Value::Type::DICTIONARY);
-  dict.SetKey("MakeAndModel", Value("Test Make and Model"));
-  dict.SetKey("SerialNumber", Value("Test Serial"));
+Value::Dict CreateCapabilitiesJson() {
+  Value::Dict dict;
+  dict.Set("MakeAndModel", "Test Make and Model");
+  dict.Set("SerialNumber", "Test Serial");
 
-  Value platen(Value::Type::DICTIONARY);
-  platen.SetKey("MaxWidth", Value(3660));
-  platen.SetKey("MaxHeight", Value(5160));
+  Value::Dict platen;
+  platen.Set("MaxWidth", 3660);
+  platen.Set("MaxHeight", 5160);
 
-  Value::ListStorage platen_color_modes;
-  platen_color_modes.push_back(Value("RGB24"));
-  platen_color_modes.push_back(Value("Grayscale8"));
-  platen.SetKey("ColorModes", Value(std::move(platen_color_modes)));
+  Value::List platen_color_modes;
+  platen_color_modes.Append("RGB24");
+  platen_color_modes.Append("Grayscale8");
+  platen.Set("ColorModes", std::move(platen_color_modes));
 
-  Value::ListStorage platen_document_formats;
-  platen_document_formats.push_back(Value("application/pdf"));
-  platen.SetKey("DocumentFormats", Value(std::move(platen_document_formats)));
+  Value::List platen_document_formats;
+  platen_document_formats.Append("application/pdf");
+  platen.Set("DocumentFormats", std::move(platen_document_formats));
 
-  Value::ListStorage platen_resolutions;
-  platen_resolutions.push_back(Value(100));
-  platen_resolutions.push_back(Value(200));
-  platen_resolutions.push_back(Value(300));
-  platen.SetKey("Resolutions", Value(std::move(platen_resolutions)));
+  Value::List platen_resolutions;
+  platen_resolutions.Append(100);
+  platen_resolutions.Append(200);
+  platen_resolutions.Append(300);
+  platen.Set("Resolutions", std::move(platen_resolutions));
 
-  dict.SetKey("Platen", std::move(platen));
+  dict.Set("Platen", std::move(platen));
 
-  Value adf(Value::Type::DICTIONARY);
-  adf.SetKey("MaxWidth", Value(3660));
-  adf.SetKey("MaxHeight", Value(5160));
+  Value::Dict adf;
+  adf.Set("MaxWidth", 3660);
+  adf.Set("MaxHeight", 5160);
 
-  Value::ListStorage adf_color_modes;
-  adf_color_modes.push_back(Value("BlackAndWhite1"));
-  adf_color_modes.push_back(Value("Grayscale8"));
-  adf.SetKey("ColorModes", Value(std::move(adf_color_modes)));
+  Value::List adf_color_modes;
+  adf_color_modes.Append("BlackAndWhite1");
+  adf_color_modes.Append("Grayscale8");
+  adf.Set("ColorModes", std::move(adf_color_modes));
 
-  Value::ListStorage adf_document_formats;
-  adf_document_formats.push_back(Value("image/jpeg"));
-  adf.SetKey("DocumentFormats", Value(std::move(adf_document_formats)));
+  Value::List adf_document_formats;
+  adf_document_formats.Append("image/jpeg");
+  adf.Set("DocumentFormats", std::move(adf_document_formats));
 
-  Value::ListStorage adf_resolutions;
-  adf_resolutions.push_back(Value(75));
-  adf_resolutions.push_back(Value(150));
-  adf_resolutions.push_back(Value(600));
-  adf.SetKey("Resolutions", Value(std::move(adf_resolutions)));
+  Value::List adf_resolutions;
+  adf_resolutions.Append(75);
+  adf_resolutions.Append(150);
+  adf_resolutions.Append(600);
+  adf.Set("Resolutions", std::move(adf_resolutions));
 
-  adf.SetKey("XJustification", Value("Right"));
+  adf.Set("XJustification", "Right");
 
-  dict.SetKey("ADF", std::move(adf));
+  dict.Set("ADF", std::move(adf));
 
   return dict;
 }
@@ -154,76 +154,76 @@ TEST(ScannerCapabilities, Initialize) {
 }
 
 TEST(ScannerCapabilities, InitializeFailColorModeHasInteger) {
-  Value json = CreateCapabilitiesJson();
-  json.FindPath("Platen.ColorModes")->Append(Value(9));
+  Value::Dict json = CreateCapabilitiesJson();
+  json.FindListByDottedPath("Platen.ColorModes")->Append(Value(9));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailDocumentFormatsHasDouble) {
-  Value json = CreateCapabilitiesJson();
-  json.FindPath("Platen.DocumentFormats")->Append(Value(2.7));
+  Value::Dict json = CreateCapabilitiesJson();
+  json.FindListByDottedPath("Platen.DocumentFormats")->Append(Value(2.7));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailResolutionsHasString) {
-  Value json = CreateCapabilitiesJson();
-  json.FindPath("Platen.Resolutions")->Append(Value("600"));
+  Value::Dict json = CreateCapabilitiesJson();
+  json.FindListByDottedPath("Platen.Resolutions")->Append(Value("600"));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingMakeAndModel) {
-  Value json = CreateCapabilitiesJson();
-  EXPECT_TRUE(json.RemoveKey("MakeAndModel"));
+  Value::Dict json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.Remove("MakeAndModel"));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingSerialNumber) {
-  Value json = CreateCapabilitiesJson();
-  EXPECT_TRUE(json.RemoveKey("SerialNumber"));
+  Value::Dict json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.Remove("SerialNumber"));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingColorModes) {
-  Value json = CreateCapabilitiesJson();
-  EXPECT_TRUE(json.RemovePath("Platen.ColorModes"));
+  Value::Dict json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.RemoveByDottedPath("Platen.ColorModes"));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingDocumentFormats) {
-  Value json = CreateCapabilitiesJson();
-  EXPECT_TRUE(json.RemovePath("Platen.DocumentFormats"));
+  Value::Dict json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.RemoveByDottedPath("Platen.DocumentFormats"));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingResolutions) {
-  Value json = CreateCapabilitiesJson();
-  EXPECT_TRUE(json.RemovePath("Platen.Resolutions"));
+  Value::Dict json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.RemoveByDottedPath("Platen.Resolutions"));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingPlatenSection) {
-  Value json = CreateCapabilitiesJson();
-  EXPECT_TRUE(json.RemoveKey("Platen"));
+  Value::Dict json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.Remove("Platen"));
   EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializePassMissingMaxWidth) {
-  Value json = CreateCapabilitiesJson();
-  EXPECT_TRUE(json.RemovePath("Platen.MaxWidth"));
-  EXPECT_TRUE(json.RemovePath("ADF.MaxWidth"));
+  Value::Dict json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.RemoveByDottedPath("Platen.MaxWidth"));
+  EXPECT_TRUE(json.RemoveByDottedPath("ADF.MaxWidth"));
   EXPECT_TRUE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializePassMissingMaxHeight) {
-  Value json = CreateCapabilitiesJson();
-  EXPECT_TRUE(json.RemovePath("Platen.MaxHeight"));
-  EXPECT_TRUE(json.RemovePath("ADF.MaxHeight"));
+  Value::Dict json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.RemoveByDottedPath("Platen.MaxHeight"));
+  EXPECT_TRUE(json.RemoveByDottedPath("ADF.MaxHeight"));
   EXPECT_TRUE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializePassMissingJustification) {
-  Value json = CreateCapabilitiesJson();
-  EXPECT_TRUE(json.RemovePath("ADF.XJustification"));
+  Value::Dict json = CreateCapabilitiesJson();
+  EXPECT_TRUE(json.RemoveByDottedPath("ADF.XJustification"));
   EXPECT_TRUE(CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
@@ -458,10 +458,11 @@ TEST(HandleEsclRequest, InvalidScanJobs) {
   request.method = "POST";
   request.uri = "/eSCL/ScanJobs";
 
-  Value json = CreateCapabilitiesJson();
+  Value::Dict json = CreateCapabilitiesJson();
   {
-    auto* value = json.FindPath("Platen.DocumentFormats");
-    value->EraseListIter(value->GetList().end() - 1);
+    auto* value = json.FindListByDottedPath("Platen.DocumentFormats");
+    ASSERT_TRUE(value);
+    value->erase(value->end() - 1);
   }
   std::optional<ScannerCapabilities> caps =
       CreateScannerCapabilitiesFromConfig(std::move(json));

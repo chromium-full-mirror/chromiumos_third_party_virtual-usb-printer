@@ -38,7 +38,7 @@ struct ScannerCapabilities {
 };
 
 std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
-    const base::Value& config);
+    const base::Value::Dict& config);
 
 // A particular region of a document to return in a scan.
 struct ScanRegion {

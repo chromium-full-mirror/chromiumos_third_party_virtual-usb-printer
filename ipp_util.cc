@@ -21,16 +21,16 @@
 
 namespace {
 
-std::vector<IppAttribute> GetAttributes(const base::Value& attributes) {
+std::vector<IppAttribute> GetAttributes(const base::Value::List& attributes) {
   std::vector<IppAttribute> ipp_attributes;
-  for (std::size_t i = 0; i < attributes.GetList().size(); ++i) {
-    const base::Value& attributes_dictionary = attributes.GetList()[i];
+  for (std::size_t i = 0; i < attributes.size(); ++i) {
+    const base::Value& attributes_dictionary = attributes[i];
     if (!attributes_dictionary.is_dict()) {
       LOG(ERROR)
           << "Failed to extract dictionary value from attributes list at index "
           << i;
     }
-    ipp_attributes.push_back(GetAttribute(attributes_dictionary));
+    ipp_attributes.push_back(GetAttribute(attributes_dictionary.GetDict()));
   }
   return ipp_attributes;
 }
@@ -333,13 +333,10 @@ bool RemoveIppAttributes(SmartBuffer* buf) {
   return true;
 }
 
-IppAttribute GetAttribute(const base::Value& attribute) {
-  CHECK(attribute.is_dict())
-      << "Failed to retrieve dictionary value from attributes";
-
-  const std::string* type = attribute.FindStringKey(kTypeKey);
-  const std::string* name = attribute.FindStringKey(kNameKey);
-  const base::Value* value = attribute.FindKey(kValueKey);
+IppAttribute GetAttribute(const base::Value::Dict& attribute) {
+  const std::string* type = attribute.FindString(kTypeKey);
+  const std::string* name = attribute.FindString(kNameKey);
+  const base::Value* value = attribute.Find(kValueKey);
   CHECK(type) << "Failed to retrieve type from attribute";
   CHECK(name) << "Failed to retrieve name from attribute";
   CHECK(value) << "Failed to extract value from attribute";
@@ -347,12 +344,9 @@ IppAttribute GetAttribute(const base::Value& attribute) {
   return IppAttribute(*type, *name, value);
 }
 
-std::vector<IppAttribute> GetAttributes(const base::Value& attributes,
+std::vector<IppAttribute> GetAttributes(const base::Value::Dict& attributes,
                                         const std::string& key) {
-  CHECK(attributes.is_dict())
-      << "Failed to retrieve dictionary value from attributes";
-
-  const base::Value* attributes_list = attributes.FindListKey(key);
+  const base::Value::List* attributes_list = attributes.FindList(key);
   CHECK(attributes_list) << "Failed to extract attributes list for key " << key;
 
   return GetAttributes(*attributes_list);

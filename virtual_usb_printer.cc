@@ -67,8 +67,13 @@ std::optional<EsclManager> InitializeEsclManager(
     return std::nullopt;
   }
 
+  if (!capabilities_json->is_dict()) {
+    LOG(ERROR) << "Cannot initialize ScannerCapabilities from non-dict value";
+    return std::nullopt;
+  }
+
   std::optional<ScannerCapabilities> capabilities =
-      CreateScannerCapabilitiesFromConfig(*capabilities_json);
+      CreateScannerCapabilitiesFromConfig(capabilities_json->GetDict());
   if (!capabilities) {
     LOG(ERROR) << "Failed to initialize ScannerCapabilities";
     return std::nullopt;
@@ -157,15 +162,19 @@ int main(int argc, char* argv[]) {
       LOG(ERROR) << "Failed to parse " << FLAGS_attributes_path;
       return 1;
     }
+    if (!result->is_dict()) {
+      LOG(ERROR) << "Failed to retrieve dictionary value from attributes";
+      return 1;
+    }
 
     std::vector<IppAttribute> operation_attributes =
-        GetAttributes(*result, kOperationAttributes);
+        GetAttributes(result->GetDict(), kOperationAttributes);
     std::vector<IppAttribute> printer_attributes =
-        GetAttributes(*result, kPrinterAttributes);
+        GetAttributes(result->GetDict(), kPrinterAttributes);
     std::vector<IppAttribute> job_attributes =
-        GetAttributes(*result, kJobAttributes);
+        GetAttributes(result->GetDict(), kJobAttributes);
     std::vector<IppAttribute> unsupported_attributes =
-        GetAttributes(*result, kUnsupportedAttributes);
+        GetAttributes(result->GetDict(), kUnsupportedAttributes);
 
     ipp_manager =
         IppManager(operation_attributes, printer_attributes, job_attributes,
