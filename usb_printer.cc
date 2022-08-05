@@ -305,17 +305,18 @@ std::optional<UsbDescriptors> UsbDescriptors::Create(
     return std::nullopt;
   }
 
-  UsbDeviceDescriptor device = GetDeviceDescriptor(*descriptors);
+  UsbDeviceDescriptor device = GetDeviceDescriptor(descriptors->GetDict());
   UsbConfigurationDescriptor configuration =
-      GetConfigurationDescriptor(*descriptors);
+      GetConfigurationDescriptor(descriptors->GetDict());
   UsbDeviceQualifierDescriptor qualifier =
-      GetDeviceQualifierDescriptor(*descriptors);
+      GetDeviceQualifierDescriptor(descriptors->GetDict());
   std::vector<UsbInterfaceDescriptor> interfaces =
-      GetInterfaceDescriptors(*descriptors);
+      GetInterfaceDescriptors(descriptors->GetDict());
   std::map<uint8_t, std::vector<UsbEndpointDescriptor>> endpoint_map =
-      GetEndpointDescriptorMap(*descriptors);
-  std::vector<std::vector<char>> strings = GetStringDescriptors(*descriptors);
-  std::vector<char> ieee_device_id = GetIEEEDeviceId(*descriptors);
+      GetEndpointDescriptorMap(descriptors->GetDict());
+  std::vector<std::vector<char>> strings =
+      GetStringDescriptors(descriptors->GetDict());
+  std::vector<char> ieee_device_id = GetIEEEDeviceId(descriptors->GetDict());
 
   return UsbDescriptors(device, configuration, qualifier, strings,
                         ieee_device_id, interfaces, endpoint_map);
