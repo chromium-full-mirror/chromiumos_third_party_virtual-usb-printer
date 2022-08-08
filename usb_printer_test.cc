@@ -4,6 +4,8 @@
 
 #include "usb_printer.h"
 #include "http_util.h"
+#include "value_util.h"
+#include "mock_printer/parse_textproto.h"
 
 #include <optional>
 #include <string>
@@ -15,10 +17,22 @@
 #include <base/files/file_enumerator.h>
 #include <base/strings/stringprintf.h>
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
+
+class UsbPrinterTestPeer {
+ public:
+  HttpResponse GenerateHttpResponse(UsbPrinter& printer,
+                                    const HttpRequest& request,
+                                    SmartBuffer* body) {
+    return printer.GenerateHttpResponse(request, body);
+  }
+};
 
 namespace {
 
-std::unique_ptr<UsbPrinter> CreateUsbPrinter(const base::FilePath& httpLogDir) {
+std::unique_ptr<UsbPrinter> CreateUsbPrinter(
+    const base::FilePath& httpLogDir,
+    std::unique_ptr<mock_printer::MockPrinter> mockPrinter) {
   const std::string descriptorsPath("./config/ippusb_printer.json");
   std::optional<UsbDescriptors> usbDescriptors =
       UsbDescriptors::Create(descriptorsPath);
@@ -27,7 +41,6 @@ std::unique_ptr<UsbPrinter> CreateUsbPrinter(const base::FilePath& httpLogDir) {
   }
 
   const base::FilePath documentOutputPath;
-  std::unique_ptr<mock_printer::MockPrinter> mockPrinter;
   ScannerCapabilities caps;
   EsclManager esclManager(caps, base::FilePath());
   IppManager ippManager;
@@ -37,6 +50,22 @@ std::unique_ptr<UsbPrinter> CreateUsbPrinter(const base::FilePath& httpLogDir) {
       esclManager, std::move(mockPrinter));
 }
 
+std::unique_ptr<UsbPrinter> CreateUsbPrinter() {
+  std::unique_ptr<mock_printer::MockPrinter> mockPrinter;
+  return CreateUsbPrinter(base::FilePath(), std::move(mockPrinter));
+}
+
+std::unique_ptr<UsbPrinter> CreateUsbPrinterWithMockPrinter(
+    std::unique_ptr<mock_printer::MockPrinter> mockPrinter) {
+  return CreateUsbPrinter(base::FilePath(), std::move(mockPrinter));
+}
+
+std::unique_ptr<UsbPrinter> CreateUsbPrinterWithLogDir(
+    const base::FilePath& httpLogDir) {
+  std::unique_ptr<mock_printer::MockPrinter> mockPrinter;
+  return CreateUsbPrinter(httpLogDir, std::move(mockPrinter));
+}
+
 }  // namespace
 
 TEST(UsbPrinter, LogHttpHeaders) {
@@ -44,7 +73,8 @@ TEST(UsbPrinter, LogHttpHeaders) {
   base::ScopedTempDir httpLogDir;
   ASSERT_TRUE(httpLogDir.CreateUniqueTempDir());
 
-  std::unique_ptr<UsbPrinter> printer = CreateUsbPrinter(httpLogDir.GetPath());
+  std::unique_ptr<UsbPrinter> printer =
+      CreateUsbPrinterWithLogDir(httpLogDir.GetPath());
   ASSERT_TRUE(printer);
 
   const std::string key1("key1");
@@ -95,4 +125,102 @@ TEST(UsbPrinter, LogHttpHeaders) {
   }
 
   EXPECT_EQ(numFiles, 2);
+}
+
+// Define bytes for Get-Attributes request and response.
+static const std::vector<uint8_t> kGetAttributesRequest{2, 0, 0, 11, 0,
+                                                        0, 0, 1, 3};
+static const std::vector<uint8_t> kExpectedGetAttributesResponse{
+    2, 0, 0, 0, 0, 0, 0, 1, 1, 4, 3};
+
+TEST(UsbPrinter, ResponseWithNoMockPrinter) {
+  // We are not going to use a mock_printer for this test case, so we expect the
+  // results to be what our usb_printer would normally respond with, which is
+  // determined by the config used to create the usb printer.
+
+  std::unique_ptr<UsbPrinter> printer = CreateUsbPrinter();
+  ASSERT_TRUE(printer);
+
+  UsbPrinterTestPeer printerTestPeer;
+  HttpRequest request{"", "POST", "/ipp/print"};
+  SmartBuffer data(kGetAttributesRequest);
+  HttpResponse response =
+      printerTestPeer.GenerateHttpResponse(*printer.get(), request, &data);
+
+  EXPECT_EQ(response.status, "200 OK");
+  EXPECT_THAT(response.body.contents(), kExpectedGetAttributesResponse);
+}
+
+TEST(UsbPrinter, MockPrinterDefaultResponse) {
+  // For this test, we use a mock_printer but we script the response to use the
+  // default response, so we expect the same results that the usb printer would
+  // provide with no mock printer.
+
+  const auto test_case = mock_printer::ParseTestCaseOrDie(R"pb(
+    steps {
+      cardinality { type: ALL_IN_ORDER }
+      expectation_with_response {
+        expectation {
+          ipp_matcher {
+            operation_id: 0x000b
+            groups { tag: OPERATION_ATTRIBUTES }
+          }
+        }
+        response { default_response: true }
+      }
+    }
+  )pb");
+
+  std::unique_ptr<mock_printer::MockPrinter> mock_printer =
+      mock_printer::MockPrinter::Create(test_case);
+
+  std::unique_ptr<UsbPrinter> printer =
+      CreateUsbPrinterWithMockPrinter(std::move(mock_printer));
+  ASSERT_TRUE(printer);
+
+  UsbPrinterTestPeer printerTestPeer;
+  HttpRequest request{"", "POST", "/ipp/print"};
+  SmartBuffer data(kGetAttributesRequest);
+  HttpResponse response =
+      printerTestPeer.GenerateHttpResponse(*printer.get(), request, &data);
+
+  EXPECT_EQ(response.status, "200 OK");
+  EXPECT_THAT(response.body.contents(), kExpectedGetAttributesResponse);
+}
+
+TEST(UsbPrinter, MockPrinterScriptedResponse) {
+  // For this test, we use a mock_printer with a scripted response.  We will
+  // check the response from the usb printer to make sure it matches the
+  // scripted response.
+
+  const auto test_case = mock_printer::ParseTestCaseOrDie(R"pb(
+    steps {
+      cardinality { type: ALL_IN_ORDER }
+      expectation_with_response {
+        expectation {
+          ipp_matcher {
+            operation_id: 0x000b
+            groups { tag: OPERATION_ATTRIBUTES }
+          }
+        }
+        response { http_properties { status_code: 500 } }
+      }
+    }
+  )pb");
+
+  std::unique_ptr<mock_printer::MockPrinter> mock_printer =
+      mock_printer::MockPrinter::Create(test_case);
+
+  std::unique_ptr<UsbPrinter> printer =
+      CreateUsbPrinterWithMockPrinter(std::move(mock_printer));
+  ASSERT_TRUE(printer);
+
+  UsbPrinterTestPeer printerTestPeer;
+  HttpRequest request{"", "POST", "/ipp/print"};
+  SmartBuffer data(kGetAttributesRequest);
+  HttpResponse response =
+      printerTestPeer.GenerateHttpResponse(*printer.get(), request, &data);
+
+  EXPECT_EQ(response.status, "500 Internal Server Error");
+  EXPECT_EQ(response.body.size(), 0);
 }

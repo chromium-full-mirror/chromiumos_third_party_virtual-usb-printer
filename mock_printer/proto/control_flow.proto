@@ -69,6 +69,10 @@ message Response {
 
   // Causes virtual-usb-printer to respond with the specified HTTP properties.
   HttpProperties http_properties = 3;
+
+  // Causes virtual-usb-printer to respond with the default (non-scripted)
+  // response
+  bool default_response = 4;
 }
 
 // An Expectation with an associated Response. Models the statement

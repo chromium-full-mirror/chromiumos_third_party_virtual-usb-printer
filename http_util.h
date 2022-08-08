@@ -40,6 +40,7 @@ class HttpResponse {
   std::string status;
   HttpHeaders headers;
   SmartBuffer body;
+  bool default_response = false;
 
   // Serializes this HttpResponse to the textual format specified by the HTTP
   // standard and appends it to the contents of |buf|.

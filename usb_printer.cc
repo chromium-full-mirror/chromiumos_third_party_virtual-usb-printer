@@ -547,7 +547,15 @@ HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
     if (!mock_printer_) {
       return GenerateHttpResponseFromIppManager(body);
     }
-    return mock_printer_->GenerateHttpResponse(body);
+
+    HttpResponse retval = mock_printer_->GenerateHttpResponse(body);
+
+    if (retval.default_response) {
+      return GenerateHttpResponseFromIppManager(body);
+    }
+
+    return retval;
+
   } else if (base::StartsWith(request.uri, "/eSCL",
                               base::CompareCase::SENSITIVE)) {
     return escl_manager_.HandleEsclRequest(request, *body);

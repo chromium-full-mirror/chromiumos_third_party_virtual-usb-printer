@@ -186,6 +186,8 @@ class UsbPrinter {
   void LogHttpHeaders(const HttpRequest& request);
 
  private:
+  friend class UsbPrinterTestPeer;
+
   // Returns true if this printer supports ipp-over-usb. An ippusb printer must
   // have at least 2 interfaces with the following values:
   //    bInterfaceClass: 7

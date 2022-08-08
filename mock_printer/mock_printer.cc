@@ -47,6 +47,10 @@ class MockPrinterImpl : public MockPrinter {
   HttpResponse GenerateHttpResponse(SmartBuffer* body) override {
     HttpResponse http_response;
     Response response = ReceiveDataAndReact(*body);
+    if (response.default_response) {
+      http_response.default_response = true;
+      return http_response;
+    }
     if (!response.smart_buffer.has_value()) {
       LOG(ERROR) << "No smart buffer from mock printer.";
       http_response.status = "500 Internal Server Error";
@@ -67,6 +71,8 @@ class MockPrinterImpl : public MockPrinter {
     std::optional<SmartBuffer> smart_buffer;
     // Used to construct the HTTP response enclosing the IPP response.
     std::optional<mocking::HttpProperties> http_properties;
+    // Used to specify if we should use the default response
+    bool default_response;
   };
 
   // Reads `message` and matches it against the contained test case, returning
@@ -81,13 +87,15 @@ class MockPrinterImpl : public MockPrinter {
     if (test_case_holder_->TestCaseFinished()) {
       LOG(ERROR) << "Received unexpected message; test case is finished";
       LOG(ERROR) << "`TestCaseError()`: " << test_case_holder_->TestCaseError();
-      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
+              /*default_response=*/false};
     }
 
     if (!server_.ReadRequestFrameFrom(message.contents())) {
       LOG(ERROR) << "BUG: failed to read inbound message";
       JoinServerLogs().LogError();
-      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
+              /*default_response=*/false};
     }
     JoinServerLogs().Vlog(2, "`server_` logs after `ReadRequestFrameFrom()`:");
 
@@ -96,7 +104,8 @@ class MockPrinterImpl : public MockPrinter {
     if (!server_.ParseRequestAndSaveTo(request.get())) {
       LOG(ERROR) << "BUG: failed to parse inbound message";
       JoinServerLogs().LogError();
-      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
+              /*default_response=*/false};
     }
     JoinServerLogs().Vlog(2, "`server_` logs after `ParseRequestAndSaveTo()`:");
 
@@ -115,7 +124,13 @@ class MockPrinterImpl : public MockPrinter {
       LOG(ERROR) << "`TestCaseError()`: " << test_case_holder_->TestCaseError();
       ToString(*std::get_if<const ipp::Request*>(&request))
           .LogError("last received `ipp::Request`:");
-      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt};
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
+              /*default_response=*/false};
+    }
+
+    if (mock_response->default_response()) {
+      return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
+              /*default_response=*/true};
     }
 
     std::vector<uint8_t> response_buffer;
@@ -128,12 +143,14 @@ class MockPrinterImpl : public MockPrinter {
         LOG(ERROR) << "`WriteResponseFrameTo()` failed";
         JoinServerLogs().LogError();
         return {/*smart_buffer=*/std::nullopt,
-                /*http_properties=*/std::nullopt};
+                /*http_properties=*/std::nullopt,
+                /*default_response=*/false};
       }
     }
 
     VLOG(1) << "Sending response.";
-    return {SmartBuffer(response_buffer), mock_response->http_properties()};
+    return {SmartBuffer(response_buffer), mock_response->http_properties(),
+            false};
   }
 
   // Returns logs from `server_`.

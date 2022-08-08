@@ -219,7 +219,9 @@ if (use.test) {
       ":http_util",
       ":smart_buffer",
       "//common-mk/testrunner",
+      "//virtual-usb-printer/mock_printer:implementation",
       "//virtual-usb-printer/mock_printer:mocking_protos",
+      "//virtual-usb-printer/mock_printer:parse_textproto",
     ]
   }
 }
