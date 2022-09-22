@@ -1,4 +1,4 @@
-// Copyright 2019 The Chromium OS Authors. All rights reserved.
+// Copyright 2019 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,10 +9,12 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <sstream>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <base/json/json_reader.h>
+#include <base/strings/stringprintf.h>
 #include <base/values.h>
 
 #include "cups_constants.h"
@@ -219,6 +221,11 @@ TEST(RemoveAttributes, InvalidAttributeSize) {
 TEST(GetIppTag, ValidTagName) {
   EXPECT_EQ(GetIppTag(kInteger), IppTag::INTEGER);
   EXPECT_EQ(GetIppTag(kDateTime), IppTag::DATE);
+
+  std::string tagString(1, static_cast<uint8_t>(IppTag::INTEGER));
+  std::ostringstream oss;
+  oss << IppTag::INTEGER;
+  EXPECT_EQ(oss.str(), tagString);
 }
 
 TEST(GetIppTag, InvalidTagName) {

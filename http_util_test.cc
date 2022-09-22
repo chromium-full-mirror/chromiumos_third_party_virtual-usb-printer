@@ -1,4 +1,4 @@
-// Copyright 2020 The Chromium OS Authors. All rights reserved.
+// Copyright 2020 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -38,12 +38,27 @@ TEST(HttpRequest, DeserializeNoHeaders) {
 
   EXPECT_EQ(request.headers.size(), 0);
   EXPECT_FALSE(request.IsChunkedMessage());
+  EXPECT_EQ(request.ContentLength(), 0);
+}
+
+TEST(HttpRequest, DeserializeInvalidContentLength) {
+  const std::string http_request =
+      "POST /ipp/print HTTP/1.1\r\n"
+      "Content-Length: ten\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  std::optional<HttpRequest> opt_request = HttpRequest::Deserialize(&buf);
+  EXPECT_TRUE(opt_request.has_value());
+  HttpRequest request = opt_request.value();
+  EXPECT_EQ(request.ContentLength(), 0);
 }
 
 TEST(HttpRequest, DeserializeChunked) {
   const std::string http_request =
       "POST /ipp/print HTTP/1.1\r\n"
       "Content-Type: application/ipp\r\n"
+      "Content-Length: 12\r\n"
       "Date: Mon, 12 Nov 2018 19:17:31 GMT\r\n"
       "Host: localhost:0\r\n"
       "Transfer-Encoding: chunked\r\n"
@@ -62,6 +77,7 @@ TEST(HttpRequest, DeserializeChunked) {
 
   HttpHeaders expected_headers{
       {"Content-Type", "application/ipp"},
+      {"Content-Length", "12"},
       {"Date", "Mon, 12 Nov 2018 19:17:31 GMT"},
       {"Host", "localhost:0"},
       {"Transfer-Encoding", "chunked"},
@@ -71,12 +87,41 @@ TEST(HttpRequest, DeserializeChunked) {
   EXPECT_EQ(request.headers, expected_headers);
   EXPECT_TRUE(request.IsChunkedMessage());
   EXPECT_EQ(buf.contents(), CreateByteVector("request body"));
+  EXPECT_EQ(request.ContentLength(), 12);
 }
 
 TEST(HttpRequest, MalformedHeader) {
   const std::string http_request =
       "POST /ipp/print HTTP/1.1\r\n"
       "Content-Type application/ipp\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  EXPECT_FALSE(HttpRequest::Deserialize(&buf).has_value());
+}
+
+TEST(HttpRequest, MalformedVersion) {
+  const std::string http_request =
+      "POST /ipp/print HTTP\r\n"
+      "Content-Type application/ipp\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  EXPECT_FALSE(HttpRequest::Deserialize(&buf).has_value());
+}
+
+TEST(HttpRequest, InvalidVersion) {
+  const std::string http_request =
+      "POST /ipp/print HTTP/1.0\r\n"
+      "Content-Type application/ipp\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  EXPECT_FALSE(HttpRequest::Deserialize(&buf).has_value());
+}
+
+TEST(HttpRequest, EmptyRequest) {
+  const std::string http_request = "\r\n\r\n";
 
   SmartBuffer buf;
   buf.Add(http_request);
@@ -148,6 +193,20 @@ TEST(ExtractChunkSize, ValidChunk) {
   message_buffer.Add(message);
   ssize_t chunk_size = ExtractChunkSize(message_buffer);
   EXPECT_EQ(chunk_size, 0x1c);
+}
+
+TEST(ExtractChunkSize, InvalidChunk) {
+  const std::string message = "no leading hex size in message\r\n";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+  EXPECT_EQ(ExtractChunkSize(message_buffer), 0);
+}
+
+TEST(ExtractChunkSize, InvalidChunkEnding) {
+  const std::string message = "Message with no line ending";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+  EXPECT_EQ(ExtractChunkSize(message_buffer), 0);
 }
 
 TEST(ParseHttpChunkedMessage, MultipleChunks) {

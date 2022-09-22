@@ -1,4 +1,4 @@
-// Copyright 2020 The Chromium OS Authors. All rights reserved.
+// Copyright 2020 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -51,9 +51,101 @@ constexpr char kNewScan[] =
        "<pwg:InputSource>Platen</pwg:InputSource>"
        "<scan:InputSource>Platen</scan:InputSource>"
    "</scan:ScanSettings>";
+constexpr char kScanInvalidResolution[] =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    "<scan:ScanSettings xmlns:pwg=\"http://www.pwg.org/schemas/2010/12/sm\" "
+         "xmlns:scan=\"http://schemas.hp.com/imaging/escl/2011/05/03\">"
+       "<pwg:Version>2.0</pwg:Version>"
+       "<pwg:ScanRegions>"
+           "<pwg:ScanRegion>"
+               "<pwg:ContentRegionUnits>"
+                   "escl:ThreeHundredthsOfInches"
+               "</pwg:ContentRegionUnits>"
+               "<pwg:Height>600</pwg:Height>"
+               "<pwg:Width>200</pwg:Width>"
+               "<pwg:XOffset>0</pwg:XOffset>"
+               "<pwg:YOffset>0</pwg:YOffset>"
+           "</pwg:ScanRegion>"
+       "</pwg:ScanRegions>"
+       "<pwg:DocumentFormat>application/pdf</pwg:DocumentFormat>"
+       "<scan:ColorMode>RGB24</scan:ColorMode>"
+       "<scan:XResolution>100</scan:XResolution>"
+       "<scan:YResolution>300</scan:YResolution>"
+       "<pwg:InputSource>Platen</pwg:InputSource>"
+       "<scan:InputSource>Platen</scan:InputSource>"
+   "</scan:ScanSettings>";
+constexpr char kScanUnsupportedInvalidResolution[] =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    "<scan:ScanSettings xmlns:pwg=\"http://www.pwg.org/schemas/2010/12/sm\" "
+         "xmlns:scan=\"http://schemas.hp.com/imaging/escl/2011/05/03\">"
+       "<pwg:Version>2.0</pwg:Version>"
+       "<pwg:ScanRegions>"
+           "<pwg:ScanRegion>"
+               "<pwg:ContentRegionUnits>"
+                   "escl:ThreeHundredthsOfInches"
+               "</pwg:ContentRegionUnits>"
+               "<pwg:Height>600</pwg:Height>"
+               "<pwg:Width>200</pwg:Width>"
+               "<pwg:XOffset>0</pwg:XOffset>"
+               "<pwg:YOffset>0</pwg:YOffset>"
+           "</pwg:ScanRegion>"
+       "</pwg:ScanRegions>"
+       "<pwg:DocumentFormat>application/pdf</pwg:DocumentFormat>"
+       "<scan:ColorMode>RGB24</scan:ColorMode>"
+       "<scan:XResolution>400</scan:XResolution>"
+       "<scan:YResolution>400</scan:YResolution>"
+       "<pwg:InputSource>Platen</pwg:InputSource>"
+       "<scan:InputSource>Platen</scan:InputSource>"
+   "</scan:ScanSettings>";
+constexpr char kScanFeeder[] =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    "<scan:ScanSettings xmlns:pwg=\"http://www.pwg.org/schemas/2010/12/sm\" "
+         "xmlns:scan=\"http://schemas.hp.com/imaging/escl/2011/05/03\">"
+       "<pwg:Version>2.0</pwg:Version>"
+       "<pwg:ScanRegions>"
+           "<pwg:ScanRegion>"
+               "<pwg:ContentRegionUnits>"
+                   "escl:ThreeHundredthsOfInches"
+               "</pwg:ContentRegionUnits>"
+               "<pwg:Height>600</pwg:Height>"
+               "<pwg:Width>200</pwg:Width>"
+               "<pwg:XOffset>0</pwg:XOffset>"
+               "<pwg:YOffset>0</pwg:YOffset>"
+           "</pwg:ScanRegion>"
+       "</pwg:ScanRegions>"
+       "<pwg:DocumentFormat>application/pdf</pwg:DocumentFormat>"
+       "<scan:ColorMode>RGB24</scan:ColorMode>"
+       "<scan:XResolution>300</scan:XResolution>"
+       "<scan:YResolution>300</scan:YResolution>"
+       "<pwg:InputSource>Feeder</pwg:InputSource>"
+       "<scan:InputSource>Feeder</scan:InputSource>"
+   "</scan:ScanSettings>";
+constexpr char kScanInvalidSource[] =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    "<scan:ScanSettings xmlns:pwg=\"http://www.pwg.org/schemas/2010/12/sm\" "
+         "xmlns:scan=\"http://schemas.hp.com/imaging/escl/2011/05/03\">"
+       "<pwg:Version>2.0</pwg:Version>"
+       "<pwg:ScanRegions>"
+           "<pwg:ScanRegion>"
+               "<pwg:ContentRegionUnits>"
+                   "escl:ThreeHundredthsOfInches"
+               "</pwg:ContentRegionUnits>"
+               "<pwg:Height>600</pwg:Height>"
+               "<pwg:Width>200</pwg:Width>"
+               "<pwg:XOffset>0</pwg:XOffset>"
+               "<pwg:YOffset>0</pwg:YOffset>"
+           "</pwg:ScanRegion>"
+       "</pwg:ScanRegions>"
+       "<pwg:DocumentFormat>application/pdf</pwg:DocumentFormat>"
+       "<scan:ColorMode>RGB24</scan:ColorMode>"
+       "<scan:XResolution>300</scan:XResolution>"
+       "<scan:YResolution>300</scan:YResolution>"
+       "<pwg:InputSource>Invalid</pwg:InputSource>"
+       "<scan:InputSource>Invalid</scan:InputSource>"
+   "</scan:ScanSettings>";
 // clang-format on
 
-Value::Dict CreateCapabilitiesJson() {
+Value::Dict CreateCapabilitiesJson(bool createAdf = true) {
   Value::Dict dict;
   dict.Set("MakeAndModel", "Test Make and Model");
   dict.Set("SerialNumber", "Test Serial");
@@ -79,28 +171,30 @@ Value::Dict CreateCapabilitiesJson() {
 
   dict.Set("Platen", std::move(platen));
 
-  Value::Dict adf;
-  adf.Set("MaxWidth", 3660);
-  adf.Set("MaxHeight", 5160);
+  if (createAdf) {
+    Value::Dict adf;
+    adf.Set("MaxWidth", 3660);
+    adf.Set("MaxHeight", 5160);
 
-  Value::List adf_color_modes;
-  adf_color_modes.Append("BlackAndWhite1");
-  adf_color_modes.Append("Grayscale8");
-  adf.Set("ColorModes", std::move(adf_color_modes));
+    Value::List adf_color_modes;
+    adf_color_modes.Append("BlackAndWhite1");
+    adf_color_modes.Append("Grayscale8");
+    adf.Set("ColorModes", std::move(adf_color_modes));
 
-  Value::List adf_document_formats;
-  adf_document_formats.Append("image/jpeg");
-  adf.Set("DocumentFormats", std::move(adf_document_formats));
+    Value::List adf_document_formats;
+    adf_document_formats.Append("image/jpeg");
+    adf.Set("DocumentFormats", std::move(adf_document_formats));
 
-  Value::List adf_resolutions;
-  adf_resolutions.Append(75);
-  adf_resolutions.Append(150);
-  adf_resolutions.Append(600);
-  adf.Set("Resolutions", std::move(adf_resolutions));
+    Value::List adf_resolutions;
+    adf_resolutions.Append(75);
+    adf_resolutions.Append(150);
+    adf_resolutions.Append(600);
+    adf.Set("Resolutions", std::move(adf_resolutions));
 
-  adf.Set("XJustification", "Right");
+    adf.Set("XJustification", "Right");
 
-  dict.Set("ADF", std::move(adf));
+    dict.Set("ADF", std::move(adf));
+  }
 
   return dict;
 }
@@ -437,6 +531,32 @@ TEST(HandleEsclRequest, ScannerStatus) {
   xmlFreeDoc(doc);
 }
 
+TEST(HandleEsclRequest, GetJobsInvalidRequest) {
+  HttpRequest request;
+  request.method = "GET";
+  // This uri is invalid when trying to get the next job.
+  request.uri = "/eSCL/ScanJobs/";
+
+  ScannerCapabilities caps;
+  EsclManager manager(caps, base::FilePath());
+  HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
+  EXPECT_EQ(response.status, "405 Method Not Allowed");
+  EXPECT_EQ(response.body.size(), 0);
+}
+
+TEST(HandleEsclRequest, GetJobsInvalidJobId) {
+  HttpRequest request;
+  request.method = "GET";
+  // An invalid id
+  request.uri = "/eSCL/ScanJobs/12345/NextDocument";
+
+  ScannerCapabilities caps;
+  EsclManager manager(caps, base::FilePath());
+  HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
+  EXPECT_EQ(response.status, "404 Not Found");
+  EXPECT_EQ(response.body.size(), 0);
+}
+
 TEST(HandleEsclRequest, ScanJobs) {
   HttpRequest request;
   request.method = "POST";
@@ -451,6 +571,109 @@ TEST(HandleEsclRequest, ScanJobs) {
 
   HttpResponse response = manager.HandleEsclRequest(request, body);
   EXPECT_EQ(response.status, "201 Created");
+}
+
+TEST(HandleEsclRequest, ScanJobsInvalidXmlRequest) {
+  HttpRequest request;
+  request.method = "POST";
+  request.uri = "/eSCL/ScanJobs";
+
+  std::optional<ScannerCapabilities> caps =
+      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+  ASSERT_TRUE(caps);
+  EsclManager manager(caps.value(), base::FilePath());
+  char invalidRequestXml[] = "Invalid XML";
+  std::vector<uint8_t> xml(invalidRequestXml,
+                           invalidRequestXml + strlen(invalidRequestXml));
+  SmartBuffer body(xml);
+
+  HttpResponse response = manager.HandleEsclRequest(request, body);
+  EXPECT_EQ(response.status, "415 Unsupported Media Type");
+}
+
+TEST(HandleEsclRequest, ScanInvalidResolution) {
+  HttpRequest request;
+  request.method = "POST";
+  request.uri = "/eSCL/ScanJobs";
+
+  std::optional<ScannerCapabilities> caps =
+      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+  ASSERT_TRUE(caps);
+  EsclManager manager(caps.value(), base::FilePath());
+  std::vector<uint8_t> xml(
+      kScanInvalidResolution,
+      kScanInvalidResolution + strlen(kScanInvalidResolution));
+  SmartBuffer body(xml);
+
+  HttpResponse response = manager.HandleEsclRequest(request, body);
+  EXPECT_EQ(response.status, "409 Conflict");
+}
+
+TEST(HandleEsclRequest, ScanUnsupportedResolution) {
+  HttpRequest request;
+  request.method = "POST";
+  request.uri = "/eSCL/ScanJobs";
+
+  std::optional<ScannerCapabilities> caps =
+      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+  ASSERT_TRUE(caps);
+  EsclManager manager(caps.value(), base::FilePath());
+  std::vector<uint8_t> xml(kScanUnsupportedInvalidResolution,
+                           kScanUnsupportedInvalidResolution +
+                               strlen(kScanUnsupportedInvalidResolution));
+  SmartBuffer body(xml);
+
+  HttpResponse response = manager.HandleEsclRequest(request, body);
+  EXPECT_EQ(response.status, "409 Conflict");
+}
+
+TEST(HandleEsclRequest, ScanFeeder) {
+  HttpRequest request;
+  request.method = "POST";
+  request.uri = "/eSCL/ScanJobs";
+
+  std::optional<ScannerCapabilities> caps =
+      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+  ASSERT_TRUE(caps);
+  EsclManager manager(caps.value(), base::FilePath());
+  std::vector<uint8_t> xml(kScanFeeder, kScanFeeder + strlen(kScanFeeder));
+  SmartBuffer body(xml);
+
+  HttpResponse response = manager.HandleEsclRequest(request, body);
+  EXPECT_EQ(response.status, "409 Conflict");
+}
+
+TEST(HandleEsclRequest, ScanNoFeederCapabilities) {
+  HttpRequest request;
+  request.method = "POST";
+  request.uri = "/eSCL/ScanJobs";
+
+  std::optional<ScannerCapabilities> caps =
+      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson(false));
+  ASSERT_TRUE(caps);
+  EsclManager manager(caps.value(), base::FilePath());
+  std::vector<uint8_t> xml(kScanFeeder, kScanFeeder + strlen(kScanFeeder));
+  SmartBuffer body(xml);
+
+  HttpResponse response = manager.HandleEsclRequest(request, body);
+  EXPECT_EQ(response.status, "409 Conflict");
+}
+
+TEST(HandleEsclRequest, ScanUnknownSource) {
+  HttpRequest request;
+  request.method = "POST";
+  request.uri = "/eSCL/ScanJobs";
+
+  std::optional<ScannerCapabilities> caps =
+      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+  ASSERT_TRUE(caps);
+  EsclManager manager(caps.value(), base::FilePath());
+  std::vector<uint8_t> xml(kScanInvalidSource,
+                           kScanInvalidSource + strlen(kScanInvalidSource));
+  SmartBuffer body(xml);
+
+  HttpResponse response = manager.HandleEsclRequest(request, body);
+  EXPECT_EQ(response.status, "409 Conflict");
 }
 
 TEST(HandleEsclRequest, InvalidScanJobs) {
