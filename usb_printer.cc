@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Copyright 2018 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -543,6 +543,7 @@ void UsbPrinter::LogHttpHeaders(const HttpRequest& request) {
 
 HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
                                               SmartBuffer* body) {
+  LOG(INFO) << request.request_line;
   if (request.method == "POST" && request.uri == "/ipp/print") {
     if (!mock_printer_) {
       return GenerateHttpResponseFromIppManager(body);
@@ -773,7 +774,7 @@ void UsbPrinter::QueueHttpResponse(const UsbipCmdSubmit& usb_request,
   SmartBuffer http_message;
   response.Serialize(&http_message);
 
-  LOG(INFO) << "Queueing ipp response...";
+  LOG(INFO) << "Queueing HTTP response...";
   InterfaceManager* im = GetInterfaceManager(usb_request.header.ep);
   im->QueueMessage(http_message);
 }

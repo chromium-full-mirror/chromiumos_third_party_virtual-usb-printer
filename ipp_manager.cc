@@ -1,4 +1,4 @@
-// Copyright 2020 The Chromium OS Authors. All rights reserved.
+// Copyright 2020 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,6 +6,8 @@
 
 #include <base/files/file_util.h>
 #include <base/logging.h>
+#include <base/strings/stringprintf.h>
+#include <chromeos/libipp/ipp_enums.h>
 
 const uint16_t IppManager::kSuccessStatus = 0;
 
@@ -22,6 +24,11 @@ IppManager::IppManager(std::vector<IppAttribute> operation_attributes,
 
 SmartBuffer IppManager::HandleIppRequest(const IppHeader& ipp_header,
                                          const SmartBuffer& body) const {
+  ipp::E_operations_supported op =
+      static_cast<ipp::E_operations_supported>(ipp_header.operation_id);
+  LOG(INFO) << base::StringPrintf("IPP/%d.%d %s", ipp_header.major,
+                                  ipp_header.minor, ipp::ToString(op).c_str());
+
   switch (ipp_header.operation_id) {
     case IPP_VALIDATE_JOB:
       return HandleValidateJob(ipp_header);
