@@ -11,16 +11,16 @@
 
 namespace mock_printer {
 
-MatchableIppData::MatchableIppData(const ipp::Frame* message,
+MatchableIppData::MatchableIppData(const ipp::Frame& message,
                                    const mocking::IppMessage& mock_message)
     : ipp_request(message), mock_ipp_request(mock_message) {}
 MatchableIppData::~MatchableIppData() = default;
 
 MatchableData GetAsIpp(const InputMessage message,
                        const mocking::ExpectationWithResponse& mock_message) {
-  auto* ipp_message = std::get_if<const ipp::Frame*>(&message);
+  auto ipp_message = std::get_if<const ipp::Frame*>(&message);
   CHECK(ipp_message) << "BUG: expected ipp::Frame* variant here";
-  return MatchableIppData(*ipp_message,
+  return MatchableIppData(**ipp_message,
                           mock_message.expectation().ipp_matcher());
 }
 

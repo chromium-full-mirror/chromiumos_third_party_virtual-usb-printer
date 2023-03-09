@@ -21,20 +21,21 @@ TEST(ToStringTest, BasicGetPrinterAttributes) {
       std::make_unique<ipp::Frame>(ipp::Operation::Get_Printer_Attributes);
 
   // Fills in a bunch of string values.
-  request->GetGroup(ipp::GroupTag::operation_attributes)
+  request->Groups(ipp::GroupTag::operation_attributes)
+      .begin()
       ->AddAttr("printer-uri", ipp::ValueTag::uri, "ipps://hello-there");
 
   // Adds some extra unknown attributes of different types to exercise
   // some other codepaths outside of the string conversions.
-  ipp::Collection* collection;
-  request->AddGroup(ipp::GroupTag::unsupported_attributes, &collection);
+  ipp::CollsView::iterator collection;
+  request->AddGroup(ipp::GroupTag::unsupported_attributes, collection);
 
   collection->AddAttr("home on the", ipp::RangeOfInteger(-9, 9001));
   collection->AddAttr("hark! a boolean", true);
   collection->AddAttr("set of keywords", ipp::ValueTag::keyword,
                       {"one", "two", "three"});
 
-  const MultilineLogHolder holder = ToString(request.get());
+  const MultilineLogHolder holder = ToString(*request);
   EXPECT_EQ(base::JoinString(holder.lines, "\n"),
             R"(Request (operation ID: 0x000b; groups: 2)
   Group (tag: 0x0001; collections: 1)

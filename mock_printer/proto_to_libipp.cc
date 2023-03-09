@@ -19,7 +19,7 @@ namespace mock_printer {
 namespace {
 
 void CopyAttributes(const mocking::IppCollection& mock_collection,
-                    ipp::Collection* collection);
+                    ipp::Collection& collection);
 
 // Returns the integer values from `mock_attribute`.
 std::vector<int32_t> CopyInts(const mocking::IppAttribute& mock_attribute) {
@@ -113,46 +113,46 @@ std::vector<ipp::DateTime> CopyDateTimes(
 // Iterates over `mock_collection` and adds all attributes to
 // `collection`.
 void CopyAttributes(const mocking::IppCollection& mock_collection,
-                    ipp::Collection* collection) {
+                    ipp::Collection& collection) {
   for (const auto& mock_attribute : mock_collection.attributes()) {
     switch (mock_attribute.value_case()) {
       case mocking::IppAttribute::ValueCase::kCollections: {
         size_t n = mock_attribute.collections().collections().size();
-        std::vector<ipp::Collection*> new_colls(n);
-        collection->AddAttr(mock_attribute.name(), new_colls);
+        ipp::CollsView new_colls;
+        collection.AddAttr(mock_attribute.name(), n, new_colls);
         for (size_t i = 0; i < n; ++i) {
           CopyAttributes(mock_attribute.collections().collections()[i],
                          new_colls[i]);
         }
       } break;
       case mocking::IppAttribute::ValueCase::kIntValues:
-        collection->AddAttr(mock_attribute.name(), CopyInts(mock_attribute));
+        collection.AddAttr(mock_attribute.name(), CopyInts(mock_attribute));
         break;
       case mocking::IppAttribute::ValueCase::kStringValues:
         if (mock_attribute.type() ==
                 mocking::IppAttribute::TEXT_WITH_LANGUAGE ||
             mock_attribute.type() ==
                 mocking::IppAttribute::NAME_WITH_LANGUAGE) {
-          collection->AddAttr(mock_attribute.name(),
-                              static_cast<ipp::ValueTag>(mock_attribute.type()),
-                              CopyStringsWithLanguage(mock_attribute));
+          collection.AddAttr(mock_attribute.name(),
+                             static_cast<ipp::ValueTag>(mock_attribute.type()),
+                             CopyStringsWithLanguage(mock_attribute));
         } else {
-          collection->AddAttr(mock_attribute.name(),
-                              static_cast<ipp::ValueTag>(mock_attribute.type()),
-                              CopyStrings(mock_attribute));
+          collection.AddAttr(mock_attribute.name(),
+                             static_cast<ipp::ValueTag>(mock_attribute.type()),
+                             CopyStrings(mock_attribute));
         }
         break;
       case mocking::IppAttribute::ValueCase::kIntRanges:
-        collection->AddAttr(mock_attribute.name(),
-                            CopyIntRanges(mock_attribute));
+        collection.AddAttr(mock_attribute.name(),
+                           CopyIntRanges(mock_attribute));
         break;
       case mocking::IppAttribute::ValueCase::kResolutions:
-        collection->AddAttr(mock_attribute.name(),
-                            CopyResolutions(mock_attribute));
+        collection.AddAttr(mock_attribute.name(),
+                           CopyResolutions(mock_attribute));
         break;
       case mocking::IppAttribute::ValueCase::kDateTimes:
-        collection->AddAttr(mock_attribute.name(),
-                            CopyDateTimes(mock_attribute));
+        collection.AddAttr(mock_attribute.name(),
+                           CopyDateTimes(mock_attribute));
         break;
       default:
         NOTREACHED() << "BUG: unhandled `mocking::IppAttribute` value case";
@@ -161,21 +161,20 @@ void CopyAttributes(const mocking::IppCollection& mock_collection,
 }
 
 // Populates `response` with the contents of `mock_group`.
-void CopyGroup(const mocking::IppGroup& mock_group, ipp::Frame* response) {
+void CopyGroup(const mocking::IppGroup& mock_group, ipp::Frame& response) {
   const auto tag = mock_group.tag();
 
   CHECK_GE(tag, 0) << "group tag " << tag << " < 0";
   CHECK_LE(tag, 0x0f) << "group tag " << tag << " > 0x0f";
 
-  std::size_t i = 0;
+  ipp::CollsView::iterator group;
+  while (response.Groups(static_cast<ipp::GroupTag>(tag)).size() <
+         mock_group.collections().size())
+    response.AddGroup(static_cast<ipp::GroupTag>(tag), group);
+  group = response.Groups(static_cast<ipp::GroupTag>(tag)).begin();
   for (const auto& mock_collection : mock_group.collections()) {
-    ipp::Collection* group =
-        response->GetGroup(static_cast<ipp::GroupTag>(tag), i++);
-    if (!group) {
-      response->AddGroup(static_cast<ipp::GroupTag>(tag), &group);
-    }
-    CHECK(group) << "BUG: expected a group here";
-    CopyAttributes(mock_collection, group);
+    CopyAttributes(mock_collection, *group);
+    ++group;
   }
 }
 
@@ -198,7 +197,7 @@ std::unique_ptr<ipp::Frame> ToResponse(
   // note of how this interacts with the version number specified in
   // the Protobufs.
   for (const auto& mock_group : mock_response.groups()) {
-    CopyGroup(mock_group, response.get());
+    CopyGroup(mock_group, *response.get());
   }
   return response;
 }

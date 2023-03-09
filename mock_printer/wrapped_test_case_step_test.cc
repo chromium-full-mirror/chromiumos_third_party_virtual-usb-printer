@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <base/check.h>
 #include <chromeos/libipp/attribute.h>
@@ -43,8 +44,7 @@ using ::testing::NotNull;
 std::unique_ptr<ipp::Frame> MakeRequest(int value) {
   auto request =
       std::make_unique<ipp::Frame>(ipp::Operation::Get_Job_Attributes);
-  auto coll = request->GetGroup(ipp::GroupTag::operation_attributes);
-  CHECK(coll);
+  auto coll = request->Groups(ipp::GroupTag::operation_attributes).begin();
   CHECK(coll->AddAttr("job-id", value) == ipp::Code::kOK);
   return request;
 }
@@ -64,14 +64,16 @@ class FakeWrappedMatcher : public WrappedMatcher {
     auto* ipp_data = std::get_if<MatchableIppData>(&data);
     CHECK(ipp_data) << "BUG: expected `MatchableIppData` variant";
 
-    int job_id = 0;
+    std::vector<int32_t> job_id;
 
-    auto* request = ipp_data->ipp_request;
-    auto* attr = request->GetGroup(ipp::GroupTag::operation_attributes)
-                     ->GetAttribute("job-id");
-    CHECK(attr) << "BUG: failed to get job_id";
-    CHECK(attr->GetValue(&job_id)) << "BUG: invalid type of job_id";
-    return job_id == ipp_data->mock_ipp_request.version_number();
+    const ipp::Collection& coll =
+        ipp_data->ipp_request.Groups(ipp::GroupTag::operation_attributes)[0];
+    auto attr = coll.GetAttr("job-id");
+    CHECK(attr != coll.end()) << "BUG: failed to get job_id";
+
+    CHECK(attr->GetValues(job_id) == ipp::Code::kOK)
+        << "BUG: invalid type of job_id";
+    return job_id[0] == ipp_data->mock_ipp_request.version_number();
   }
 };
 

@@ -30,7 +30,7 @@
 namespace mock_printer {
 namespace {
 
-bool IppCollectionMatches(const ipp::Collection* const collection,
+bool IppCollectionMatches(const ipp::Collection& collection,
                           const mocking::IppCollection& mock_collection);
 
 bool ResolutionMatches(const ipp::Resolution& resolution,
@@ -86,16 +86,15 @@ bool DateTimeMatches(const ipp::DateTime& date_time,
                                    mock_date_time.utc_minutes());
 }
 
-bool EmbeddedCollectionsMatch(const ipp::Attribute* const attribute,
+bool EmbeddedCollectionsMatch(const ipp::Attribute& attribute,
                               const mocking::IppAttribute& mock_attribute) {
-  if (mock_attribute.collections().collections_size() != attribute->Size()) {
+  if (mock_attribute.collections().collections_size() != attribute.Size()) {
     return false;
   }
   std::size_t index = 0;
   for (const mocking::IppCollection& mock_collection :
        mock_attribute.collections().collections()) {
-    const ipp::Collection* const collection = attribute->GetCollection(index);
-    CHECK(collection) << "BUG: expected non-nullptr ipp::Collection*";
+    const ipp::Collection& collection = attribute.Colls()[index];
     if (!IppCollectionMatches(collection, mock_collection)) {
       return false;
     }
@@ -104,17 +103,16 @@ bool EmbeddedCollectionsMatch(const ipp::Attribute* const attribute,
   return true;
 }
 
-bool IntValuesMatch(const ipp::Attribute* const attribute,
+bool IntValuesMatch(const ipp::Attribute& attribute,
                     const mocking::IppAttribute& mock_attribute) {
-  if (mock_attribute.int_values().int_values_size() != attribute->Size()) {
+  std::vector<int32_t> values;
+  attribute.GetValues(values);
+  if (mock_attribute.int_values().int_values_size() != values.size()) {
     return false;
   }
   std::size_t index = 0;
   for (const int mock_integer : mock_attribute.int_values().int_values()) {
-    int true_integer;
-    CHECK(attribute->GetValue(&true_integer, index))
-        << "BUG: expected integer here";
-    if (true_integer != mock_integer) {
+    if (values[index] != mock_integer) {
       return false;
     }
     index++;
@@ -122,11 +120,11 @@ bool IntValuesMatch(const ipp::Attribute* const attribute,
   return true;
 }
 
-bool StringValuesMatch(const ipp::Attribute* const attribute,
+bool StringValuesMatch(const ipp::Attribute& attribute,
                        const mocking::IppAttribute& mock_attribute) {
   // We allow string-coercible types to pass onto actual matching.
   // We bail out here if it's not a string-ish type.
-  switch (attribute->Tag()) {
+  switch (attribute.Tag()) {
     case (ipp::ValueTag::textWithoutLanguage):
     case (ipp::ValueTag::nameWithoutLanguage):
     case (ipp::ValueTag::keyword):
@@ -139,19 +137,17 @@ bool StringValuesMatch(const ipp::Attribute* const attribute,
     default:
       return false;
   }
-  if (mock_attribute.string_values().string_values_size() !=
-      attribute->Size()) {
+  std::vector<std::string> values;
+  attribute.GetValues(values);
+  if (mock_attribute.string_values().string_values_size() != values.size()) {
     return false;
   }
 
   std::size_t index = 0;
   for (const mocking::OctetString& octet_string :
        mock_attribute.string_values().string_values()) {
-    ipp::StringWithLanguage true_string;
-    CHECK(attribute->GetValue(&true_string, index))
-        << "BUG: expected StringWithLanguage here";
-    if (true_string.language != octet_string.language() ||
-        true_string.value != octet_string.value()) {
+    if (!octet_string.language().empty() ||
+        values[index] != octet_string.value()) {
       return false;
     }
     index++;
@@ -159,19 +155,18 @@ bool StringValuesMatch(const ipp::Attribute* const attribute,
   return true;
 }
 
-bool IntRangesMatch(const ipp::Attribute* const attribute,
+bool IntRangesMatch(const ipp::Attribute& attribute,
                     const mocking::IppAttribute& mock_attribute) {
-  if (attribute->Size() != mock_attribute.int_ranges().int_ranges_size()) {
+  std::vector<ipp::RangeOfInteger> values;
+  attribute.GetValues(values);
+  if (values.size() != mock_attribute.int_ranges().int_ranges_size()) {
     return false;
   }
   std::size_t index = 0;
   for (const mocking::IntegerRange& mock_range :
        mock_attribute.int_ranges().int_ranges()) {
-    ipp::RangeOfInteger true_range;
-    CHECK(attribute->GetValue(&true_range, index))
-        << "BUG: expected RangeOfInteger here";
-    if (true_range.min_value != mock_range.minimum() ||
-        true_range.max_value != mock_range.maximum()) {
+    if (values[index].min_value != mock_range.minimum() ||
+        values[index].max_value != mock_range.maximum()) {
       return false;
     }
     index++;
@@ -179,18 +174,17 @@ bool IntRangesMatch(const ipp::Attribute* const attribute,
   return true;
 }
 
-bool ResolutionsMatch(const ipp::Attribute* const attribute,
+bool ResolutionsMatch(const ipp::Attribute& attribute,
                       const mocking::IppAttribute& mock_attribute) {
-  if (attribute->Size() != mock_attribute.resolutions().resolutions_size()) {
+  std::vector<ipp::Resolution> values;
+  attribute.GetValues(values);
+  if (values.size() != mock_attribute.resolutions().resolutions_size()) {
     return false;
   }
   std::size_t index = 0;
   for (const mocking::Resolution& mock_resolution :
        mock_attribute.resolutions().resolutions()) {
-    ipp::Resolution true_resolution;
-    CHECK(attribute->GetValue(&true_resolution, index))
-        << "BUG: expected Resolution here";
-    if (!ResolutionMatches(true_resolution, mock_resolution)) {
+    if (!ResolutionMatches(values[index], mock_resolution)) {
       return false;
     }
     index++;
@@ -198,18 +192,17 @@ bool ResolutionsMatch(const ipp::Attribute* const attribute,
   return true;
 }
 
-bool DateTimesMatch(const ipp::Attribute* const attribute,
+bool DateTimesMatch(const ipp::Attribute& attribute,
                     const mocking::IppAttribute& mock_attribute) {
-  if (attribute->Size() != mock_attribute.date_times().date_times_size()) {
+  std::vector<ipp::DateTime> values;
+  attribute.GetValues(values);
+  if (values.size() != mock_attribute.date_times().date_times_size()) {
     return false;
   }
   std::size_t index = 0;
   for (const mocking::DateTime& mock_date_time :
        mock_attribute.date_times().date_times()) {
-    ipp::DateTime true_date_time;
-    CHECK(attribute->GetValue(&true_date_time, index))
-        << "BUG: expected DateTime here";
-    if (!DateTimeMatches(true_date_time, mock_date_time)) {
+    if (!DateTimeMatches(values[index], mock_date_time)) {
       return false;
     }
     index++;
@@ -217,12 +210,12 @@ bool DateTimesMatch(const ipp::Attribute* const attribute,
   return true;
 }
 
-bool AttributeTypeMatches(const ipp::Attribute* const attribute,
+bool AttributeTypeMatches(const ipp::Attribute& attribute,
                           const mocking::IppAttribute& mock_attribute) {
   if (mock_attribute.type() == mocking::IppAttribute::UNSPECIFIED) {
     return true;
   }
-  switch (attribute->Tag()) {
+  switch (attribute.Tag()) {
     case (ipp::ValueTag::integer):
       return mock_attribute.type() == mocking::IppAttribute::INTEGER;
     case (ipp::ValueTag::boolean):
@@ -267,7 +260,7 @@ bool AttributeTypeMatches(const ipp::Attribute* const attribute,
   }
 }
 
-bool AttributeValueMatches(const ipp::Attribute* const attribute,
+bool AttributeValueMatches(const ipp::Attribute& attribute,
                            const mocking::IppAttribute& mock_attribute) {
   switch (mock_attribute.value_case()) {
     case (mocking::IppAttribute::ValueCase::VALUE_NOT_SET):
@@ -290,24 +283,24 @@ bool AttributeValueMatches(const ipp::Attribute* const attribute,
   }
 }
 
-bool IppAttributeMatches(const ipp::Attribute* const attribute,
+bool IppAttributeMatches(const ipp::Attribute& attribute,
                          const mocking::IppAttribute& mock_attribute) {
   return AttributeTypeMatches(attribute, mock_attribute) &&
          AttributeValueMatches(attribute, mock_attribute);
 }
 
-bool IppCollectionMatches(const ipp::Collection* const collection,
+bool IppCollectionMatches(const ipp::Collection& collection,
                           const mocking::IppCollection& mock_collection) {
-  if (collection->GetAllAttributes().size() !=
-      mock_collection.attributes_size()) {
+  if (collection.size() != mock_collection.attributes_size()) {
     return false;
   }
 
   for (const mocking::IppAttribute& mock_attribute :
        mock_collection.attributes()) {
-    const ipp::Attribute* const attribute =
-        collection->GetAttribute(mock_attribute.name());
-    if (!attribute || !IppAttributeMatches(attribute, mock_attribute)) {
+    ipp::Collection::const_iterator it_attr =
+        collection.GetAttr(mock_attribute.name());
+    if (it_attr == collection.end() ||
+        !IppAttributeMatches(*it_attr, mock_attribute)) {
       return false;
     }
   }
@@ -341,7 +334,7 @@ ipp::GroupTag TagFromProtobuf(const mocking::IppGroup& mock_group) {
   }
 }
 
-bool IppGroupMatches(const std::vector<const ipp::Collection*>& group,
+bool IppGroupMatches(ipp::ConstCollsView group,
                      const mocking::IppGroup& mock_group) {
   // Collections are optional.
   if (!mock_group.collections_size()) {
@@ -365,17 +358,17 @@ bool IppGroupMatches(const std::vector<const ipp::Collection*>& group,
 
 }  // namespace
 
-bool IppMessageMatches(const ipp::Frame* const message,
+bool IppMessageMatches(const ipp::Frame& message,
                        const mocking::IppMessage& mock_message) {
   if (static_cast<std::underlying_type_t<ipp::Operation>>(
-          message->OperationId()) != mock_message.operation_id()) {
+          message.OperationId()) != mock_message.operation_id()) {
     return false;
   }
 
   // Save all GroupTags that have at least one group (collection).
   std::set<ipp::GroupTag> group_tags_to_match;
   for (const ipp::GroupTag tag : ipp::kGroupTags) {
-    if (!message->GetGroups(tag).empty()) {
+    if (!message.Groups(tag).empty()) {
       group_tags_to_match.insert(tag);
     }
   }
@@ -383,8 +376,7 @@ bool IppMessageMatches(const ipp::Frame* const message,
   for (const auto& mock_group : mock_message.groups()) {
     const ipp::GroupTag tag = TagFromProtobuf(mock_group);
     group_tags_to_match.erase(tag);
-    const std::vector<const ipp::Collection*> group = message->GetGroups(tag);
-    if (!IppGroupMatches(group, mock_group)) {
+    if (!IppGroupMatches(message.Groups(tag), mock_group)) {
       return false;
     }
   }

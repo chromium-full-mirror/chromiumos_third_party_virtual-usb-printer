@@ -30,11 +30,11 @@ namespace mock_printer {
 // *  a real IPP message to be matched and
 // *  a mock IPP message to be matched against.
 struct MatchableIppData {
-  MatchableIppData(const ipp::Frame* message,
+  MatchableIppData(const ipp::Frame& message,
                    const mocking::IppMessage& mock_message);
   ~MatchableIppData();
 
-  const ipp::Frame* ipp_request;
+  const ipp::Frame& ipp_request;
   const mocking::IppMessage& mock_ipp_request;
 };
 

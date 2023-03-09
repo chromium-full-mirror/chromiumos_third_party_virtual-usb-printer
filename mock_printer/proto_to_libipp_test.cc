@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <chromeos/libipp/attribute.h>
 #include <chromeos/libipp/frame.h>
@@ -47,27 +48,27 @@ TEST(ProtoToLibippTest, BasicConversionTest) {
 
   for (ipp::GroupTag tag : ipp::kGroupTags) {
     if (tag == ipp::GroupTag::operation_attributes) {
-      ASSERT_GE(response->GetGroups(tag).size(), 1ull);
+      ASSERT_GE(response->Groups(tag).size(), 1ull);
     }
   }
 
   // Unpack the IPP group [of interest].
-  const ipp::Collection* group =
-      response->GetGroup(ipp::GroupTag::operation_attributes);
-  ASSERT_THAT(group, NotNull());
-  ASSERT_GE(group->GetAllAttributes().size(), 1ull);
+  ipp::CollsView::const_iterator group;
+  group = response->Groups(ipp::GroupTag::operation_attributes).begin();
+  ASSERT_GE(group->size(), 1ull);
 
   // Unpack the IPP attribute [of interest].
-  const ipp::Attribute* attribute = group->GetAttribute("attributes-charset");
-  ASSERT_THAT(attribute, NotNull());
+  ipp::Collection::const_iterator attribute =
+      group->GetAttr("attributes-charset");
+  ASSERT_NE(attribute, group->end());
 
   // Examine the IPP attribute.
   EXPECT_EQ(attribute->Tag(), ipp::ValueTag::charset);
   ASSERT_EQ(attribute->Size(), 1ull);
 
-  std::string attribute_value;
-  EXPECT_TRUE(attribute->GetValue(&attribute_value, 0ull));
-  EXPECT_EQ(attribute_value, "utf-8");
+  std::vector<std::string> attribute_value;
+  EXPECT_EQ(attribute->GetValues(attribute_value), ipp::Code::kOK);
+  EXPECT_EQ(attribute_value, std::vector<std::string>{"utf-8"});
 }
 
 }  // namespace

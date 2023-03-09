@@ -7,12 +7,15 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <base/check.h>
 #include <base/logging.h>
 #include <base/strings/string_util.h>
+#include <chromeos/libipp/builder.h>
 #include <chromeos/libipp/frame.h>
+#include <chromeos/libipp/parser.h>
 
 #include "libipp_helper.h"
 #include "mock_printer/proto/http.pb.h"
@@ -90,10 +93,11 @@ class MockPrinterImpl : public MockPrinter {
               /*default_response=*/false};
     }
 
-    ipp::ParsingResults logs;
+    ipp::SimpleParserLog logs;
+    ipp::Frame frame = ipp::Parse(message.data(), message.size(), logs);
     std::unique_ptr<ipp::Frame> request =
-        std::make_unique<ipp::Frame>(message.data(), message.size(), &logs);
-    if (!logs.whole_buffer_was_parsed) {
+        std::make_unique<ipp::Frame>(std::move(frame));
+    if (!logs.CriticalErrors().empty()) {
       LOG(ERROR) << "BUG: failed to read inbound message";
       JoinServerLogs(logs).LogError();
       return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
@@ -101,7 +105,7 @@ class MockPrinterImpl : public MockPrinter {
     }
     JoinServerLogs(logs).Vlog(2, "message parsed by `ipp::Frame`:");
 
-    ToString(request.get()).Vlog(1, "received `ipp::Frame`:");
+    ToString(*request).Vlog(1, "received `ipp::Frame`:");
     return ProgressAndReact(InputMessage(request.get()));
   }
 
@@ -114,7 +118,7 @@ class MockPrinterImpl : public MockPrinter {
     if (!mock_response) {
       LOG(ERROR) << "Got nullptr from `TestCaseHolder::Progress()`.";
       LOG(ERROR) << "`TestCaseError()`: " << test_case_holder_->TestCaseError();
-      ToString(std::get<0>(request)).LogError("last received `ipp::Request`:");
+      ToString(*std::get<0>(request)).LogError("last received `ipp::Request`:");
       return {/*smart_buffer=*/std::nullopt, /*http_properties=*/std::nullopt,
               /*default_response=*/false};
     }
@@ -128,7 +132,7 @@ class MockPrinterImpl : public MockPrinter {
     std::unique_ptr<ipp::Frame> response =
         ToResponse(mock_response->ipp_response());
     if (response)
-      response_buffer = response->SaveToBuffer();
+      response_buffer = BuildBinaryFrame(*response);
 
     VLOG(1) << "Sending response.";
     return {SmartBuffer(response_buffer), mock_response->http_properties(),
@@ -136,11 +140,11 @@ class MockPrinterImpl : public MockPrinter {
   }
 
   // Returns logs from parsing.
-  MultilineLogHolder JoinServerLogs(const ipp::ParsingResults& logs) const {
+  MultilineLogHolder JoinServerLogs(const ipp::SimpleParserLog& logs) const {
     std::vector<std::string> messages;
-    messages.reserve(logs.errors.size());
-    for (const ipp::Log& log : logs.errors) {
-      messages.push_back(log.message);
+    messages.reserve(logs.Errors().size());
+    for (const ipp::ParserError& error : logs.Errors()) {
+      messages.push_back(ipp::ToString(error));
     }
     return MultilineLogHolder{.lines = messages};
   }

@@ -38,7 +38,7 @@ struct MultilineLogHolder {
 //
 // Note that a more sophisticated version of this function (albeit for
 // `ipp::Response`) exists in `platform2/print_tools`.
-MultilineLogHolder ToString(const ipp::Frame* request);
+MultilineLogHolder ToString(const ipp::Frame& request);
 
 }  // namespace mock_printer
 

@@ -30,7 +30,7 @@ std::unique_ptr<ipp::Frame> GetPrinterAttributesRequest() {
   auto request =
       std::make_unique<ipp::Frame>(ipp::Operation::Get_Printer_Attributes);
 
-  auto group = request->GetGroup(ipp::GroupTag::operation_attributes);
+  auto group = request->Groups(ipp::GroupTag::operation_attributes).begin();
   group->AddAttr("printer-uri", ipp::ValueTag::uri, "ipps://hello-there");
 
   return request;
@@ -45,7 +45,7 @@ std::unique_ptr<ipp::Frame> GetPrinterAttributesRequest() {
 // access to attribute manipulation.
 struct RequestAndCollection {
   std::unique_ptr<ipp::Frame> request;
-  ipp::Collection* collection;
+  ipp::CollsView::iterator collection;
 };
 
 // Creates an IPP request
@@ -57,9 +57,8 @@ RequestAndCollection RequestWithOneGroup() {
   auto libipp_request = std::make_unique<ipp::Frame>();
   libipp_request->OperationIdOrStatusCode() =
       static_cast<uint16_t>(ipp::Operation::Shutdown_One_Printer);
-  auto holder = RequestAndCollection{.request = std::move(libipp_request),
-                                     .collection = nullptr};
-  holder.request->AddGroup(ipp::GroupTag::job_attributes, &(holder.collection));
+  auto holder = RequestAndCollection{.request = std::move(libipp_request)};
+  holder.request->AddGroup(ipp::GroupTag::job_attributes, holder.collection);
   return holder;
 }
 
@@ -93,7 +92,7 @@ TEST(IppMatchingTest, GetPrinterAttributesMatches) {
     }
   )pb");
 
-  EXPECT_TRUE(IppMessageMatches(request.get(), mock_request));
+  EXPECT_TRUE(IppMessageMatches(*request, mock_request));
 }
 
 // The same trivial test as `GetPrinterAttributesMatches`, but without
@@ -116,7 +115,7 @@ TEST(IppMatchingTest, MatchingNeedNotDependOnAttributeValues) {
     }
   )pb");
 
-  EXPECT_TRUE(IppMessageMatches(request.get(), mock_request));
+  EXPECT_TRUE(IppMessageMatches(*request, mock_request));
 }
 
 // The same trivial test as `GetPrinterAttributesMatches`, but
@@ -139,7 +138,7 @@ TEST(IppMatchingTest, MatchingForbidsExtraIppAttributes) {
     }
   )pb");
 
-  EXPECT_FALSE(IppMessageMatches(request.get(), mock_request));
+  EXPECT_FALSE(IppMessageMatches(*request, mock_request));
 }
 
 // The same trivial test as `GetPrinterAttributesMatches`, but
@@ -162,7 +161,7 @@ TEST(IppMatchingTest, MatchingRequiresAllIppAttributes) {
     }
   )pb");
 
-  EXPECT_FALSE(IppMessageMatches(request.get(), mock_request));
+  EXPECT_FALSE(IppMessageMatches(*request, mock_request));
 }
 
 // The same trivial test as `GetPrinterAttributesMatches`, but
@@ -185,7 +184,7 @@ TEST(IppMatchingTest, MatchingDoesNotRequireOrderedIppAttributes) {
     }
   )pb");
 
-  EXPECT_TRUE(IppMessageMatches(request.get(), mock_request));
+  EXPECT_TRUE(IppMessageMatches(*request, mock_request));
 }
 
 // The same trivial test as `GetPrinterAttributesMatches`, but
@@ -216,7 +215,7 @@ TEST(IppMatchingTest, MatchingAttributesIsTypeSensitive) {
     }
   )pb");
 
-  EXPECT_FALSE(IppMessageMatches(request.get(), mock_request));
+  EXPECT_FALSE(IppMessageMatches(*request, mock_request));
 }
 
 // Tests that an IPP DateTime attribute can be matched.
@@ -247,7 +246,7 @@ TEST(IppMatchingTest, BasicDateTimeMatching) {
     }
   )pb");
 
-  EXPECT_TRUE(IppMessageMatches(request.request.get(), mock_request));
+  EXPECT_TRUE(IppMessageMatches(*request.request, mock_request));
 }
 
 // Tests that an IPP DateTime attribute can be matched even when the
@@ -279,7 +278,7 @@ TEST(IppMatchingTest, DateTimeMatchingWithWildcardMembers) {
     }
   )pb");
 
-  EXPECT_TRUE(IppMessageMatches(request.request.get(), mock_request));
+  EXPECT_TRUE(IppMessageMatches(*request.request, mock_request));
 }
 
 }  // namespace

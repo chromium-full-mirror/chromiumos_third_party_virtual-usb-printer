@@ -15,7 +15,7 @@
 namespace mock_printer {
 
 // Returns whether or not `message` matches `mock_message`.
-bool IppMessageMatches(const ipp::Frame* message,
+bool IppMessageMatches(const ipp::Frame& message,
                        const mocking::IppMessage& mock_message);
 
 }  // namespace mock_printer
