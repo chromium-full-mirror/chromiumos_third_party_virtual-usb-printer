@@ -1,0 +1,211 @@
+# Copyright 2019 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//common-mk/pkg_config.gni")
+
+pkg_config("target_defaults") {
+  pkg_deps = [
+    "libbrillo",
+    "libchrome",
+    "libipp",
+    "libjpeg",
+    "libxml-2.0",
+  ]
+}
+
+executable("virtual-usb-printer") {
+  sources = [
+    "cups_constants.cc",
+    "device_descriptors.cc",
+    "escl_manager.cc",
+    "ipp_manager.cc",
+    "ipp_util.cc",
+    "jpeg_util.cc",
+    "load_config.cc",
+    "op_commands.cc",
+    "server.cc",
+    "usb_printer.cc",
+    "usbip.cc",
+    "value_util.cc",
+    "virtual_usb_printer.cc",
+    "xml_util.cc",
+  ]
+  configs += [ ":target_defaults" ]
+  deps = [
+    ":http_util",
+    ":smart_buffer",
+    "//virtual-usb-printer/mock_printer:implementation",
+    "//virtual-usb-printer/mock_printer:mocking_protos",
+    "//virtual-usb-printer/mock_printer:parse_textproto",
+  ]
+}
+
+source_set("http_util") {
+  public = [ "http_util.h" ]
+  sources = [ "http_util.cc" ]
+  configs += [ ":target_defaults" ]
+  deps = [ ":smart_buffer" ]
+}
+
+source_set("smart_buffer") {
+  public = [ "smart_buffer.h" ]
+  sources = [ "smart_buffer.cc" ]
+  configs += [ ":target_defaults" ]
+}
+
+if (use.test) {
+  pkg_config("test_config") {
+    pkg_deps = [ "libchrome-test" ]
+  }
+
+  executable("escl-manager-testrunner") {
+    sources = [
+      "escl_manager.cc",
+      "escl_manager_test.cc",
+      "ipp_util.cc",
+      "jpeg_util.cc",
+      "xml_util.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":smart_buffer",
+      "//common-mk/testrunner",
+    ]
+  }
+
+  executable("http-util-testrunner") {
+    sources = [
+      "http_util_test.cc",
+      "value_util.cc",
+    ]
+
+    # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":http_util",
+      ":smart_buffer",
+      "//common-mk/testrunner",
+    ]
+  }
+
+  executable("ipp-manager-testrunner") {
+    sources = [
+      "ipp_manager.cc",
+      "ipp_manager_test.cc",
+      "ipp_util.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":smart_buffer",
+      "//common-mk/testrunner",
+    ]
+  }
+
+  executable("ipp-util-testrunner") {
+    sources = [
+      "cups_constants.cc",
+      "ipp_util.cc",
+      "ipp_util_test.cc",
+      "value_util.cc",
+    ]
+
+    # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":http_util",
+      ":smart_buffer",
+      "//common-mk/testrunner",
+    ]
+  }
+
+  executable("jpeg-util-testrunner") {
+    sources = [
+      "jpeg_util.cc",
+      "jpeg_util_test.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [ "//common-mk/testrunner" ]
+  }
+
+  executable("smart-buffer-testrunner") {
+    sources = [
+      "smart_buffer_test.cc",
+      "value_util.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":smart_buffer",
+      "//common-mk/testrunner",
+    ]
+  }
+
+  executable("load-config-testrunner") {
+    sources = [
+      "device_descriptors.cc",
+      "load_config.cc",
+      "load_config_test.cc",
+      "value_util.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [ "//common-mk/testrunner" ]
+  }
+
+  executable("usb-printer-testrunner") {
+    sources = [
+      "escl_manager.cc",
+      "ipp_manager.cc",
+      "ipp_util.cc",
+      "jpeg_util.cc",
+      "load_config.cc",
+      "op_commands.cc",
+      "server.cc",
+      "usb_printer.cc",
+      "usb_printer_test.cc",
+      "usbip.cc",
+      "value_util.cc",
+      "xml_util.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":http_util",
+      ":smart_buffer",
+      "//common-mk/testrunner",
+      "//virtual-usb-printer/mock_printer:implementation",
+      "//virtual-usb-printer/mock_printer:mocking_protos",
+      "//virtual-usb-printer/mock_printer:parse_textproto",
+    ]
+  }
+}

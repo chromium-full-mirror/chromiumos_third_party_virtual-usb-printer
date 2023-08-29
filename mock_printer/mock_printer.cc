@@ -22,7 +22,7 @@
 #include "proto_to_http.h"
 #include "proto_to_libipp.h"
 #include "test_case_holder.h"
-#include "virtual-usb-printer/smart_buffer.h"
+#include "virtual-usb-printer/virtual_usb_printer/smart_buffer.h"
 #include "wrapped_matcher.h"
 
 namespace mock_printer {

@@ -1,0 +1,330 @@
+// Copyright 2020 The ChromiumOS Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "http_util.h"
+
+#include <optional>
+#include <string>
+#include <vector>
+
+#include <base/containers/flat_map.h>
+#include <gtest/gtest.h>
+
+using std::string_literals::operator""s;
+
+namespace {
+
+const std::vector<uint8_t> CreateByteVector(const std::string& str) {
+  std::vector<uint8_t> v(str.size());
+  for (size_t i = 0; i < str.size(); ++i) {
+    v[i] = static_cast<uint8_t>(str[i]);
+  }
+  return v;
+}
+
+}  // namespace
+
+TEST(HttpRequest, DeserializeNoHeaders) {
+  const std::string http_request = "GET /eSCL/ScannerStatus HTTP/1.1\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  std::optional<HttpRequest> opt_request = HttpRequest::Deserialize(&buf);
+  EXPECT_TRUE(opt_request.has_value());
+  HttpRequest request = opt_request.value();
+  EXPECT_EQ(request.method, "GET");
+  EXPECT_EQ(request.uri, "/eSCL/ScannerStatus");
+
+  EXPECT_EQ(request.headers.size(), 0);
+  EXPECT_FALSE(request.IsChunkedMessage());
+  EXPECT_EQ(request.ContentLength(), 0);
+}
+
+TEST(HttpRequest, DeserializeInvalidContentLength) {
+  const std::string http_request =
+      "POST /ipp/print HTTP/1.1\r\n"
+      "Content-Length: ten\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  std::optional<HttpRequest> opt_request = HttpRequest::Deserialize(&buf);
+  EXPECT_TRUE(opt_request.has_value());
+  HttpRequest request = opt_request.value();
+  EXPECT_EQ(request.ContentLength(), 0);
+}
+
+TEST(HttpRequest, DeserializeChunked) {
+  const std::string http_request =
+      "POST /ipp/print HTTP/1.1\r\n"
+      "Content-Type: application/ipp\r\n"
+      "Content-Length: 12\r\n"
+      "Date: Mon, 12 Nov 2018 19:17:31 GMT\r\n"
+      "Host: localhost:0\r\n"
+      "Transfer-Encoding: chunked\r\n"
+      "User-Agent: CUPS/2.2.8 (Linux 4.14.82; x86_64) IPP/2.0\r\n"
+      "Expect: 100-continue\r\n\r\n"
+      "request body";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+
+  std::optional<HttpRequest> opt_request = HttpRequest::Deserialize(&buf);
+  EXPECT_TRUE(opt_request.has_value());
+  HttpRequest request = opt_request.value();
+  EXPECT_EQ(request.method, "POST");
+  EXPECT_EQ(request.uri, "/ipp/print");
+
+  HttpHeaders expected_headers{
+      {"Content-Type", "application/ipp"},
+      {"Content-Length", "12"},
+      {"Date", "Mon, 12 Nov 2018 19:17:31 GMT"},
+      {"Host", "localhost:0"},
+      {"Transfer-Encoding", "chunked"},
+      {"User-Agent", "CUPS/2.2.8 (Linux 4.14.82; x86_64) IPP/2.0"},
+      {"Expect", "100-continue"},
+  };
+  EXPECT_EQ(request.headers, expected_headers);
+  EXPECT_TRUE(request.IsChunkedMessage());
+  EXPECT_EQ(buf.contents(), CreateByteVector("request body"));
+  EXPECT_EQ(request.ContentLength(), 12);
+}
+
+TEST(HttpRequest, MalformedHeader) {
+  const std::string http_request =
+      "POST /ipp/print HTTP/1.1\r\n"
+      "Content-Type application/ipp\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  EXPECT_FALSE(HttpRequest::Deserialize(&buf).has_value());
+}
+
+TEST(HttpRequest, MalformedVersion) {
+  const std::string http_request =
+      "POST /ipp/print HTTP\r\n"
+      "Content-Type application/ipp\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  EXPECT_FALSE(HttpRequest::Deserialize(&buf).has_value());
+}
+
+TEST(HttpRequest, InvalidVersion) {
+  const std::string http_request =
+      "POST /ipp/print HTTP/1.0\r\n"
+      "Content-Type application/ipp\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  EXPECT_FALSE(HttpRequest::Deserialize(&buf).has_value());
+}
+
+TEST(HttpRequest, EmptyRequest) {
+  const std::string http_request = "\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  EXPECT_FALSE(HttpRequest::Deserialize(&buf).has_value());
+}
+
+TEST(HttpRequest, MalformedRequestLine) {
+  const std::string http_request =
+      "GET /ipp/print HTTP1.1\r"
+      "Content-Type: application/ipp\r\n\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  EXPECT_FALSE(HttpRequest::Deserialize(&buf).has_value());
+}
+
+TEST(HttpRequest, NoEndOfHeaderMarker) {
+  const std::string http_request =
+      "GET /ipp/print HTTP/1.1\r\n"
+      "Content-Type: application/ipp\r\n";
+
+  SmartBuffer buf;
+  buf.Add(http_request);
+  EXPECT_FALSE(HttpRequest::Deserialize(&buf).has_value());
+}
+
+TEST(HttpResponse, Serialize) {
+  HttpResponse response;
+  response.status = "200 OK";
+  response.headers["Test"] = "Header";
+  response.body.Add("[body]");
+
+  SmartBuffer serialized;
+  response.Serialize(&serialized);
+
+  const std::string expected_response =
+      "HTTP/1.1 200 OK\r\n"
+      "Connection: close\r\n"
+      "Content-Length: 6\r\n"
+      "Server: localhost:0\r\n"
+      "Test: Header\r\n\r\n"
+      "[body]"s;
+
+  const std::string actual_response(serialized.contents().begin(),
+                                    serialized.contents().end());
+  EXPECT_EQ(actual_response, expected_response);
+}
+
+TEST(IsHttpChunkedHeader, ContainsChunkedEncoding) {
+  const std::string http_header =
+      "POST /ipp/print HTTP/1.1\x0d\x0a"
+      "Content-Type: application/ipp\x0d\x0a"
+      "Date: Mon, 12 Nov 2018 19:17:31 GMT\x0d\x0a"
+      "Host: localhost:0\x0d\x0a"
+      "Transfer-Encoding: chunked\x0d\x0a"
+      "User-Agent: CUPS/2.2.8 (Linux 4.14.82; x86_64) IPP/2.0\x0d\x0a"
+      "Expect: 100-continue\x0d\x0a\x0d\x0a"s;
+
+  std::vector<uint8_t> bytes = CreateByteVector(http_header);
+  SmartBuffer buf(bytes);
+  EXPECT_TRUE(IsHttpChunkedMessage(buf));
+}
+
+TEST(ExtractChunkSize, ValidChunk) {
+  const std::string message =
+      "1c\r\n"
+      "hello world my name is david\r\n";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+  ssize_t chunk_size = ExtractChunkSize(message_buffer);
+  EXPECT_EQ(chunk_size, 0x1c);
+}
+
+TEST(ExtractChunkSize, InvalidChunk) {
+  const std::string message = "no leading hex size in message\r\n";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+  EXPECT_EQ(ExtractChunkSize(message_buffer), 0);
+}
+
+TEST(ExtractChunkSize, InvalidChunkEnding) {
+  const std::string message = "Message with no line ending";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+  EXPECT_EQ(ExtractChunkSize(message_buffer), 0);
+}
+
+TEST(ParseHttpChunkedMessage, MultipleChunks) {
+  const std::string message =
+      "4\r\n"
+      "test\r\n"
+      "5\r\n"
+      "chunk\r\n"
+      "0\r\n\r\n";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+
+  SmartBuffer chunk1 = ParseHttpChunkedMessage(&message_buffer);
+  const std::vector<uint8_t> expected1 = {'t', 'e', 's', 't'};
+  EXPECT_EQ(chunk1.contents(), expected1);
+
+  SmartBuffer chunk2 = ParseHttpChunkedMessage(&message_buffer);
+  const std::vector<uint8_t> expected2 = {'c', 'h', 'u', 'n', 'k'};
+  EXPECT_EQ(chunk2.contents(), expected2);
+
+  SmartBuffer chunk3 = ParseHttpChunkedMessage(&message_buffer);
+  EXPECT_EQ(chunk3.size(), 0);
+  EXPECT_EQ(message_buffer.size(), 0);
+}
+
+TEST(ContainsFinalChunk, DoesContainFinalChunk) {
+  const std::string message =
+      "5\r\n"
+      "hello\r\n"
+      "0\r\n\r\n";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+  EXPECT_TRUE(ContainsFinalChunk(message_buffer));
+}
+
+TEST(ContainsFinalChunk, NoFinalChunk) {
+  const std::string message =
+      "4\r\n"
+      "test\r\n"
+      "5\r\n"
+      "chunk\r\n";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+  EXPECT_FALSE(ContainsFinalChunk(message_buffer));
+}
+
+// Tests that ContainsFinalChunk will only return true when the final chunk
+// (0\r\n\r\n) is found at the end of the message. In this case the final chunk
+// is present as the message contents of one of the chunks, so it should not be
+// treated as the final chunk.
+TEST(ContainsFinalChunk, NotAtEnd) {
+  const std::string message =
+      "3\r\n"
+      "0\r\n\r\n"
+      "4\r\n"
+      "test\r\n";
+  SmartBuffer buf;
+  buf.Add(message);
+  EXPECT_FALSE(ContainsFinalChunk(buf));
+}
+
+TEST(ProcessMessageChunks, ContainsHttpHeader) {
+  const std::string message =
+      "Transfer-Encoding: chunked\r\n\r\n"
+      "4\r\n"
+      "test\r\n";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+  // We expect ProcessMessageChunks to return true since |message| does not
+  // contain the final 0-length chunk.
+  EXPECT_TRUE(ProcessMessageChunks(&message_buffer));
+  EXPECT_EQ(message_buffer.size(), 0);
+}
+
+TEST(ProcessMessageChunks, MultipleChunks) {
+  const std::string message1 =
+      "4\r\n"
+      "test\r\n";
+  SmartBuffer message_buffer1;
+  message_buffer1.Add(message1);
+  // We expect ProcessMessageChunks to return true since |message| does not
+  // contain the final 0-length chunk.
+  EXPECT_TRUE(ProcessMessageChunks(&message_buffer1));
+  EXPECT_EQ(message_buffer1.size(), 0);
+
+  const std::string message2 =
+      "5\r\n"
+      "chunk\r\n"
+      "0\r\n\r\n";
+  SmartBuffer message_buffer2;
+  message_buffer2.Add(message2);
+  // We expect ProcessMessageChunks to return false since |message| contains the
+  // final 0-length chunk, and parsing should be completed.
+  EXPECT_FALSE(ProcessMessageChunks(&message_buffer2));
+  EXPECT_EQ(message_buffer2.size(), 0);
+}
+
+TEST(MergeDocument, ValidMessage) {
+  const std::string message =
+      "6\r\n"
+      "these \r\n"
+      "7\r\n"
+      "chunks \r\n"
+      "7\r\n"
+      "should \r\n"
+      "5\r\n"
+      "form \r\n"
+      "14\r\n"
+      "a complete sentence.\r\n"
+      "0\r\n\r\n";
+  SmartBuffer message_buffer;
+  message_buffer.Add(message);
+
+  const std::string expected_string =
+      "these chunks should form a complete sentence.";
+  const std::vector<uint8_t> expected = CreateByteVector(expected_string);
+
+  SmartBuffer document = MergeDocument(&message_buffer);
+  EXPECT_EQ(message_buffer.size(), 0);
+  EXPECT_EQ(document.contents(), expected);
+}
