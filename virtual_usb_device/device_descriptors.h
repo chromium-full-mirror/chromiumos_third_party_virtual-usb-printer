@@ -2,12 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef DEVICE_DESCRIPTORS_H__
-#define DEVICE_DESCRIPTORS_H__
+#ifndef VIRTUAL_USB_DEVICE_DEVICE_DESCRIPTORS_H_
+#define VIRTUAL_USB_DEVICE_DEVICE_DESCRIPTORS_H_
 
 #include <cstdint>
 
 #include "usbip_constants.h"
+#include "smart_buffer.h"
 
 // USB Descriptors implemented according to:
 // Universal Serial Bus Specification Revision 2.0
@@ -183,6 +184,20 @@ struct UsbDeviceQualifierDescriptor {
   uint8_t bReserved;           // Reserved, must be zero (0)
 } __attribute__((packed));
 
+// Convert different descriptors into network byte order
+// and pack into smart buffer.
+SmartBuffer PackUsbDescriptor(UsbDeviceDescriptor& data);
+SmartBuffer PackConfigDescriptor(UsbConfigurationDescriptor& data);
+SmartBuffer PackQualifierDescriptor(UsbDeviceQualifierDescriptor& data);
+SmartBuffer PackInterfaceDescriptor(UsbInterfaceDescriptor& data);
+
+// Return different descriptors after converting into host byte order
+// from smart buffer.
+UsbDeviceDescriptor UnpackUsbDescriptor(SmartBuffer& data);
+UsbConfigurationDescriptor UnpackConfigDescriptor(SmartBuffer& data);
+UsbDeviceQualifierDescriptor UnpackDeviceQualifierDescriptor(SmartBuffer& data);
+UsbInterfaceDescriptor UnpackInterfaceDescriptors(SmartBuffer& data);
+
 // Test-only operators.
 bool operator==(const UsbDeviceDescriptor& lhs, const UsbDeviceDescriptor& rhs);
 bool operator==(const UsbConfigurationDescriptor& lhs,
@@ -194,4 +209,4 @@ bool operator==(const UsbEndpointDescriptor& lhs,
 bool operator==(const UsbDeviceQualifierDescriptor& lhs,
                 const UsbDeviceQualifierDescriptor& rhs);
 
-#endif  // DEVICE_DESCRIPTORS_H__
+#endif  // VIRTUAL_USB_DEVICE_DEVICE_DESCRIPTORS_H_

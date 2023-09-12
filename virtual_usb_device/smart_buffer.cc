@@ -13,7 +13,7 @@
 #include <base/logging.h>
 
 SmartBuffer::SmartBuffer(size_t size) {
-  // Set the capacity of |buffer_| to |size|.
+  // Set the capacity of `buffer_` to `size`.
   buffer_.reserve(size);
 }
 
@@ -27,13 +27,13 @@ void SmartBuffer::Add(const char* s) {
   Add(s, strlen(s));
 }
 
-// Adds the contents from |buf|.
+// Adds the contents from `buf`.
 void SmartBuffer::Add(const SmartBuffer& buf) {
   const std::vector<uint8_t> contents = buf.contents();
   buffer_.insert(buffer_.end(), contents.begin(), contents.end());
 }
 
-// Add the contents from |buf|, starting from |start|.
+// Add the contents from `buf`, starting from `start`.
 void SmartBuffer::Add(const SmartBuffer& buf, size_t start) {
   const std::vector<uint8_t>& contents = buf.contents();
   buffer_.insert(buffer_.end(), contents.begin() + start, contents.end());

@@ -6,7 +6,6 @@
 
 #include <climits>
 #include <cstdio>
-#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -151,13 +150,13 @@ UsbInterfaceDescriptor GetInterfaceDescriptor(
   return intf_dsc;
 }
 
-std::map<uint8_t, std::vector<UsbEndpointDescriptor>> GetEndpointDescriptorMap(
-    const base::Value::Dict& printer) {
+base::flat_map<uint8_t, std::vector<UsbEndpointDescriptor>>
+GetEndpointDescriptorMap(const base::Value::Dict& printer) {
   const base::Value::List* interfaces_list =
       printer.FindList("interface_descriptors");
   CHECK(interfaces_list)
       << "Failed to extract interface_descriptors list from printer config";
-  std::map<uint8_t, std::vector<UsbEndpointDescriptor>> endpoints_map;
+  base::flat_map<uint8_t, std::vector<UsbEndpointDescriptor>> endpoints_map;
   for (size_t i = 0; i < interfaces_list->size(); ++i) {
     const base::Value& interface_dictionary = (*interfaces_list)[i];
     CHECK(interface_dictionary.is_dict())

@@ -5,11 +5,11 @@
 #include "usbip.h"
 
 #include <cinttypes>
+#include <arpa/inet.h>
 
 #include "device_descriptors.h"
 #include "server.h"
 #include "smart_buffer.h"
-#include "usb_printer.h"
 #include "usbip_constants.h"
 
 #include <base/check.h>
@@ -86,16 +86,6 @@ void PrintUsbipRetSubmit(const UsbipRetSubmit& response) {
   VLOG(2) << "== END RET ==";
 }
 
-void PrintUsbControlRequest(const UsbControlRequest& request) {
-  VLOG(2) << "  UC Request Type " << unsigned{request.bmRequestType};
-  VLOG(2) << "  UC Request " << unsigned{request.bRequest};
-  VLOG(2) << "  UC Value  " << unsigned{request.wValue1} << "["
-          << unsigned{request.wValue0} << "]";
-  VLOG(2) << "  UC Index  " << unsigned{request.wIndex1} << "-"
-          << unsigned{request.wIndex0};
-  VLOG(2) << "  UC Length " << unsigned{request.wLength};
-}
-
 UsbipRetSubmit CreateUsbipRetSubmit(const UsbipCmdSubmit& request) {
   UsbipRetSubmit response;
   memset(&response, 0, sizeof(response));
@@ -114,7 +104,7 @@ void SendUsbDataResponse(int sockfd,
   response.actual_length = received;
 
   PrintUsbipRetSubmit(response);
-  SendBuffer(sockfd, PackUsbipRetSubmit(response));
+  // TODO(santo):  SendBuffer(sockfd, PackUsbipRetSubmit(response));
 }
 
 void SendUsbControlResponse(int sockfd,
@@ -129,5 +119,5 @@ void SendUsbControlResponse(int sockfd,
   if (data_size > 0) {
     smart_buffer.Add(data, data_size);
   }
-  SendBuffer(sockfd, smart_buffer);
+  // TODO(santo): SendBuffer(sockfd, smart_buffer);
 }

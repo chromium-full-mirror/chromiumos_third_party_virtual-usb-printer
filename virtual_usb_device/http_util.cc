@@ -19,7 +19,7 @@ namespace {
 const std::string kHttpRequestEnd = "\r\n\r\n";  // NOLINT(runtime/string)
 const std::string kHttpLineEnd = "\r\n";         // NOLINT(runtime/string)
 
-// Determines if |message| starts with the string |target|.
+// Determines if `message` starts with the string `target`.
 bool StartsWith(const SmartBuffer& message, const std::string& target) {
   return message.FindFirstOccurrence(target) == 0;
 }
@@ -117,7 +117,7 @@ std::optional<HttpRequest> HttpRequest::Deserialize(SmartBuffer* message) {
   }
   request.headers = headers.value();
 
-  // Erase the data we just parsed from |message|.
+  // Erase the data we just parsed from `message`.
   message->Erase(0, request_end + kHttpRequestEnd.size());
   return request;
 }
@@ -190,7 +190,7 @@ size_t ExtractChunkSize(const SmartBuffer& message) {
 
 SmartBuffer ParseHttpChunkedMessage(SmartBuffer* message) {
   CHECK_NE(message, nullptr) << "Given null message";
-  // If |message| starts with the trailing CRLF end-of-chunk indicator from the
+  // If `message` starts with the trailing CRLF end-of-chunk indicator from the
   // previous chunk then erase it.
   if (StartsWith(*message, "\r\n")) {
     message->Erase(0, 2);
@@ -204,7 +204,7 @@ SmartBuffer ParseHttpChunkedMessage(SmartBuffer* message) {
   }
 
   ret.Add(*message, start + 2, chunk_size);
-  // In case |message| contains multiple chunks, we remove the chunk which was
+  // In case `message` contains multiple chunks, we remove the chunk which was
   // just parsed.
   //
   // The length of the prefix to be deleted is calculated as follows:
@@ -214,7 +214,7 @@ SmartBuffer ParseHttpChunkedMessage(SmartBuffer* message) {
   size_t to_erase_length = start + chunk_size + 2;
   CHECK_GE(message->size(), to_erase_length);
   message->Erase(0, to_erase_length);
-  // If |message| also contains the trailing CRLF end-of-chunk indicator, then
+  // If `message` also contains the trailing CRLF end-of-chunk indicator, then
   // erase it.
   if (StartsWith(*message, "\r\n")) {
     message->Erase(0, 2);
@@ -231,7 +231,7 @@ bool ContainsFinalChunk(const SmartBuffer& message) {
 bool ProcessMessageChunks(SmartBuffer* message) {
   CHECK(message != nullptr) << "Process - Given null message";
   if (IsHttpChunkedMessage(*message)) {
-    // If |message| contains an HTTP header then we discard it.
+    // If `message` contains an HTTP header then we discard it.
     int start = message->FindFirstOccurrence("\r\n\r\n");
     CHECK_GT(start, 0) << "Failed to process HTTP chunked message";
     message->Erase(0, start + 4);

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SMART_BUFFER_H__
-#define SMART_BUFFER_H__
+#ifndef VIRTUAL_USB_DEVICE_SMART_BUFFER_H_
+#define VIRTUAL_USB_DEVICE_SMART_BUFFER_H_
 
 #include <memory>
 #include <string>
@@ -17,53 +17,53 @@ class SmartBuffer {
  public:
   SmartBuffer() = default;
 
-  // Initialize the buffer with an initial size of |size|.
+  // Initialize the buffer with an initial size of `size`.
   explicit SmartBuffer(size_t size);
 
-  // Initialize the buffer with the same contents as |v|.
+  // Initialize the buffer with the same contents as `v`.
   explicit SmartBuffer(const std::vector<uint8_t>& v);
 
-  // Convert |data| into uint8_t* and add |data_size| bytes to the internal
+  // Convert `data` into uint8_t* and add `data_size` bytes to the internal
   // buffer.
   template <typename T>
   void Add(const T* data, size_t data_size);
 
-  // Add the underlying byte representation of |data| to the buffer.
+  // Add the underlying byte representation of `data` to the buffer.
   template <typename T>
   void Add(const T& data);
 
-  // Specialized Add method for std::vector so that we can call |v.data()| and
-  // |v.size()| to extract the underlying pointer and size of the data.
+  // Specialized Add method for std::vector so that we can call `v.data()` and
+  // `v.size()` to extract the underlying pointer and size of the data.
   template <typename T>
   void Add(const std::vector<T>& v);
 
-  // Specialized Add method for std::string so that we can call |s.c_str()| and
-  // |s.size()| to extract the underlying pointer and size of the data.
+  // Specialized Add method for std::string so that we can call `s.c_str()` and
+  // `s.size()` to extract the underlying pointer and size of the data.
   void Add(const std::string& s);
 
   // Specialized Add method for char* that uses strlen.
   void Add(const char* s);
 
-  // Adds the contents from |buf|.
+  // Adds the contents from `buf`.
   void Add(const SmartBuffer& buf);
 
-  // Add the contents from |buf|, starting from |start|.
+  // Add the contents from `buf`, starting from `start`.
   void Add(const SmartBuffer& buf, size_t start);
 
-  // Add the subsequence of |buf| starting at |start| and of length |len|.
+  // Add the subsequence of `buf` starting at `start` and of length `len`.
   void Add(const SmartBuffer& buf, size_t start, size_t len);
 
-  // Erases the element at |index|.
+  // Erases the element at `index`.
   void Erase(size_t index);
 
-  // Erases the subsequence of length |len| starting at |start| from |buffer|.
+  // Erases the subsequence of length `len` starting at `start` from `buffer`.
   void Erase(size_t start, size_t len);
 
-  // Shrink the underlying vector to |size|.
+  // Shrink the underlying vector to `size`.
   void Shrink(size_t size);
 
-  // Find first occurrence of |target| in the buffer and return the index to
-  // where it begins. If |target| does not appear in |message| then returns -1.
+  // Find first occurrence of `target` in the buffer and return the index to
+  // where it begins. If `target` does not appear in `message` then returns -1.
   ssize_t FindFirstOccurrence(const std::string& target,
                               size_t start = 0) const;
 
@@ -97,4 +97,4 @@ void SmartBuffer::Add(const std::vector<T>& v) {
   Add(v.data(), byte_size);
 }
 
-#endif  // SMART_BUFFER_H__
+#endif  // VIRTUAL_USB_DEVICE_SMART_BUFFER_H_

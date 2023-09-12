@@ -1,0 +1,109 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//common-mk/pkg_config.gni")
+
+pkg_config("target_defaults") {
+  pkg_deps = [
+    "libbrillo",
+    "libchrome",
+  ]
+}
+
+executable("virtual-usbip-host") {
+  sources = [
+    "usbip_host/device_proxy.h",
+    "usbip_host/device_proxy.cc",
+    "usbip_host/usbip_manager.h",
+    "usbip_host/usbip_manager.cc",
+    "usbip_host/usbip_server.h",
+    "usbip_host/usbip_server.cc",
+    "usbip_host/main.cc",
+    "server.h",
+    "server.cc",
+    "op_commands.h",
+    "op_commands.cc",
+    "usbip.h",
+    "usbip.cc",
+    "usb_util.h",
+    "usb_util.cc",
+    "load_config.h",
+    "load_config.cc",
+    "value_util.h",
+    "value_util.h",
+    "device_descriptors.h",
+    "device_descriptors.cc",
+  ]
+  configs += [ ":target_defaults"]
+  deps = [
+    ":http_util",
+    ":smart_buffer",
+  ]
+}
+
+executable("virtual-printer") {
+  sources = [
+    "usb_device/printer/printer.h",
+    "usb_device/printer/printer.cc",
+    "usb_device/printer/printerserver.h",
+    "usb_device/printer/printerserver.cc",
+    "server.h",
+    "server.cc",
+    "value_util.h",
+    "value_util.cc",
+    "load_config.h",
+    "load_config.cc",
+    "device_descriptors.h",
+    "device_descriptors.cc",
+    "op_commands.h",
+    "op_commands.cc",
+  ]
+  configs += [ ":target_defaults"]
+  deps = [
+    ":http_util",
+    ":smart_buffer",
+  ]
+}
+
+source_set("http_util") {
+  public = [ "http_util.h" ]
+  sources = [ "http_util.cc" ]
+  configs += [ ":target_defaults" ]
+  deps = [ ":smart_buffer" ]
+}
+
+source_set("smart_buffer") {
+  public = [ "smart_buffer.h" ]
+  sources = [ "smart_buffer.cc" ]
+  configs += [ ":target_defaults" ]
+}
+
+if (use.test) {
+  pkg_config("test_config") {
+    pkg_deps = [ "libchrome-test" ]
+  }
+
+  executable("virtual-usbip-host-test") {
+    sources = [
+      "usbip_host/usbip_manager_test.cc",
+      "usbip_host/usbip_manager.h",
+      "usbip_host/usbip_manager.cc",
+      "device_descriptors.h",
+      "device_descriptors.cc",
+      "op_commands.h",
+      "op_commands.cc",
+      "server.h",
+      "server.cc",
+    ]
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      ":smart_buffer",
+      "//common-mk/testrunner",
+    ]
+  }
+}

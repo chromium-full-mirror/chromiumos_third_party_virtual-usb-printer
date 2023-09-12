@@ -6,6 +6,9 @@ import("//common-mk/pkg_config.gni")
 
 group("all") {
   deps = [ "//virtual-usb-printer/virtual_usb_printer:virtual-usb-printer" ]
+  deps += [ "//virtual-usb-printer/virtual_usb_device:virtual-usbip-host" ]
+  deps += [ "//virtual-usb-printer/virtual_usb_device:virtual-printer" ]
+
   if (use.test) {
     deps += [
       "//virtual-usb-printer/virtual_usb_printer:escl-manager-testrunner",
@@ -17,6 +20,7 @@ group("all") {
       "//virtual-usb-printer/virtual_usb_printer:smart-buffer-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:usb-printer-testrunner",
       "//virtual-usb-printer/mock_printer:unit_tests",
+      "//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-test",
     ]
   }
 }

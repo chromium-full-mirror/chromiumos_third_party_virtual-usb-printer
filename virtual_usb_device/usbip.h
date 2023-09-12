@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef USBIP_H__
-#define USBIP_H__
+#ifndef VIRTUAL_USB_DEVICE_USBIP_H_
+#define VIRTUAL_USB_DEVICE_USBIP_H_
 
 /*
  * This file defines the supported messages from the usbip-core protocol,
@@ -57,51 +57,39 @@ struct UsbipRetSubmit {
   uint64_t setup;         // Contains a USB SETUP packet.
 };
 
-// Represents a USB SETUP packet.
-struct UsbControlRequest {
-  uint8_t bmRequestType;
-  uint8_t bRequest;
-  uint8_t wValue0;
-  uint8_t wValue1;
-  uint8_t wIndex0;
-  uint8_t wIndex1;
-  uint16_t wLength;
-};
-
 // Prints the contents of various elements of USBIP messages for debugging
 // purposes.
 void PrintUsbHeaderBasic(const UsbipHeaderBasic& header);
 void PrintUsbipCmdSubmit(const UsbipCmdSubmit& command);
 void PrintUsbipRetSubmit(const UsbipRetSubmit& response);
-void PrintUsbControlRequest(const UsbControlRequest& request);
 
 // Creates a new UsbipRetSubmit which is initialized using the shared values
-// from |request|.
+// from `request`.
 UsbipRetSubmit CreateUsbipRetSubmit(const UsbipCmdSubmit& usb_request);
 
-// Serializes |reply| into a buffer and converts the contents to network byte
+// Serializes `reply` into a buffer and converts the contents to network byte
 // order.
 SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply);
 
-// Reads a UsbipCmdSubmit struct from |buf| and converts the contents of the
+// Reads a UsbipCmdSubmit struct from `buf` and converts the contents of the
 // message into host byte order.
 //
-// Erases the deserialized bytes from |buf|.
+// Erases the deserialized bytes from `buf`.
 UsbipCmdSubmit UnpackUsbipCmdSubmit(SmartBuffer* buf);
 
-// Responds to the USB data request |usb_request| by sending a UsbRetSubmit
-// message that uses |received| to indicate how many uint8_ts that it
+// Responds to the USB data request `usb_request` by sending a UsbRetSubmit
+// message that uses `received` to indicate how many uint8_ts that it
 // successfully received.
 void SendUsbDataResponse(int sockfd,
                          const UsbipCmdSubmit& usb_request,
                          size_t received);
 
-// Sends a UsbipRetSubmit message to the socket described by |sockfd|.
-// |usb_request| is used to create the UsbipRetSubmit header and |data|
+// Sends a UsbipRetSubmit message to the socket described by `sockfd`.
+// `usb_request` is used to create the UsbipRetSubmit header and `data`
 // contains the actual URB data.
 void SendUsbControlResponse(int sockfd,
                             const UsbipCmdSubmit& usb_request,
                             const uint8_t* data,
                             size_t size);
 
-#endif  // USBIP_H__
+#endif  // VIRTUAL_USB_DEVICE_USBIP_H_

@@ -275,7 +275,7 @@ TEST(ProcessMessageChunks, ContainsHttpHeader) {
       "test\r\n";
   SmartBuffer message_buffer;
   message_buffer.Add(message);
-  // We expect ProcessMessageChunks to return true since |message| does not
+  // We expect ProcessMessageChunks to return true since `message` does not
   // contain the final 0-length chunk.
   EXPECT_TRUE(ProcessMessageChunks(&message_buffer));
   EXPECT_EQ(message_buffer.size(), 0);
@@ -287,7 +287,7 @@ TEST(ProcessMessageChunks, MultipleChunks) {
       "test\r\n";
   SmartBuffer message_buffer1;
   message_buffer1.Add(message1);
-  // We expect ProcessMessageChunks to return true since |message| does not
+  // We expect ProcessMessageChunks to return true since `message` does not
   // contain the final 0-length chunk.
   EXPECT_TRUE(ProcessMessageChunks(&message_buffer1));
   EXPECT_EQ(message_buffer1.size(), 0);
@@ -298,7 +298,7 @@ TEST(ProcessMessageChunks, MultipleChunks) {
       "0\r\n\r\n";
   SmartBuffer message_buffer2;
   message_buffer2.Add(message2);
-  // We expect ProcessMessageChunks to return false since |message| contains the
+  // We expect ProcessMessageChunks to return false since `message` contains the
   // final 0-length chunk, and parsing should be completed.
   EXPECT_FALSE(ProcessMessageChunks(&message_buffer2));
   EXPECT_EQ(message_buffer2.size(), 0);

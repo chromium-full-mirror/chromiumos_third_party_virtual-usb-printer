@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef OP_COMMANDS_H__
-#define OP_COMMANDS_H__
+#ifndef VIRTUAL_USB_DEVICE_OP_COMMANDS_H_
+#define VIRTUAL_USB_DEVICE_OP_COMMANDS_H_
 
 /*
  * This file defines the supported OP command messages from the usbip userspace
@@ -26,15 +26,25 @@
 #include "smart_buffer.h"
 #include "usbip_constants.h"
 
-// Forward declaration of UsbPrinter.
-class UsbPrinter;
+struct DeviceData {
+  uint16_t port;         // Port number on which device listens
+  uint16_t device_type;  // Type of usb device, e.g printer, scanner
+  uint16_t device_id;    // usb device identifier, possibly ieee_device_id
+};
 
 // Contains the header values that are contained within all of the "OP" messages
 // used by usbip.
 struct OpHeader {
-  uint16_t version;  // usbip version.
-  uint16_t command;  // op command type.
-  int status;        // op request status.
+  uint16_t version;  // usbip version
+  uint16_t command;  // op command type
+  int status;        // op request status
+};
+
+// Defines Bind request message, used for registration of usb device
+// with host.
+struct BindRequest {
+  OpHeader header;         // usbip message header
+  DeviceData device_data;  // usb device data
 };
 
 // Generic device descriptor used by OpRepDevlist and OpRepImport.
@@ -59,10 +69,10 @@ struct OpRepDevice {
 typedef OpHeader OpReqDevlist;
 
 // The header used in an OpRepDevlist message, the only difference from
-// OpHeader is that it contains |numExportedDevices|.
+// OpHeader is that it contains `numExportedDevices`.
 struct OpRepDevlistHeader {
   OpHeader header;
-  int numExportedDevices;
+  int numExportedDevices;  // Number of registered usb device (i.e exported)
 };
 
 // Basic interface descriptor used by OpRepDevlist.
@@ -73,13 +83,20 @@ struct OpRepDevlistInterface {
   uint8_t padding;
 };
 
+// Single device information (descriptors+interfaces) used in
+// OP_REP_DEVLIST response.
+// OP_REQ_DEVLIST lists multiple usb device information and
+// each device information is represented by this struct.
+// (see struct OpRepDevlist also).
+struct OpRepDevInfo {
+  OpRepDevice device;
+  OpRepDevlistInterface* interfaces;
+};
+
 // Defines the OpRepDevlist used to respond to a OpReqDevlist message.
 struct OpRepDevlist {
   OpRepDevlistHeader header;
-  // Since our program is used to provide a virtual USB device, we only include
-  // a single OpRepDevice in our response.
-  OpRepDevice device;
-  OpRepDevlistInterface* interfaces;
+  std::vector<OpRepDevInfo> devices;
 };
 
 // Defines the OpReqImport request used to request a device for import.
@@ -95,32 +112,37 @@ struct OpRepImport {
   OpRepDevice device;
 };
 
-// Sets the corresponding members of |header| using the given values.
+// Sets the corresponding members of `header` using the given values.
 void SetOpHeader(uint16_t command, int status, OpHeader* header);
 
-// Sets the corresponding members of |devlist_header| using the given values.
+// Sets the corresponding members of `devlist_header` using the given values.
 void SetOpRepDevlistHeader(uint16_t command,
                            int status,
                            int numExportedDevices,
                            OpRepDevlistHeader* header);
 
-// Sets the members of |device| using the corresponding values in
-// |dev_dsc| and |config|.
+// Sets the members of `device` using the corresponding values in
+// `dev_dsc` and `config`.
 void SetOpRepDevice(const UsbDeviceDescriptor& dev_dsc,
                     const UsbConfigurationDescriptor& configuration,
                     OpRepDevice* device);
 
-// Assigns the values from |interfaces| into |rep_interfaces|.
+// Assigns the values from `interfaces` into `rep_interfaces`.
 void SetOpRepDevlistInterfaces(
     const std::vector<UsbInterfaceDescriptor>& interfaces,
     OpRepDevlistInterface** rep_interfaces);
 
-// Creates the OpRepDevlist message used to respond to requests to list the
-// host's exported USB devices.
-void CreateOpRepDevlist(const UsbDeviceDescriptor& device,
-                        const UsbConfigurationDescriptor& config,
-                        const std::vector<UsbInterfaceDescriptor>& interfaces,
-                        OpRepDevlist* list);
+// Set header for OP_REP_DEVLIST message.
+void CreateOpRepDevlistHeader(uint16_t numExportedDevices,
+                              OpRepDevlist* message);
+
+// Populate the OpRepDevInfo information for OP_REP_DEVLIST message,
+// which is used to respond when a request to list all exported devices
+// are received.
+void SetOpRepDevInfo(const UsbDeviceDescriptor& device,
+                     const UsbConfigurationDescriptor& config,
+                     const std::vector<UsbInterfaceDescriptor>& interfaces,
+                     OpRepDevInfo* devinfo);
 
 // Creates the OpRepImport message used to respond to a request to attach a
 // host USB device.
@@ -135,9 +157,12 @@ SmartBuffer PackOpHeader(OpHeader header);
 SmartBuffer PackOpRepDevice(OpRepDevice device);
 SmartBuffer PackOpRepDevlistHeader(OpRepDevlistHeader devlist_header);
 SmartBuffer PackOpRepDevlist(OpRepDevlist devlist);
-SmartBuffer PackOpRepImport(OpRepImport import);
+SmartBuffer PackOpRepImport(OpRepImport message);
+SmartBuffer PackBindRequest(BindRequest request);
+SmartBuffer PackDeviceData(DeviceData data);
 
-// Convert |header| into host uint8_t order.
+// Convert `header` into host uint8_t order.
 void UnpackOpHeader(OpHeader* header);
+void UnpackDeviceData(DeviceData* header);
 
-#endif  // OP_COMMANDS_H__
+#endif  // VIRTUAL_USB_DEVICE_OP_COMMANDS_H_

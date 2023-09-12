@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef USBIP_CONSTANTS_H__
-#define USBIP_CONSTANTS_H__
+#ifndef VIRTUAL_USB_DEVICE_USBIP_CONSTANTS_H_
+#define VIRTUAL_USB_DEVICE_USBIP_CONSTANTS_H_
 
 // USB Descriptor Type Constants.
 #define USB_DESCRIPTOR_DEVICE 0x01            // Device Descriptor.
@@ -53,6 +53,11 @@
 #define OP_REQ_DEVLIST_CMD 0x8005
 #define OP_REP_DEVLIST_CMD 0x0005
 
+// usbip command sent by device for exporting/binding ( see usbip bind)
+// These are custom message and not defined by usbip protocol.
+#define OP_REQ_BIND_CMD 0x8007
+#define OP_REP_BIND_CMD 0x0007
+
 // USBIP Command Constants.
 #define COMMAND_USBIP_CMD_SUBMIT 0x0001
 #define COMMAND_USBIP_CMD_UNLINK 0X0002
@@ -66,7 +71,4 @@
 #define IPP_GET_JOB_ATTRIBUTES 0x0009
 #define IPP_GET_PRINTER_ATTRIBUTES 0x000B
 
-// Port that the server is bound to.
-#define TCP_SERV_PORT 3240
-
-#endif  // USBIP_CONSTANTS_H__
+#endif  // VIRTUAL_USB_DEVICE_USBIP_CONSTANTS_H_
