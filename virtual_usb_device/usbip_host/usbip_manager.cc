@@ -16,10 +16,8 @@
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
 
-#define TCP_SERVER_PORT 3240
-
-UsbIpManager::UsbIpManager()
-    : server_(new UsbIpServer(this, TCP_SERVER_PORT)) {}
+UsbIpManager::UsbIpManager(uint16_t port)
+    : server_(new UsbIpServer(this, port)) {}
 
 UsbIpManager::~UsbIpManager() {}
 

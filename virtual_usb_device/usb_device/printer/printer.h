@@ -14,19 +14,24 @@
 #include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
-// Represents a single USB printer that can handle basic USB control and
-// printer-specific USB requests and respond with the result.
+// Represents a single usb printer that can handle basic USB control, raw usb
+// data, printer-specific USB requests and also responds with the result.
 class UsbPrinter : public UsbDevice {
  public:
+  // Creates a printer usb device object with config provided by
+  // `descriptors_path`. This device register itself with the usbip host
+  // on `host_port` and listens for the usb request on `port`.
+  // `document_output_path` is where a document is outputted to mimic
+  // printing.
   UsbPrinter(const std::string descriptors_path,
+             uint16_t port,
+             uint16_t host_port,
              const base::FilePath& document_output_path);
 
-  // Return status of printer.
+  // `UsbDevice` interface implementation for usb printer.
   void HandleGetStatus(int sockfd,
                        const Urb& usb_request,
                        const UsbControlRequest& control_request) const override;
-
-  // Handle usb data received on `sockfd`.
   void HandleUsbData(int sockfd, const Urb& usb_request) const override;
 
  private:

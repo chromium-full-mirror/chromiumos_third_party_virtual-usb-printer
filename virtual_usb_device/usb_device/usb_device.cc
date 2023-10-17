@@ -72,14 +72,16 @@ std::optional<UsbDescriptors> UsbDescriptors::Create(
                         ieee_device_id, interfaces, endpoint_map);
 }
 
-UsbDevice::UsbDevice(const std::string& descriptors_path, uint32_t port) {
+UsbDevice::UsbDevice(const std::string& descriptors_path,
+                     uint16_t port,
+                     uint16_t host_port) {
   auto descriptors = UsbDescriptors::Create(descriptors_path);
   if (!descriptors.has_value()) {
     LOG(FATAL) << "Unable to create USB descriptors from file "
                << descriptors_path;
   }
   usb_descriptors_ = descriptors.value();
-  server_.reset(new DeviceServer(this, port));
+  server_.reset(new DeviceServer(this, port, host_port));
 }
 
 void UsbDevice::Run() {

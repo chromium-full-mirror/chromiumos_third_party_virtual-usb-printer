@@ -18,7 +18,9 @@ class UsbDevice;
 // This class is owned by UsbDevice class.
 class DeviceServer : public Server {
  public:
-  explicit DeviceServer(UsbDevice* device, uint16_t port);
+  // Creates device server object which listens on `port` and
+  // registers itself to usbip host server listening on `host_port`.
+  DeviceServer(UsbDevice* device, uint16_t port, uint16_t host_port);
   void OnServerStarted() final;
 
  private:
@@ -33,6 +35,7 @@ class DeviceServer : public Server {
   void HandleConnection(base::ScopedFD connection) final;
 
   base::raw_ptr<UsbDevice> device_;
+  uint16_t host_port_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USB_DEVICE_DEVICE_SERVER_H_

@@ -8,8 +8,21 @@
 #include <brillo/flag_helper.h>
 #include <brillo/syslog_logging.h>
 
+constexpr char kUsage[] =
+    "UsbIpManager \n"
+    "    --port=<unsigned int>";
+
+#define TCP_SERV_PORT 3240
+
 int main(int argc, char* argv[]) {
+  DEFINE_int32(port, TCP_SERV_PORT, "Port that UsbIp server listens to");
+  DEFINE_int32(help, false, "print usage");
   brillo::FlagHelper::Init(argc, argv, "Virtual USB Device");
+  if (FLAGS_help) {
+    printf("%s\n", kUsage);
+    return 0;
+  }
+
   brillo::InitLog(brillo::kLogToSyslog | brillo::kLogToStderrIfTty);
 
   // Create a threadpool instance for this process
@@ -18,6 +31,6 @@ int main(int argc, char* argv[]) {
   base::ThreadPoolInstance::InitParams init_params(max_num_foreground_threads);
   base::ThreadPoolInstance::Get()->Start(init_params);
 
-  UsbIpManager manager{};
+  UsbIpManager manager(FLAGS_port);
   manager.Run();
 }

@@ -17,8 +17,8 @@
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
-DeviceServer::DeviceServer(UsbDevice* device, uint16_t port)
-    : Server(port), device_(device) {}
+DeviceServer::DeviceServer(UsbDevice* device, uint16_t port, uint16_t host_port)
+    : Server(port), device_(device), host_port_(host_port) {}
 
 void DeviceServer::OnServerStarted() {
   if (!RegisterToHost()) {
@@ -46,7 +46,7 @@ bool DeviceServer::RegisterToHost() {
   memset(&serv_addr, '0', sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-  serv_addr.sin_port = htons(3240);  // Port on which UsbIpHost listens.
+  serv_addr.sin_port = htons(host_port_);  // Port on which UsbIpHost listens.
 
   int status = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
   if (status < 0) {

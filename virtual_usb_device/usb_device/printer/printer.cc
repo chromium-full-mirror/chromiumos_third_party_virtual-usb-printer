@@ -15,10 +15,10 @@
 #define DEFAULT_TCP_HOST_PORT 3240
 
 constexpr char kUsage[] =
-    "virtual_usb_device\n"
+    "virtual_usb_printer\n"
     "    --descriptors_path=<path>\n"
-    "    --port=<int>\n"
-    "    --host_port=<int>\n"
+    "    --port=<unsigned int>\n"
+    "    --host_port=<unsigned int>\n"
     "    [--record_doc_path=<path>]";
 
 // Appends `buf` to the file at `path`. If no file exists at `path`, it is
@@ -39,8 +39,10 @@ void AppendToFile(base::FilePath path, SmartBuffer buf) {
 }
 
 UsbPrinter::UsbPrinter(const std::string descriptors_path,
+                       uint16_t port,
+                       uint16_t host_port,
                        const base::FilePath& document_output_path)
-    : UsbDevice(descriptors_path, DEFAULT_TCP_PRINTER_PORT),
+    : UsbDevice(descriptors_path, port, host_port),
       document_output_path_(document_output_path) {}
 
 void UsbPrinter::HandleUsbData(int sockfd, const Urb& usb_request) const {
@@ -93,6 +95,10 @@ void UsbPrinter::HandleGetDeviceId(
 int main(int argc, char* argv[]) {
   DEFINE_string(descriptors_path, "", "Path to descriptors JSON file");
   DEFINE_string(record_doc_path, "", "Path to file to record document to");
+  DEFINE_int32(port, DEFAULT_TCP_PRINTER_PORT,
+               "Port on which this device listens to");
+  DEFINE_int32(host_port, DEFAULT_TCP_HOST_PORT,
+               "Usbip host port which this is binded");
 
   brillo::FlagHelper::Init(argc, argv, "Virtual USB Printer");
 
@@ -104,6 +110,7 @@ int main(int argc, char* argv[]) {
 
   base::FilePath document_output_path(FLAGS_record_doc_path);
 
-  UsbPrinter usb_printer(FLAGS_descriptors_path, document_output_path);
+  UsbPrinter usb_printer(FLAGS_descriptors_path, FLAGS_port, FLAGS_host_port,
+                         document_output_path);
   usb_printer.Run();
 }

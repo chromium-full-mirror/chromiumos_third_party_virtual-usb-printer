@@ -138,15 +138,18 @@ class UsbDescriptors {
       endpoint_descriptors_;
 };
 
-// Represents a single USB device that can respond to basic USB control requests
+// Represents a single USB device that can respond to basic USB control
 // and device-specific USB requests.
-// Each usb device register itself with UsbIpHost and listen for usb commands on
-// fixed port and response back result to the usbiphost.
+// Each usb device registers itself with the usbip host, listens for the usb
+// commands on fixed port, and responds back result to the usbip host.
 class UsbDevice {
  public:
-  // Create generic usb device which listens for the usb command
-  // on fixed port. Usb configuration are read from `descriptors_path`.
-  UsbDevice(const std::string& descriptors_path, uint32_t port);
+  // Create generic usb device object which listens for usb requests on
+  // `port`. It registers itself with the usbip host listening on `host_port`.
+  // Usb configuration is provided by `descriptors_path` file.
+  UsbDevice(const std::string& descriptors_path,
+            uint16_t port,
+            uint16_t host_port);
 
   // Starts the tcp server and listen for usb commands.
   void Run();

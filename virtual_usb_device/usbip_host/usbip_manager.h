@@ -21,7 +21,8 @@
 // which is used to communicate with actual device process.
 class UsbIpManager {
  public:
-  UsbIpManager();
+  // Creates object which listens on `port` for usbip messages.
+  explicit UsbIpManager(uint16_t port);
   ~UsbIpManager();
 
   UsbIpManager(const UsbIpManager&) = delete;
