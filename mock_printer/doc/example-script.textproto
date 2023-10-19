@@ -565,18 +565,20 @@ steps {
             attributes {
               name: "printer-config-change-date-time"
               type: DATETIME
-              date_times { date_times {
-                year: 2047
-                month: 8
-                day: 20
-                hour: 15
-                minutes: 49
-                seconds: 49
-                deciseconds: 0
-                utc_direction: MINUS
-                utc_hours: 8
-                utc_minutes: 0
-              } }
+              date_times {
+                date_times {
+                  year: 2047
+                  month: 8
+                  day: 20
+                  hour: 15
+                  minutes: 49
+                  seconds: 49
+                  deciseconds: 0
+                  utc_direction: MINUS
+                  utc_hours: 8
+                  utc_minutes: 0
+                }
+              }
             }
             attributes {
               name: "printer-config-change-time"
@@ -588,18 +590,20 @@ steps {
             attributes {
               name: "printer-current-time"
               type: DATETIME
-              date_times { date_times {
-                year: 2047
-                month: 9
-                day: 20
-                hour: 15
-                minutes: 53
-                seconds: 53
-                deciseconds: 0
-                utc_direction: MINUS
-                utc_hours: 8
-                utc_minutes: 0
-              } }
+              date_times {
+                date_times {
+                  year: 2047
+                  month: 9
+                  day: 20
+                  hour: 15
+                  minutes: 53
+                  seconds: 53
+                  deciseconds: 0
+                  utc_direction: MINUS
+                  utc_hours: 8
+                  utc_minutes: 0
+                }
+              }
             }
             attributes {
               name: "printer-device-id"
@@ -702,20 +706,24 @@ steps {
             attributes {
               name: "printer-resolution-default"
               type: RESOLUTION
-              resolutions { resolutions {
-                xres: 300
-                yres: 300
-                units: DOTS_PER_INCH
-              } }
+              resolutions {
+                resolutions {
+                  xres: 300
+                  yres: 300
+                  units: DOTS_PER_INCH
+                }
+              }
             }
             attributes {
               name: "printer-resolution-supported"
               type: RESOLUTION
-              resolutions { resolutions {
-                xres: 300
-                yres: 300
-                units: DOTS_PER_INCH
-              } }
+              resolutions {
+                resolutions {
+                  xres: 300
+                  yres: 300
+                  units: DOTS_PER_INCH
+                }
+              }
             }
             attributes {
               name: "printer-state"
@@ -727,18 +735,20 @@ steps {
             attributes {
               name: "printer-state-change-date-time"
               type: DATETIME
-              date_times { date_times {
-                year: 2047
-                month: 8
-                day: 20
-                hour: 15
-                minutes: 49
-                seconds: 16
-                deciseconds: 0
-                utc_direction: MINUS
-                utc_hours: 8
-                utc_minutes: 0
-              } }
+              date_times {
+                date_times {
+                  year: 2047
+                  month: 8
+                  day: 20
+                  hour: 15
+                  minutes: 49
+                  seconds: 16
+                  deciseconds: 0
+                  utc_direction: MINUS
+                  utc_hours: 8
+                  utc_minutes: 0
+                }
+              }
             }
             attributes {
               name: "printer-state-change-time"
@@ -807,11 +817,13 @@ steps {
             attributes {
               name: "pwg-raster-document-resolution-supported"
               type: RESOLUTION
-              resolutions { resolutions {
-                xres: 600
-                yres: 600
-                units: DOTS_PER_INCH
-              } }
+              resolutions {
+                resolutions {
+                  xres: 600
+                  yres: 600
+                  units: DOTS_PER_INCH
+                }
+              }
             }
             attributes {
               name: "pwg-raster-document-type-supported"
@@ -951,26 +963,32 @@ steps {
             attributes {
               name: "jpeg-k-octets-supported"
               type: RANGE_OF_INTEGER
-              int_ranges { int_ranges {
-                minimum: 0
-                maximum: 777
-              } }
+              int_ranges {
+                int_ranges {
+                  minimum: 0
+                  maximum: 777
+                }
+              }
             }
             attributes {
               name: "jpeg-x-dimension-supported"
               type: RANGE_OF_INTEGER
-              int_ranges { int_ranges {
-                minimum: 0
-                maximum: 15103
-              } }
+              int_ranges {
+                int_ranges {
+                  minimum: 0
+                  maximum: 15103
+                }
+              }
             }
             attributes {
               name: "jpeg-y-dimension-supported"
               type: RANGE_OF_INTEGER
-              int_ranges { int_ranges {
-                minimum: 0
-                maximum: 15103
-              } }
+              int_ranges {
+                int_ranges {
+                  minimum: 0
+                  maximum: 15103
+                }
+              }
             }
             attributes {
               name: "landscape-orientation-requested-preferred"
@@ -1048,10 +1066,12 @@ steps {
             attributes {
               name: "pdf-k-octets-supported"
               type: RANGE_OF_INTEGER
-              int_ranges { int_ranges {
-                minimum: 0
-                maximum: 31250
-              } }
+              int_ranges {
+                int_ranges {
+                  minimum: 0
+                  maximum: 31250
+                }
+              }
             }
             attributes {
               name: "pdf-versions-supported"
