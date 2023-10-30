@@ -5,8 +5,14 @@
 #include "usbip_manager.h"
 #include <base/task/thread_pool/thread_pool_instance.h>
 
+#include <brillo/flag_helper.h>
+#include <brillo/syslog_logging.h>
+
 int main(int argc, char* argv[]) {
-  // Create a threadpool instance for this process.
+  brillo::FlagHelper::Init(argc, argv, "Virtual USB Device");
+  brillo::InitLog(brillo::kLogToSyslog | brillo::kLogToStderrIfTty);
+
+  // Create a threadpool instance for this process
   base::ThreadPoolInstance::Create("UsbIpHost Threadpool");
   constexpr size_t max_num_foreground_threads = 8;  // Chosen randomly.
   base::ThreadPoolInstance::InitParams init_params(max_num_foreground_threads);

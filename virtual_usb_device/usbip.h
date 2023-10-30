@@ -28,34 +28,36 @@
 
 // Common USBIP header used in both requests and responses.
 struct UsbipHeaderBasic {
-  int command;    // The USBIP request type.
-  int seqnum;     // Sequential number that identifies requests.
-  int devid;      // Specifies a remote USB devie uniquely.
-  int direction;  // Direction of the transfer (0 Out, 1 In).
-  int ep;         // The USB endpoint number.
-};
+  uint32_t command;    // The USBIP request type.
+  uint32_t seqnum;     // Sequential number that identifies requests.
+  uint32_t devid;      // Specifies a remote USB devie uniquely.
+  uint32_t direction;  // Direction of the transfer (0 Out, 1 In).
+  uint32_t ep;         // The USB endpoint number.
+} __attribute__((packed));
 
 // Used to submit a USB request.
 struct UsbipCmdSubmit {
   UsbipHeaderBasic header;
-  int transfer_flags;          // URB flags.
-  int transfer_buffer_length;  // Data size for transfer.
-  int start_frame;             // Initial frame for iso or interrupt transfers.
-  int number_of_packets;       // Number of iso packets.
-  int interval;                // Timeout for response.
+  uint32_t transfer_flags;          // URB flags.
+  uint32_t transfer_buffer_length;  // Data size for transfer.
+  uint32_t start_frame;        // Initial frame for iso or interrupt transfers.
+  uint32_t number_of_packets;  // Number of iso packets.
+  uint32_t interval;           // Timeout for response.
   uint64_t setup;              // Contains a USB SETUP packet.
-};
+} __attribute__((packed));
 
 // Used to reply to a USB request.
 struct UsbipRetSubmit {
   UsbipHeaderBasic header;
-  int status;         // Response status (O for success, non-zero for error).
-  int actual_length;  // Number of bytes transferred.
-  int start_frame;    // Iniitial frame for iso or interrupt transfers.
-  int number_of_packets;  // Number of iso packets.
-  int error_count;        // Number of errors for iso transfers.
-  uint64_t setup;         // Contains a USB SETUP packet.
-};
+  uint32_t status;  // Response status (O for success, non-zero for error).
+  uint32_t actual_length;      // Number of bytes transferred.
+  uint32_t start_frame;        // Iniitial frame for iso or interrupt transfers.
+  uint32_t number_of_packets;  // Number of iso packets.
+  uint32_t error_count;        // Number of errors for iso transfers.
+} __attribute__((packed));
+
+// Populate Urb (USB request block) with usbip request
+void usbip_to_urb(const struct UsbipCmdSubmit* usbip, struct Urb* urb);
 
 // Prints the contents of various elements of USBIP messages for debugging
 // purposes.
@@ -76,20 +78,5 @@ SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply);
 //
 // Erases the deserialized bytes from `buf`.
 UsbipCmdSubmit UnpackUsbipCmdSubmit(SmartBuffer* buf);
-
-// Responds to the USB data request `usb_request` by sending a UsbRetSubmit
-// message that uses `received` to indicate how many uint8_ts that it
-// successfully received.
-void SendUsbDataResponse(int sockfd,
-                         const UsbipCmdSubmit& usb_request,
-                         size_t received);
-
-// Sends a UsbipRetSubmit message to the socket described by `sockfd`.
-// `usb_request` is used to create the UsbipRetSubmit header and `data`
-// contains the actual URB data.
-void SendUsbControlResponse(int sockfd,
-                            const UsbipCmdSubmit& usb_request,
-                            const uint8_t* data,
-                            size_t size);
 
 #endif  // VIRTUAL_USB_DEVICE_USBIP_H_

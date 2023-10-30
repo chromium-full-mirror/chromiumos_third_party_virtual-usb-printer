@@ -118,6 +118,15 @@ TEST_F(UsbIpManagerTest, HandleDeviceListOneDevice) {
   SmartBuffer buf2 = ReceiveBuffer(client_fd, sizeof(OpRepDevlistHeader));
   OpRepDevlistHeader list_header = UnpackOpRepDevlistHeader(&buf2);
   int count = list_header.numExportedDevices;
-
   EXPECT_EQ(count, 1);
+
+  OpReqImport req;
+  req.header.version = 2;
+  req.header.command = OP_REQ_IMPORT_CMD;
+  req.header.status = 0;
+  SmartBuffer buf3 = PackOpHeader(req.header);
+
+  SendBuffer(client_fd, buf1);
+  EXPECT_EQ(count, 1);
+  sleep(1);
 }

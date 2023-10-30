@@ -16,7 +16,7 @@ class UsbIpManager;
 // This class is owned by `UsbIpManager`.
 class UsbIpServer : public Server {
  public:
-  explicit UsbIpServer(UsbIpManager* manager_);
+  UsbIpServer(UsbIpManager* manager, int port);
 
   // Process each incoming usbip message on a new thread.
   void HandleConnection(base::ScopedFD connection) final;

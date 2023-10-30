@@ -177,3 +177,62 @@ void PrintUsbControlRequest(const UsbControlRequest& request) {
           << unsigned{request.wIndex0};
   VLOG(2) << "  UC Length " << unsigned{request.wLength};
 }
+
+Urb UnpackUrb(SmartBuffer* buf) {
+  Urb result;
+  CHECK(buf->size() >= sizeof(result));
+  memcpy(&result, buf->data(), sizeof(result));
+  buf->Erase(0, sizeof(result));
+
+  result.devid = ntohl(result.devid);
+  result.direction = ntohl(result.direction);
+  result.ep = ntohl(result.ep);
+
+  result.transfer_flags = ntohl(result.transfer_flags);
+  result.transfer_buffer_length = ntohl(result.transfer_buffer_length);
+  result.start_frame = ntohl(result.start_frame);
+  result.num_of_packets = ntohl(result.num_of_packets);
+  result.interval = ntohl(result.interval);
+  result.setup = be64toh(result.setup);
+  return result;
+}
+
+SmartBuffer PackUrb(const Urb& urb) {
+  SmartBuffer result;
+  result.Add(htonl(urb.devid));
+  result.Add(htonl(urb.direction));
+  result.Add(htonl(urb.ep));
+
+  result.Add(htonl(urb.transfer_flags));
+  result.Add(htonl(urb.transfer_buffer_length));
+  result.Add(htonl(urb.start_frame));
+  result.Add(htonl(urb.num_of_packets));
+  result.Add(htonl(urb.interval));
+
+  result.Add(htobe64(urb.setup));
+  return result;
+}
+
+SmartBuffer PackUrbReply(const UrbReply& urb) {
+  SmartBuffer result;
+  result.Add(htonl(urb.devid));
+  result.Add(htonl(urb.direction));
+  result.Add(htonl(urb.ep));
+
+  result.Add(htonl(urb.actual_size));
+  return result;
+}
+
+UrbReply UnpackUrbReply(SmartBuffer* buf) {
+  UrbReply result;
+  CHECK(buf->size() >= sizeof(result));
+  memcpy(&result, buf->data(), sizeof(result));
+  buf->Erase(0, sizeof(result));
+
+  result.devid = ntohl(result.devid);
+  result.direction = ntohl(result.direction);
+  result.ep = ntohl(result.ep);
+
+  result.actual_size = ntohl(result.actual_size);
+  return result;
+}

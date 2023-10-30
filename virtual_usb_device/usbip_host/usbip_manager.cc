@@ -16,7 +16,10 @@
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
 
-UsbIpManager::UsbIpManager() : server_(new UsbIpServer(this)) {}
+#define TCP_SERVER_PORT 3240
+
+UsbIpManager::UsbIpManager()
+    : server_(new UsbIpServer(this, TCP_SERVER_PORT)) {}
 
 UsbIpManager::~UsbIpManager() {}
 
@@ -87,31 +90,42 @@ bool UsbIpManager::HandleOpRequest(const base::ScopedFD& connection,
                                    bool* attached) {
   SmartBuffer buf = ReceiveBuffer(connection.get(), sizeof(OpHeader));
   if (buf.size() != sizeof(OpHeader)) {
+    LOG(INFO) << "An unrecognised message was received - ignoring it";
     return false;
   }
 
   OpHeader request = UnpackOpHeader(&buf);
   if (request.command == OP_REQ_BIND_CMD) {
     HandleBind(connection);
-  } else if (request.command == OP_REQ_DEVLIST_CMD) {
+    return false;
+  }
+
+  if (request.command == OP_REQ_DEVLIST_CMD) {
     HandleDeviceList(connection);
-  } else if (request.command == OP_REQ_IMPORT_CMD) {
+    return false;
+  }
+
+  if (request.command == OP_REQ_IMPORT_CMD) {
     *attached = HandleAttach(connection);
     return *attached;
-  } else {
-    LOG(WARNING) << "Unknown usbip command";
   }
-  return true;
+
+  LOG(WARNING) << "Unknown usbip command";
+
+  return false;
 }
 
 bool UsbIpManager::HandleUsbRequest(const base::ScopedFD& connection,
                                     bool* connection_open) {
   SmartBuffer received =
       ReceiveBuffer(connection.get(), sizeof(UsbipCmdSubmit));
+  if (received.size() != sizeof(UsbipCmdSubmit))
+    return false;
+
   UsbipCmdSubmit command = UnpackUsbipCmdSubmit(&received);
   if (command.header.command == COMMAND_USBIP_CMD_SUBMIT) {
     PrintUsbipCmdSubmit(command);
-    HandleUsbCommand(connection.get(), command);
+    HandleUsbCommand(connection, command);
     return true;
   }
 
@@ -119,6 +133,7 @@ bool UsbIpManager::HandleUsbRequest(const base::ScopedFD& connection,
     LOG(INFO) << "Received unlink URB...ignoring";
     return true;
   }
+
   return false;
 }
 
@@ -130,7 +145,7 @@ void UsbIpManager::HandleConnection(base::ScopedFD connection) {
     if (!attached) {
       connection_open = HandleOpRequest(connection, &attached);
     } else {
-      HandleUsbRequest(connection, &connection_open);
+      connection_open = HandleUsbRequest(connection, &connection_open);
     }
   }
 }
@@ -204,7 +219,7 @@ bool UsbIpManager::HandleAttach(const base::ScopedFD& connection) {
   return status == 0 ? true : false;
 }
 
-bool UsbIpManager::HandleDeviceList(const base::ScopedFD& connection) {
+void UsbIpManager::HandleDeviceList(const base::ScopedFD& connection) {
   LOG(INFO) << "Listing devices..." << proxy_list.size();
 
   OpRepDevlist list{};
@@ -215,16 +230,31 @@ bool UsbIpManager::HandleDeviceList(const base::ScopedFD& connection) {
 
   SmartBuffer packed_devlist = PackOpRepDevlist(list);
   SendBuffer(connection.get(), packed_devlist);
-  LOG(INFO) << "Sent: " << packed_devlist.size();
-  return true;
 }
 
-void UsbIpManager::HandleUsbCommand(int sockfd,
+void UsbIpManager::HandleUsbCommand(const base::ScopedFD& sockfd,
                                     const UsbipCmdSubmit& usb_request) {
   for (auto& proxy : proxy_list) {
-    if (proxy->GetAttachedSocket() == sockfd) {
-      SmartBuffer buf = proxy->HandleUsbDeviceRequest(usb_request);
-      SendUsbControlResponse(sockfd, usb_request, buf.data(), buf.size());
+    if (proxy->GetAttachedSocket() == sockfd.get()) {
+      Urb urb_request;
+      usbip_to_urb(&usb_request, &urb_request);
+      SmartBuffer buf = proxy->HandleUsbDeviceRequest(urb_request);
+      SendUsbipControlResponse(sockfd, usb_request, buf.data(), buf.size());
     }
   }
+}
+
+void UsbIpManager::SendUsbipControlResponse(const base::ScopedFD& connection,
+                                            const UsbipCmdSubmit& usb_request,
+                                            const uint8_t* data,
+                                            size_t data_size) {
+  UsbipRetSubmit response = CreateUsbipRetSubmit(usb_request);
+  response.actual_length = data_size;
+
+  PrintUsbipRetSubmit(response);
+  SmartBuffer smart_buffer = PackUsbipRetSubmit(response);
+  if (data_size > 0) {
+    smart_buffer.Add(data, data_size);
+  }
+  SendBuffer(connection.get(), smart_buffer);
 }

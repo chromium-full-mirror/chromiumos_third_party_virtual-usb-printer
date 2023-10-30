@@ -11,6 +11,7 @@
 #include "server.h"
 #include "smart_buffer.h"
 #include "usbip_constants.h"
+#include "usb_util.h"
 
 #include <base/check.h>
 #include <base/logging.h>
@@ -30,12 +31,13 @@ SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply) {
   serialized.Add(htonl(reply.number_of_packets));
   serialized.Add(htonl(reply.error_count));
 
-  serialized.Add(htobe64(reply.setup));
   return serialized;
 }
 
 UsbipCmdSubmit UnpackUsbipCmdSubmit(SmartBuffer* buf) {
   UsbipCmdSubmit result;
+  LOG(INFO) << "buf->size() " << buf->size();
+  LOG(INFO) << "sizeof UsbipCmdSubmit " << sizeof(result);
   CHECK(buf->size() >= sizeof(result));
   memcpy(&result, buf->data(), sizeof(result));
   buf->Erase(0, sizeof(result));
@@ -97,27 +99,14 @@ UsbipRetSubmit CreateUsbipRetSubmit(const UsbipCmdSubmit& request) {
   return response;
 }
 
-void SendUsbDataResponse(int sockfd,
-                         const UsbipCmdSubmit& usb_request,
-                         size_t received) {
-  UsbipRetSubmit response = CreateUsbipRetSubmit(usb_request);
-  response.actual_length = received;
-
-  PrintUsbipRetSubmit(response);
-  // TODO(santo):  SendBuffer(sockfd, PackUsbipRetSubmit(response));
-}
-
-void SendUsbControlResponse(int sockfd,
-                            const UsbipCmdSubmit& usb_request,
-                            const uint8_t* data,
-                            size_t data_size) {
-  UsbipRetSubmit response = CreateUsbipRetSubmit(usb_request);
-  response.actual_length = data_size;
-
-  PrintUsbipRetSubmit(response);
-  SmartBuffer smart_buffer = PackUsbipRetSubmit(response);
-  if (data_size > 0) {
-    smart_buffer.Add(data, data_size);
-  }
-  // TODO(santo): SendBuffer(sockfd, smart_buffer);
+void usbip_to_urb(const struct UsbipCmdSubmit* usbip, struct Urb* urb) {
+  urb->devid = usbip->header.devid;
+  urb->direction = usbip->header.direction;
+  urb->ep = usbip->header.ep;
+  urb->transfer_flags = usbip->transfer_flags;
+  urb->transfer_buffer_length = usbip->transfer_buffer_length;
+  urb->start_frame = usbip->start_frame;
+  urb->num_of_packets = usbip->number_of_packets;
+  urb->interval = usbip->interval;
+  urb->setup = usbip->setup;
 }

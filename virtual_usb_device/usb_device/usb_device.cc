@@ -86,13 +86,12 @@ void UsbDevice::Run() {
   server_->Start();
 }
 
-void UsbDevice::HandleUsbRequest(int sockfd,
-                                 const UsbipCmdSubmit& usb_request) {
+void UsbDevice::HandleUsbRequest(int sockfd, const Urb& usb_request) {
   // Endpoint 0 is used for USB control requests.
-  if (usb_request.header.ep == 0) {
+  if (usb_request.ep == 0) {
     HandleUsbControl(sockfd, usb_request);
   } else {
-    if (usb_request.header.direction == 1) {
+    if (usb_request.direction == 1) {
       HandleBulkInRequest(sockfd, usb_request);
     } else {
       HandleUsbData(sockfd, usb_request);
@@ -100,8 +99,7 @@ void UsbDevice::HandleUsbRequest(int sockfd,
   }
 }
 
-void UsbDevice::HandleUsbControl(int sockfd,
-                                 const UsbipCmdSubmit& usb_request) const {
+void UsbDevice::HandleUsbControl(int sockfd, const Urb& usb_request) const {
   UsbControlRequest control_request =
       CreateUsbControlRequest(usb_request.setup);
   int request_type = GetControlType(control_request.bmRequestType);
@@ -122,7 +120,7 @@ void UsbDevice::HandleUsbControl(int sockfd,
 
 void UsbDevice::HandleStandardControl(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   switch (control_request.bRequest) {
     case GET_STATUS:
@@ -153,7 +151,7 @@ void UsbDevice::HandleStandardControl(
 
 void UsbDevice::HandleDeviceControl(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   switch (control_request.bRequest) {
     case GET_DEVICE_ID:
@@ -173,7 +171,7 @@ void UsbDevice::HandleDeviceControl(
 
 void UsbDevice::HandleGetStatus(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetStatus " << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
@@ -185,7 +183,7 @@ void UsbDevice::HandleGetStatus(
 
 void UsbDevice::HandleGetDescriptor(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDescriptor "
           << DescriptorTypeString(control_request.wValue1) << "["
@@ -219,7 +217,7 @@ void UsbDevice::HandleGetDescriptor(
 
 void UsbDevice::HandleGetDeviceDescriptor(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDeviceDescriptor "
           << DescriptorTypeString(control_request.wValue1) << "["
@@ -241,7 +239,7 @@ void UsbDevice::HandleGetDeviceDescriptor(
 
 void UsbDevice::HandleGetConfigurationDescriptor(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetConfigurationDescriptor "
           << DescriptorTypeString(control_request.wValue1) << "["
@@ -286,7 +284,7 @@ void UsbDevice::HandleGetConfigurationDescriptor(
 
 void UsbDevice::HandleGetDeviceQualifierDescriptor(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDeviceQualifierDescriptor "
           << DescriptorTypeString(control_request.wValue1) << "["
@@ -299,7 +297,7 @@ void UsbDevice::HandleGetDeviceQualifierDescriptor(
 
 void UsbDevice::HandleGetStringDescriptor(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetStringDescriptor "
           << DescriptorTypeString(control_request.wValue1) << "["
@@ -315,7 +313,7 @@ void UsbDevice::HandleGetStringDescriptor(
 
 void UsbDevice::HandleGetConfiguration(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetConfiguration " << unsigned{control_request.wValue1}
           << "[" << unsigned{control_request.wValue0} << "]";
@@ -331,7 +329,7 @@ void UsbDevice::HandleGetConfiguration(
 
 void UsbDevice::HandleUnsupportedRequest(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleUnsupportedRequest "
           << StandardDeviceRequestString(control_request.bRequest) << ": "
@@ -342,7 +340,7 @@ void UsbDevice::HandleUnsupportedRequest(
 
 void UsbDevice::HandleGetDeviceId(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDeviceId " << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
@@ -352,12 +350,34 @@ void UsbDevice::HandleGetDeviceId(
   SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
 }
 
-void UsbDevice::HandleUsbData(int sockfd,
-                              const UsbipCmdSubmit& usb_request) const {
+void UsbDevice::HandleUsbData(int sockfd, const Urb& usb_request) const {
   NOTIMPLEMENTED();
 }
 
-void UsbDevice::HandleBulkInRequest(int sockfd,
-                                    const UsbipCmdSubmit& usb_request) {
+void UsbDevice::HandleBulkInRequest(int sockfd, const Urb& usb_request) {
   NOTIMPLEMENTED();
+}
+
+void UsbDevice::SendUsbDataResponse(int sockfd,
+                                    const Urb& usb_request,
+                                    size_t received) const {
+  NOTIMPLEMENTED();
+}
+
+void UsbDevice::SendUsbControlResponse(int sockfd,
+                                       const Urb& usb_request,
+                                       const uint8_t* data,
+                                       size_t data_size) const {
+  UrbReply reply;
+  reply.devid = usb_request.devid;
+  reply.direction = usb_request.direction;
+  reply.ep = usb_request.ep;
+  reply.actual_size = data_size;
+  SmartBuffer buf = PackUrbReply(reply);
+  if (data_size > 0) {
+    buf.Add(data, data_size);
+  }
+  LOG(INFO) << __func__ << " "
+            << "data size: " << data_size;
+  SendBuffer(sockfd, buf);
 }

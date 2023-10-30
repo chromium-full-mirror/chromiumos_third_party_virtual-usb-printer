@@ -13,7 +13,6 @@
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
-#include "virtual-usb-printer/virtual_usb_device/usbip.h"
 
 // Represents a single USB printer that can handle basic USB control and
 // printer-specific USB requests and respond with the result.
@@ -24,27 +23,26 @@ class UsbPrinter : public UsbDevice {
 
   // Return status of printer.
   void HandleGetStatus(int sockfd,
-                       const UsbipCmdSubmit& usb_request,
+                       const Urb& usb_request,
                        const UsbControlRequest& control_request) const override;
 
   // Handle usb data received on `sockfd`.
-  void HandleUsbData(int sockfd,
-                     const UsbipCmdSubmit& usb_request) const override;
+  void HandleUsbData(int sockfd, const Urb& usb_request) const override;
 
  private:
   // Handles printer control specific USB requests.
   void HandleDeviceControl(int sockfd,
-                           const UsbipCmdSubmit& usb_request,
+                           const Urb& usb_request,
                            const UsbControlRequest& control_request) const;
 
   // Responds with ieee device id of the printer.
   void HandleGetDeviceId(int sockfd,
-                         const UsbipCmdSubmit& usb_request,
+                         const Urb& usb_request,
                          const UsbControlRequest& control_request) const;
 
   // Used to send an empty response to control requests which are not supported.
   void HandleUnsupportedRequest(int sockfd,
-                                const UsbipCmdSubmit& usb_request,
+                                const Urb& usb_request,
                                 const UsbControlRequest& control_request) const;
 
   base::FilePath document_output_path_;

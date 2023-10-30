@@ -11,10 +11,8 @@
 
 #include "usbip_manager.h"
 
-#define TCP_SERV_PORT 3240
-
-UsbIpServer::UsbIpServer(UsbIpManager* manager)
-    : Server(TCP_SERV_PORT), manager_(manager) {}
+UsbIpServer::UsbIpServer(UsbIpManager* manager, int port)
+    : Server(port), manager_(manager) {}
 
 void UsbIpServer::HandleConnection(base::ScopedFD connection) {
   base::ThreadPool::PostTask(

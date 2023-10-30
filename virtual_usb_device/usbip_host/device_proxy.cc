@@ -44,7 +44,7 @@ bool DeviceProxy::Connect() {
 
   LOG(INFO) << "Connected with device on port: " << port_;
 
-  return true;
+  return is_connected_;
 }
 
 void DeviceProxy::Disconnect() {
@@ -59,61 +59,17 @@ void DeviceProxy::AttachConnection(int sockfd) {
   attached_socket_ = sockfd;
 }
 
-SmartBuffer DeviceProxy::HandleUsbDeviceRequest(
-    const UsbipCmdSubmit& usb_request) {
-  SmartBuffer buf;
-  // TODO(santo):  usb_request need to be packed for network
-  buf.Add(usb_request);
+SmartBuffer DeviceProxy::HandleUsbDeviceRequest(const Urb& urb_request) {
+  // Send URB to device
+  SmartBuffer buf = PackUrb(urb_request);
   SendBuffer(client_fd_, buf);
 
-  // FIXME(santo): Confirm if size of receivebuffer is ok
-  SmartBuffer data = ReceiveBuffer(client_fd_, sizeof(usb_request));
-  return data;
-}
+  // Process response of URB
+  UrbReply result;
+  SmartBuffer reply_buf = ReceiveBuffer(client_fd_, sizeof(result));
+  result = UnpackUrbReply(&reply_buf);
 
-UsbDeviceDescriptor DeviceProxy::device_descriptor() {
-  SmartBuffer buf;
-  uint8_t req = GET_DEVICE_DESCRIPTOR;
-  buf.Add(req);
-  SendBuffer(client_fd_, buf);
-  SmartBuffer data = ReceiveBuffer(client_fd_, sizeof(UsbDeviceDescriptor));
-  return UnpackUsbDescriptor(data);
-}
+  LOG(INFO) << "Rcv size: " << result.actual_size;
 
-UsbConfigurationDescriptor DeviceProxy::configuration_descriptor() {
-  // TODO(santo): adjust better once device class is fully ready.
-  SmartBuffer buf;
-  uint8_t req = GET_CONFIG_DESCRIPTOR;
-  buf.Add(req);
-  SendBuffer(client_fd_, buf);
-  SmartBuffer data =
-      ReceiveBuffer(client_fd_, sizeof(UsbConfigurationDescriptor));
-  return UnpackConfigDescriptor(data);
-}
-
-UsbDeviceQualifierDescriptor DeviceProxy::qualifier_descriptor() {
-  // TODO(santo): adjust better once device class is fully ready.
-  SmartBuffer buf;
-  uint8_t req = GET_QUALIFIER_DESCRIPTOR;
-  buf.Add(req);
-  SendBuffer(client_fd_, buf);
-
-  SmartBuffer data =
-      ReceiveBuffer(client_fd_, sizeof(UsbDeviceQualifierDescriptor));
-  return UnpackDeviceQualifierDescriptor(data);
-}
-
-std::vector<UsbInterfaceDescriptor> DeviceProxy::interface_descriptors() {
-  // TODO(santo): adjust better once device class is fully ready.
-  SmartBuffer buf;
-  std::vector<UsbInterfaceDescriptor> descriptors;
-  uint8_t req = GET_INTERFACE_DESCRIPTOR;
-  buf.Add(req);
-  SendBuffer(client_fd_, buf);
-  SmartBuffer data = ReceiveBuffer(client_fd_, sizeof(UsbInterfaceDescriptor));
-  // TODO(santo): data may have multiple interface descriptors and
-  // need to handle.
-  UsbInterfaceDescriptor descriptor = UnpackInterfaceDescriptors(data);
-  descriptors.emplace_back(descriptor);
-  return descriptors;
+  return ReceiveBuffer(client_fd_, result.actual_size);
 }

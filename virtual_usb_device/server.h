@@ -30,7 +30,7 @@ class Server {
   Server(const Server&) = delete;
   Server& operator=(const Server&) = delete;
 
-  // Creates a socket, bind it to port and then start listening.
+  // Creates a socket, binds it to the port and then starts listening.
   void Start();
   // Shutdown server and close listening socket.
   void Stop();

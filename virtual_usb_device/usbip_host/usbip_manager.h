@@ -27,7 +27,7 @@ class UsbIpManager {
   UsbIpManager(const UsbIpManager&) = delete;
   UsbIpManager& operator=(const UsbIpManager&) = delete;
 
-  // Start the server which listens on port.
+  // Starts the server which listens on port.
   void Run();
   // Stops the server.
   void Stop() { server_->Stop(); }
@@ -40,7 +40,7 @@ class UsbIpManager {
   // Note: OP_REQ_BIND_CMD is custom defined usbip message.
   void HandleBind(const base::ScopedFD& connection);
 
-  // Register the usb device with `UsbIpManager`.
+  // Registers the usb device with `UsbIpManager`.
   // Once this is called, a proxy of actual usb device is created and
   // only after registeration, device can be attached by the user
   void RegisterDevice(const uint16_t port, const OpRepDevInfo& device_info);
@@ -49,36 +49,50 @@ class UsbIpManager {
 
   // Handles OP_REQ_DEVLIST command by responding with the list of exported usb
   // devices.
-  bool HandleDeviceList(const base::ScopedFD& connection);
+  void HandleDeviceList(const base::ScopedFD& connection);
   // Handles OP_REQ_IMPORT command by attaching a usb device for further
   // communication. Internally, a `DeviceProxy` is used to make tcp connection
   // to the usb device server. Any subsequent usb messages on that proxy will be
   // forwarded to attached usb device.
+  // Returns whether usb device is successfully attached or not.
   bool HandleAttach(const base::ScopedFD& connection);
 
-  // Handle usb requests after usb device is attached.
+  // Handles usb requests after usb device is attached.
   // Requests could be of following type: control, bulk, ipp, raw usb data.
+  // A true return value means connection to the client should
+  // be kept open after servicing the request.
   bool HandleUsbRequest(const base::ScopedFD& connection,
                         bool* connection_open);
 
-  // Handle Op usbip requests, which is of following type
-  // OP_REQ_BIND_CMD : custom defined for registeration
-  // OP_REQ_DEVLIST_CMD : Lists exported device list
+  // Handles following usbip OP requests.
+  // OP_REQ_BIND_CMD : custom defined for registeration.
+  // OP_REQ_DEVLIST_CMD : Lists exported device list.
   // OP_REQ_IMPORT_CMD : Attach requested device to
-  // receive usb command directly
+  // receive usb command directly.
+  // A true return value means connection to the client should
+  // be kept open after servicing the request.
   bool HandleOpRequest(const base::ScopedFD& connection, bool* attached);
 
  private:
-  // Respond with status of OP_REQ_BIND_CMD usbip message.
+  // Responds with the status of OP_REQ_BIND_CMD usbip message.
   void RespondBind(const base::ScopedFD& connection, bool status);
-  // Read port number from connection and return DeviceProxy index
-  // associated with port.
+  // Reads busid from `sockfd` and returns DeviceProxy index
+  // associated with the busid.
   int ReadBusId(const base::ScopedFD& sockfd);
 
-  // Handles usbip messages after device is attached.
-  // It retrieves the usb command and forward to UsbIpManager
-  void HandleUsbCommand(int sockfd, const UsbipCmdSubmit& usb_request);
-  // Update busID, usbPath and devnum, so that for each new device it is unique.
+  // Handles usbip requests after the device is attached.
+  // It retrieves the usb command and forward it to the `UsbIpManager`.
+  void HandleUsbCommand(const base::ScopedFD& sockfd,
+                        const UsbipCmdSubmit& usb_request);
+
+  //  Sends a usbip response on socket `sockfd`. The `data` are
+  //  response data with size `data_size`.
+  void SendUsbipControlResponse(const base::ScopedFD& sockfd,
+                                const UsbipCmdSubmit& usb_request,
+                                const uint8_t* data,
+                                size_t data_size);
+  // Updates the busID, usbPath and devnum, so that for each new device it is
+  // unique.
   void UpdateDeviceParameter(OpRepDevice* device);
 
   std::unique_ptr<Server> server_;

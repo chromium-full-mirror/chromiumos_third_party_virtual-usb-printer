@@ -43,8 +43,7 @@ UsbPrinter::UsbPrinter(const std::string descriptors_path,
     : UsbDevice(descriptors_path, DEFAULT_TCP_PRINTER_PORT),
       document_output_path_(document_output_path) {}
 
-void UsbPrinter::HandleUsbData(int sockfd,
-                               const UsbipCmdSubmit& usb_request) const {
+void UsbPrinter::HandleUsbData(int sockfd, const Urb& usb_request) const {
   SmartBuffer data = ReceiveBuffer(sockfd, usb_request.transfer_buffer_length);
   size_t received = data.size();
   LOG(INFO) << "Received " << received << " bytes";
@@ -58,7 +57,7 @@ void UsbPrinter::HandleUsbData(int sockfd,
 
 void UsbPrinter::HandleGetStatus(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetStatus " << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
@@ -70,7 +69,7 @@ void UsbPrinter::HandleGetStatus(
 
 void UsbPrinter::HandleUnsupportedRequest(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleUnsupportedRequest "
           << StandardDeviceRequestString(control_request.bRequest) << ": "
@@ -81,7 +80,7 @@ void UsbPrinter::HandleUnsupportedRequest(
 
 void UsbPrinter::HandleGetDeviceId(
     int sockfd,
-    const UsbipCmdSubmit& usb_request,
+    const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDeviceId " << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";

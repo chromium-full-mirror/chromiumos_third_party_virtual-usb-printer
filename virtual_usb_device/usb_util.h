@@ -13,7 +13,8 @@
 #include <base/check.h>
 #include <base/check_op.h>
 
-#include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
+#include "usbip_constants.h"
+#include "smart_buffer.h"
 
 // Bitmask constants used for extracting individual values out of
 // UsbControlRequest which is packed inside of a uint64_t.
@@ -34,7 +35,32 @@ struct UsbControlRequest {
   uint8_t wIndex0;
   uint8_t wIndex1;
   uint16_t wLength;
-};
+} __attribute__((packed));
+
+struct Urb {
+  uint32_t devid;                   // Specifies a remote USB devie uniquely.
+  uint32_t direction;               // Direction of the transfer (0 Out, 1 In).
+  uint32_t ep;                      // USB endpoint number
+  uint32_t transfer_flags;          // URB flags.
+  uint32_t transfer_buffer_length;  // Data size for transfer.
+  uint32_t start_frame;     // Initial frame for iso or interrupt transfers.
+  uint32_t num_of_packets;  // Number of iso packets.
+  uint32_t interval;        // Timeout for response.
+  uint64_t setup;           // Contains a USB SETUP packet.
+} __attribute__((packed));
+
+struct UrbReply {
+  uint32_t devid;        // Specifies a remote USB devie uniquely.
+  uint32_t direction;    // Direction of the transfer (0 Out, 1 In).
+  uint32_t ep;           // USB endpoint number
+  uint32_t actual_size;  // actual size of replied data.
+} __attribute__((packed));
+
+SmartBuffer PackUrb(const Urb& urb);
+Urb UnpackUrb(SmartBuffer* buf);
+
+SmartBuffer PackUrbReply(const UrbReply& urb);
+UrbReply UnpackUrbReply(SmartBuffer* buf);
 
 // Unpacks the standard USB SETUP packet contained within `setup` into a
 // UsbControlRequest struct and returns the result.

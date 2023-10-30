@@ -40,9 +40,9 @@ struct OpHeader {
 struct OpRepDevice {
   char usbPath[256];
   char busID[32];
-  int busnum;
-  int devnum;
-  int speed;
+  uint32_t busnum;
+  uint32_t devnum;
+  uint32_t speed;
   uint16_t idVendor;
   uint16_t idProduct;
   uint16_t bcdDevice;
@@ -103,7 +103,7 @@ struct OpReqImport {
   char busID[32];
 };
 
-// Defins the OpRepImport response which indicates whether the requested device
+// Defines the OpRepImport response which indicates whether the requested device
 // was successfully exported.
 struct OpRepImport {
   OpHeader header;

@@ -15,6 +15,7 @@
 
 #include "usb_device.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
 DeviceServer::DeviceServer(UsbDevice* device, uint16_t port)
     : Server(port), device_(device) {}
@@ -28,14 +29,13 @@ void DeviceServer::OnServerStarted() {
 
 void DeviceServer::HandleConnection(base::ScopedFD connection) {
   while (true) {
-    SmartBuffer received =
-        ReceiveBuffer(connection.get(), sizeof(UsbipCmdSubmit));
-    if (received.size() != sizeof(UsbipCmdSubmit)) {
+    SmartBuffer received = ReceiveBuffer(connection.get(), sizeof(Urb));
+    if (received.size() != sizeof(Urb)) {
       LOG(INFO) << "Received unknown size data - ignoring it";
       return;
     }
 
-    UsbipCmdSubmit request = UnpackUsbipCmdSubmit(&received);
+    Urb request = UnpackUrb(&received);
     device_->HandleUsbRequest(connection.get(), request);
   }
 }
