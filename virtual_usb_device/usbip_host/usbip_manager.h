@@ -35,14 +35,13 @@ class UsbIpManager {
   // actual usb device, which communicates with the usb device via socket. An
   // usbip client can list (e.g `usbip list` command) or interact with the
   // registered usb devices only.
-  void RegisterDevice(const uint32_t port,
+  void RegisterDevice(const uint16_t port,
                       const uint16_t device_type,
-                      const uint32_t device_id);
-  void DeregisterDevice(const uint32_t port);
+                      const uint16_t device_id);
+  void DeregisterDevice(const uint16_t port);
 
   // Handles OP_REQ_DEVLIST command.
-  // Collect all registered(exported) usb devices and response
-  // back to the user.
+  // Collect all registered(exported) usb devices and response back to the user.
   bool HandleDeviceList(const base::ScopedFD& connection);
 
   // Handles OP_REQ_IMPORT command.
@@ -51,7 +50,7 @@ class UsbIpManager {
   void HandleAttach(const base::ScopedFD& connection);
 
   // Handle usbip messages with usb requests after devices are attached.
-  // Requests could be of folowing type: control, bulk, ipp, raw usb data.
+  // Requests could be of folowing type: control, bulk, ipp and raw usb data.
   bool HandleUsbRequest(const base::ScopedFD& connection,
                         bool* connection_open);
 

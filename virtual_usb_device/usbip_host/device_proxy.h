@@ -16,14 +16,14 @@
 
 // This class act as a proxy for actual usb device similar to
 // dbus proxy classes. It communicates with actual usb device via socket and
-// reply user with responses. There is single DeviceProxy for each usb device
-// registered with UsbIpHost.
+// receives responses.
+// There is single DeviceProxy for each usb device registered with UsbIpHost.
 class DeviceProxy {
  public:
   // Takes device listening port number, device type
   // and device id, as params and create Object.
   // TODO(santo): We may need to change it as per requirement.
-  DeviceProxy(const uint32_t port, const uint16_t type, const uint32_t id);
+  DeviceProxy(const uint16_t port, const uint16_t type, const uint32_t id);
 
   // Connect with usb devices process via socket.
   bool Connect();
@@ -47,7 +47,8 @@ class DeviceProxy {
   bool IsConnected() const { return is_connected_; }
 
  private:
-  uint32_t port_;
+  // port on which actual usb device is listening.
+  uint16_t port_;
   uint16_t type_;
   uint32_t id_;
 

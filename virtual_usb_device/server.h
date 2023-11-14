@@ -24,7 +24,7 @@ class Server {
  public:
   // Creates a TCP server instance which will listen on specified
   // port number when started.
-  explicit Server(uint32_t port);
+  explicit Server(uint16_t port);
   virtual ~Server() {}
 
   Server(const Server&) = delete;
@@ -40,8 +40,10 @@ class Server {
   // Process all incoming message on connected socket.
   virtual void HandleConnection(base::ScopedFD connection) = 0;
 
+  uint16_t GetListenPort() const { return port_; }
+
  private:
-  uint32_t port_;
+  uint16_t port_;
   int server_fd_;  // Listening socket descriptor.
 };
 

@@ -11,9 +11,9 @@
 
 class UsbIpManager;
 
-// Create a server which listens for usbip messages and forward the usbip
-// messages to UsbIpManager for further processing.
-// This class is owned by UsbIpManager.
+// Create a server which listens for USB/IP messages and forward them
+// messages UsbIpManager for further processing.
+// This class is owned by `UsbIpManager`.
 class UsbIpServer : public Server {
  public:
   explicit UsbIpServer(UsbIpManager* manager_);

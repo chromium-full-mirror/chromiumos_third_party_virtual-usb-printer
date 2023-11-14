@@ -14,7 +14,7 @@
 // Universal Serial Bus Specification Revision 2.0
 // Section 9.6 Standard USB Descriptor Definitions
 // https://www.usb.org/document-library/usb-20-specification-released-april-27-2000
-
+//
 // USB Device Descriptor
 struct UsbDeviceDescriptor {
   UsbDeviceDescriptor() = default;

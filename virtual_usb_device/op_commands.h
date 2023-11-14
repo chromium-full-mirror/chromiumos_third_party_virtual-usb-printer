@@ -161,8 +161,7 @@ SmartBuffer PackOpRepImport(OpRepImport message);
 SmartBuffer PackBindRequest(BindRequest request);
 SmartBuffer PackDeviceData(DeviceData data);
 
-// Convert `header` into host uint8_t order.
-void UnpackOpHeader(OpHeader* header);
+OpHeader UnpackOpHeader(SmartBuffer* buf);
 void UnpackDeviceData(DeviceData* header);
 
 #endif  // VIRTUAL_USB_DEVICE_OP_COMMANDS_H_

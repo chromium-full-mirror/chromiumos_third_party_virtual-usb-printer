@@ -14,7 +14,7 @@
 #include "virtual-usb-printer/virtual_usb_device/device_request.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 
-DeviceProxy::DeviceProxy(const uint32_t port,
+DeviceProxy::DeviceProxy(const uint16_t port,
                          const uint16_t type,
                          const uint32_t id)
     : port_(port), type_(type), id_(id) {
@@ -51,7 +51,7 @@ bool DeviceProxy::Connect() {
 void DeviceProxy::Disconnect() {
   int status = close(client_fd_);
   if (status < 0) {
-    LOG(ERROR) << "\nClosing connection Failed";
+    LOG(ERROR) << "Closing connection Failed";
   }
   is_connected_ = false;
 }

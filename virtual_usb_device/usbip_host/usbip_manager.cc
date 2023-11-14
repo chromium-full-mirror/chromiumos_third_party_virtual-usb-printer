@@ -40,14 +40,13 @@ bool UsbIpManager::HandleOpRequest(const base::ScopedFD& connection,
                                    bool* attached,
                                    bool* connection_open) {
   bool status = false;
-  OpHeader request;
-  ssize_t received = recv(connection.get(), &request, sizeof(request), 0);
-  if (received != sizeof(request)) {
+  SmartBuffer received = ReceiveBuffer(connection.get(), sizeof(OpHeader));
+  if (received.size() != sizeof(OpHeader)) {
     printf("Receive error :%s\n", strerror(errno));
     exit(1);
   }
 
-  UnpackOpHeader(&request);
+  OpHeader request = UnpackOpHeader(&received);
   // Custom request (not usbip protocol defined) use to bind the usb device.
   if (request.command == OP_REQ_BIND_CMD) {
     HandleBind(connection);
@@ -94,15 +93,15 @@ void UsbIpManager::HandleConnection(base::ScopedFD connection) {
   }
 }
 
-void UsbIpManager::RegisterDevice(const uint32_t port,
+void UsbIpManager::RegisterDevice(const uint16_t port,
                                   const uint16_t device_type,
-                                  const uint32_t device_id) {
+                                  const uint16_t device_id) {
   auto client_ = std::make_unique<DeviceProxy>(port, device_type, device_id);
   if (client_->Connect())
     clients.push_back(std::move(client_));
 }
 
-void UsbIpManager::DeregisterDevice(const uint32_t port) {
+void UsbIpManager::DeregisterDevice(const uint16_t port) {
   for (auto it = clients.begin(); it != clients.end();) {
     if ((*it)->GetPort() == port) {
       (*it)->Disconnect();
@@ -113,14 +112,19 @@ void UsbIpManager::DeregisterDevice(const uint32_t port) {
   }
 }
 
+// We use port number instead of busid for usbip attach command.
+// Thus 32 bytes contains port number as char string, which is conveted
+// to port number as integer.
 int UsbIpManager::ReadPort(const base::ScopedFD& sockfd) {
-  uint32_t port;
-  LOG(INFO) << "Attaching device...";
-  ssize_t received = recv(sockfd.get(), &port, sizeof(port), 0);
+  // 32 byte are sent by usbip command for busid information.
+  char busid[32];
+  ssize_t received = recv(sockfd.get(), &busid, 32, 0);
   if (received != 32) {
     printf("Receive error :%s\n", strerror(errno));
     exit(1);
   }
+
+  uint16_t port = std::stoi(busid);
 
   for (size_t i = 0; i < clients.size(); ++i) {
     if (clients[i]->GetPort() == port) {

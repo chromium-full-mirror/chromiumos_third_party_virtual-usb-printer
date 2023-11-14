@@ -83,7 +83,7 @@ void ReportBoundAddress(sockaddr_in* server) {
 
 }  // namespace
 
-Server::Server(uint32_t port) : port_(port) {}
+Server::Server(uint16_t port) : port_(port) {}
 
 void Server::Stop() {
   close(server_fd_);
@@ -140,7 +140,6 @@ SmartBuffer ReceiveBuffer(int sockfd, size_t size) {
       LOG(ERROR) << "Client has closed connection";
       return smart_buffer;
     }
-    CHECK_GE(received, 0) << "Failed to receive data from socket";
     CHECK_GE(remaining, received) << "Received more data than expected";
     size_t received_unsigned = static_cast<size_t>(received);
     total += received_unsigned;

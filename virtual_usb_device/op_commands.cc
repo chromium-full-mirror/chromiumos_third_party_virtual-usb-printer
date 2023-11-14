@@ -164,10 +164,15 @@ SmartBuffer PackOpRepImport(OpRepImport import) {
   return packed_import;
 }
 
-void UnpackOpHeader(OpHeader* header) {
-  header->version = ntohs(header->version);
-  header->command = ntohs(header->command);
-  header->status = ntohl(header->status);
+OpHeader UnpackOpHeader(SmartBuffer* buf) {
+  OpHeader result;
+  CHECK(buf->size() >= sizeof(result));
+  memcpy(&result, buf->data(), sizeof(result));
+  buf->Erase(0, sizeof(result));
+  result.version = ntohs(result.version);
+  result.command = ntohs(result.command);
+  result.status = ntohl(result.status);
+  return result;
 }
 
 void UnpackDeviceData(DeviceData* data) {
