@@ -25,26 +25,34 @@ class Server {
   // Creates a TCP server instance which will listen on specified
   // port number when started.
   explicit Server(uint16_t port);
-  virtual ~Server() {}
+  virtual ~Server() = default;
 
   Server(const Server&) = delete;
   Server& operator=(const Server&) = delete;
 
   // Creates a socket, binds it to the port and then starts listening.
-  void Start();
-  // Shutdown server and close listening socket.
+  // Returns whether the server was started successfully or not.
+  bool Start();
+  // Shutdown the server and close listening socket.
   void Stop();
+
   // This function is called after server started to listen.
   // Called from `Start` function.
   virtual void OnServerStarted() {}
-  // Process all incoming message on connected socket.
+  // Processes all incoming message on connected socket.
   virtual void HandleConnection(base::ScopedFD connection) = 0;
 
+  // Returns the port number on which this server is listening.
   uint16_t GetListenPort() const { return port_; }
 
  private:
+  // Creates a socket and start listening for connections.
+  bool Listen();
+  // Loops and accept connections.
+  void HandleLoop();
+
   uint16_t port_;
-  int server_fd_;  // Listening socket descriptor.
+  base::ScopedFD server_fd_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_SERVER_H_

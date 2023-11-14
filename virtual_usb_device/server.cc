@@ -54,12 +54,13 @@ sockaddr_in BindServerSocket(const base::ScopedFD& sockfd, uint32_t port) {
 
 // Accepts a new connection to the server described by `fd` and returns the file
 // descriptor of the connection.
-base::ScopedFD AcceptConnection(const base::ScopedFD& fd) {
+base::ScopedFD AcceptConnection(base::ScopedFD& fd) {
   sockaddr_in client;
   socklen_t client_length = sizeof(client);
   int connection =
       accept(fd.get(), reinterpret_cast<sockaddr*>(&client), &client_length);
   if (connection < 0) {
+    printf("Accept error :%s\n", strerror(errno));
     LOG(ERROR) << "Accept error: " << errno;
     exit(1);
   }
@@ -86,40 +87,50 @@ void ReportBoundAddress(sockaddr_in* server) {
 Server::Server(uint16_t port) : port_(port) {}
 
 void Server::Stop() {
-  close(server_fd_);
-  shutdown(server_fd_, SHUT_RDWR);
-  LOG(INFO) << "Server socket closed port: " << port_;
+  if (shutdown(server_fd_.get(), SHUT_RDWR) < 0) {
+    LOG(ERROR) << "Server shutdown failed";
+  }
+  LOG(INFO) << "Server listening on port:" << port_ << " Closed";
 }
 
-void Server::Start() {
-  base::ScopedFD fd = SetupServerSocket();
-  server_fd_ = fd.get();
-  sockaddr_in server = BindServerSocket(fd, port_);
+bool Server::Listen() {
+  server_fd_ = SetupServerSocket();
+  sockaddr_in server = BindServerSocket(server_fd_, port_);
   ReportBoundAddress(&server);
 
-  int status = listen(fd.get(), SOMAXCONN);
+  int status = listen(server_fd_.get(), SOMAXCONN);
   if (status < 0) {
     LOG(ERROR) << "Listen error: " << (errno) << " status: " << status;
-    exit(1);
+    return false;
   }
 
-  OnServerStarted();
+  return true;
+}
 
+void Server::HandleLoop() {
   while (true) {
-    base::ScopedFD connection = AcceptConnection(fd);
+    base::ScopedFD connection = AcceptConnection(server_fd_);
+    LOG(INFO) << "Connection accepted";
     HandleConnection(std::move(connection));
   }
 }
 
+bool Server::Start() {
+  if (!Listen())
+    return false;
+
+  OnServerStarted();
+  HandleLoop();
+  return true;
+}
+
 void SendBuffer(int sockfd, const SmartBuffer& smart_buffer) {
   size_t remaining = smart_buffer.size();
-  LOG(INFO) << "Size: " << remaining;
   size_t total = 0;
   while (remaining > 0) {
     size_t to_send = std::min<size_t>(remaining, 512UL);
     ssize_t sent =
         send(sockfd, smart_buffer.data() + total, to_send, MSG_NOSIGNAL);
-    printf("SendBuffer code: %d, %s\n", errno, strerror(errno));
     CHECK_GE(sent, 0) << "Failed to write data to socket";
     CHECK_GE(remaining, sent) << "Sent more data than expected";
     size_t sent_unsigned = static_cast<size_t>(sent);
