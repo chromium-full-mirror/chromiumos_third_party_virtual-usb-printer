@@ -1,5 +1,5 @@
 // Copyright 2023 The ChromiumOS Authors
-// // Use of this source code is governed by a BSD-style license that can be
+// Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "usbip_manager.h"
@@ -29,8 +29,7 @@ class UsbIpManagerTest : public testing::Test {
     base::FilePath host_bin = self_bin.DirName().Append("virtual-usbip-host");
     base::CommandLine cmd(host_bin);
     proc = base::LaunchProcess(cmd, base::LaunchOptionsForTest());
-    // wait for host to ready.
-    sleep(3);  // FIXME(santo): Confirm the sleep time is enough.
+    sleep(3);  // wait for host to ready
   }
 
   static void TearDownTestSuite() { proc.Terminate(0, true); }
@@ -50,10 +49,16 @@ class UsbIpManagerTest : public testing::Test {
     }
   }
 
+  void TearDown() override {
+    shutdown(client_fd, SHUT_RDWR);
+    close(client_fd);
+  }
+
   base::test::TaskEnvironment task_environment_;
   struct sockaddr_in serv_addr;
   int client_fd = -1;
   static base::Process proc;
+  base::Process printer_proc;
 };
 
 base::Process UsbIpManagerTest::proc;
@@ -66,18 +71,53 @@ TEST_F(UsbIpManagerTest, CheckConnection) {
   EXPECT_GT(client_fd, 0);
 }
 
-TEST_F(UsbIpManagerTest, HandleDeviceList) {
+TEST_F(UsbIpManagerTest, HandleDeviceListNoDevice) {
   EXPECT_GT(client_fd, 0);
   OpHeader header;
   header.version = 2;
   header.command = OP_REQ_DEVLIST_CMD;
   header.status = 0;
-  SmartBuffer buf = PackOpHeader(header);
-  SendBuffer(client_fd, buf);
+  SmartBuffer buf1 = PackOpHeader(header);
+  SendBuffer(client_fd, buf1);
 
-  OpRepDevlist list;
-  recv(client_fd, &list, sizeof(list), 0);
-  int count = ntohs(list.header.numExportedDevices);
-  close(client_fd);
+  SmartBuffer buf = ReceiveBuffer(client_fd, sizeof(OpRepDevlistHeader));
+  OpRepDevlistHeader list_header = UnpackOpRepDevlistHeader(&buf);
+  int count = list_header.numExportedDevices;
   EXPECT_EQ(count, 0);
+}
+
+TEST_F(UsbIpManagerTest, HandleDeviceListOneDevice) {
+  EXPECT_GT(client_fd, 0);
+  BindRequest request;
+  request.header.version = 2;
+  request.header.command = OP_REQ_BIND_CMD;
+  request.port = 3245;
+  strncpy(request.device_desc.device.usbPath, "/sys/path/", 10);
+  strncpy(request.device_desc.device.usbPath, "1:2", 3);
+  request.device_desc.device.busnum = 1;
+  request.device_desc.device.devnum = 2;
+  request.device_desc.device.bNumInterfaces = 0;
+  SmartBuffer buf = PackBindRequest(request);
+  SendBuffer(client_fd, buf);
+  close(client_fd);
+
+  client_fd = socket(AF_INET, SOCK_STREAM, 0);
+  int status =
+      connect(client_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+  if (status < 0) {
+    LOG(ERROR) << "Connection failed";
+  }
+
+  OpHeader header;
+  header.version = 2;
+  header.command = OP_REQ_DEVLIST_CMD;
+  header.status = 0;
+  SmartBuffer buf1 = PackOpHeader(header);
+  SendBuffer(client_fd, buf1);
+
+  SmartBuffer buf2 = ReceiveBuffer(client_fd, sizeof(OpRepDevlistHeader));
+  OpRepDevlistHeader list_header = UnpackOpRepDevlistHeader(&buf2);
+  int count = list_header.numExportedDevices;
+
+  EXPECT_EQ(count, 1);
 }

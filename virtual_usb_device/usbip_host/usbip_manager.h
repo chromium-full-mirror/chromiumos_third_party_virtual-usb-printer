@@ -14,10 +14,11 @@
 #include "device_proxy.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
 
-// This class implements the server side of USB/IP protocol. It receives usbip
-// messages from the usbip client, filters actual usb requests and sends to the
-// usb device (via device proxy). It also replies back to the client with usbip
-// response messages.
+// This class deals with usbip messages recevied from the user.
+// It receives usbip messages, filter the usb command and forward them
+// to the registered usb device (which runs on seperate process).
+// It also maintains the list of proxy for each registered usb device
+// which is used to communicate with actual device process.
 class UsbIpManager {
  public:
   UsbIpManager();
@@ -28,72 +29,64 @@ class UsbIpManager {
 
   // Start the server which listens on port.
   void Run();
-  // Stop the server.
+  // Stops the server.
   void Stop() { server_->Stop(); }
 
-  // Register usb device with the UsbIpManager. This creates a proxy of the
-  // actual usb device, which communicates with the usb device via socket. An
-  // usbip client can list (e.g `usbip list` command) or interact with the
-  // registered usb devices only.
-  void RegisterDevice(const uint16_t port,
-                      const uint16_t device_type,
-                      const uint16_t device_id);
+  // Loops and process usbip message received on connection.
+  void HandleConnection(base::ScopedFD connection);
+
+  // Process OP_REQ_BIND_CMD usbip message by registering the usb device with
+  // `UsbIpManager`.
+  // Note: OP_REQ_BIND_CMD is custom defined usbip message.
+  void HandleBind(const base::ScopedFD& connection);
+
+  // Register the usb device with `UsbIpManager`.
+  // Once this is called, a proxy of actual usb device is created and
+  // only after registeration, device can be attached by the user
+  void RegisterDevice(const uint16_t port, const OpRepDevInfo& device_info);
+  // TODO(santo): Figure out when to deregister.
   void DeregisterDevice(const uint16_t port);
 
-  // Handles OP_REQ_DEVLIST command.
-  // Collect all registered(exported) usb devices and response back to the user.
+  // Handles OP_REQ_DEVLIST command by responding with the list of exported usb
+  // devices.
   bool HandleDeviceList(const base::ScopedFD& connection);
+  // Handles OP_REQ_IMPORT command by attaching a usb device for further
+  // communication. Internally, a `DeviceProxy` is used to make tcp connection
+  // to the usb device server. Any subsequent usb messages on that proxy will be
+  // forwarded to attached usb device.
+  bool HandleAttach(const base::ScopedFD& connection);
 
-  // Handles OP_REQ_IMPORT command.
-  // Internally, It maintains mapping of socket<-->device proxy. Any messages
-  // received on socket is fowarded to mapped device proxy.
-  void HandleAttach(const base::ScopedFD& connection);
-
-  // Handle usbip messages with usb requests after devices are attached.
-  // Requests could be of folowing type: control, bulk, ipp and raw usb data.
+  // Handle usb requests after usb device is attached.
+  // Requests could be of following type: control, bulk, ipp, raw usb data.
   bool HandleUsbRequest(const base::ScopedFD& connection,
                         bool* connection_open);
 
-  // Process the usbip messages as per type of message.
-  void HandleConnection(base::ScopedFD connection);
-
-  // Handles OP_REQ_BIND_CMD usbip message.
-  // OP_REQ_BIND_CMD is used to register usb device with UsbipManager.
-  // Note: OP_REQ_BIND_CMD is custom defined.
-  void HandleBind(const base::ScopedFD& connection);
-
-  // Handles following OP usbip messages:
-  // OP_REQ_BIND_CMD : Custom defined usbip message used for
-  // registration of device.
-  // OP_REQ_DEVLIST_CMD : Lists exported device list.
-  // OP_REQ_IMPORT_CMD : Import usb device for further communication.
-  // More details about these messages are documented in
-  // https://docs.kernel.org/usb/usbip_protocol.html.
-  bool HandleOpRequest(const base::ScopedFD& connection,
-                       bool* attached,
-                       bool* connection_open);
-
-  // Handles USBIP_CMD_SUBMIT messages after device is imported.
-  void HandleUsbCommand(int sockfd, const UsbipCmdSubmit& usb_request);
-
-  // Count of devices registered.
-  size_t NoOfExportedDevice() { return clients.size(); }
+  // Handle Op usbip requests, which is of following type
+  // OP_REQ_BIND_CMD : custom defined for registeration
+  // OP_REQ_DEVLIST_CMD : Lists exported device list
+  // OP_REQ_IMPORT_CMD : Attach requested device to
+  // receive usb command directly
+  bool HandleOpRequest(const base::ScopedFD& connection, bool* attached);
 
  private:
-  // Reads port number from connection and return DeviceProxy index
+  // Respond with status of OP_REQ_BIND_CMD usbip message.
+  void RespondBind(const base::ScopedFD& connection, bool status);
+  // Read port number from connection and return DeviceProxy index
   // associated with port.
-  int ReadPort(const base::ScopedFD& sockfd);
+  int ReadBusId(const base::ScopedFD& sockfd);
 
-  // Determines whether `usb_request` is either a standard or class-specific
-  // control request and defers to the corresponding function.
-  void HandleUsbControl(int sockfd, const UsbipCmdSubmit& usb_request);
+  // Handles usbip messages after device is attached.
+  // It retrieves the usb command and forward to UsbIpManager
+  void HandleUsbCommand(int sockfd, const UsbipCmdSubmit& usb_request);
+  // Update busID, usbPath and devnum, so that for each new device it is unique.
+  void UpdateDeviceParameter(OpRepDevice* device);
 
   std::unique_ptr<Server> server_;
 
-  // List of clients for registered usb devices.
-  std::vector<std::unique_ptr<DeviceProxy>> clients;
-  // mapping of socket<-->DeviceProxy Index in clients.
-  base::flat_map<int, int> attachments_;
+  // List of proxy for each registered usb device.
+  std::vector<std::unique_ptr<DeviceProxy>> proxy_list;
+
+  size_t device_count = 0;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_MANAGER_H_

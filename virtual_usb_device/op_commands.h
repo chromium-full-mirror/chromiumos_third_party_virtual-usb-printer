@@ -26,11 +26,7 @@
 #include "smart_buffer.h"
 #include "usbip_constants.h"
 
-struct DeviceData {
-  uint16_t port;         // Port number on which device listens
-  uint16_t device_type;  // Type of usb device, e.g printer, scanner
-  uint16_t device_id;    // usb device identifier, possibly ieee_device_id
-};
+constexpr uint16_t kUsbipVersion = 0x0111;  // usbip version in BCD.
 
 // Contains the header values that are contained within all of the "OP" messages
 // used by usbip.
@@ -38,13 +34,6 @@ struct OpHeader {
   uint16_t version;  // usbip version
   uint16_t command;  // op command type
   int status;        // op request status
-};
-
-// Defines Bind request message, used for registration of usb device
-// with host.
-struct BindRequest {
-  OpHeader header;         // usbip message header
-  DeviceData device_data;  // usb device data
 };
 
 // Generic device descriptor used by OpRepDevlist and OpRepImport.
@@ -76,7 +65,7 @@ struct OpRepDevlistHeader {
 };
 
 // Basic interface descriptor used by OpRepDevlist.
-struct OpRepDevlistInterface {
+struct OpRepDeviceInterface {
   uint8_t bInterfaceClass;
   uint8_t bInterfaceSubClass;
   uint8_t bInterfaceProtocol;
@@ -90,10 +79,19 @@ struct OpRepDevlistInterface {
 // (see struct OpRepDevlist also).
 struct OpRepDevInfo {
   OpRepDevice device;
-  OpRepDevlistInterface* interfaces;
+  OpRepDeviceInterface* interfaces;
 };
 
-// Defines the OpRepDevlist used to respond to a OpReqDevlist message.
+// Custom usbip message which is used to bind the usb device with
+// UsbIpHost. Once usb device is binded with UsbIpHost, it is
+// considered exported and can be attached with `usbip attach` command.
+struct BindRequest {
+  OpHeader header;
+  uint16_t port;  // port on which usb device listens
+  OpRepDevInfo device_desc;
+};
+
+// Defines the OpReqDevlist message.
 struct OpRepDevlist {
   OpRepDevlistHeader header;
   std::vector<OpRepDevInfo> devices;
@@ -128,9 +126,9 @@ void SetOpRepDevice(const UsbDeviceDescriptor& dev_dsc,
                     OpRepDevice* device);
 
 // Assigns the values from `interfaces` into `rep_interfaces`.
-void SetOpRepDevlistInterfaces(
+void SetOpRepDeviceInterfaces(
     const std::vector<UsbInterfaceDescriptor>& interfaces,
-    OpRepDevlistInterface** rep_interfaces);
+    OpRepDeviceInterface** rep_interfaces);
 
 // Set header for OP_REP_DEVLIST message.
 void CreateOpRepDevlistHeader(uint16_t numExportedDevices,
@@ -139,16 +137,14 @@ void CreateOpRepDevlistHeader(uint16_t numExportedDevices,
 // Populate the OpRepDevInfo information for OP_REP_DEVLIST message,
 // which is used to respond when a request to list all exported devices
 // are received.
-void SetOpRepDevInfo(const UsbDeviceDescriptor& device,
-                     const UsbConfigurationDescriptor& config,
-                     const std::vector<UsbInterfaceDescriptor>& interfaces,
-                     OpRepDevInfo* devinfo);
+void CreateOpRepDevInfo(const UsbDeviceDescriptor& device,
+                        const UsbConfigurationDescriptor& config,
+                        const std::vector<UsbInterfaceDescriptor>& interfaces,
+                        OpRepDevInfo* devinfo);
 
 // Creates the OpRepImport message used to respond to a request to attach a
 // host USB device.
-void CreateOpRepImport(const UsbDeviceDescriptor& device,
-                       const UsbConfigurationDescriptor& config,
-                       OpRepImport* rep);
+void CreateOpRepImport(const OpRepDevInfo& devinfo, OpRepImport* rep);
 
 // Convert the various elements of an "OpRep" message into network
 // byte order and pack them into a SmartBuffer to be used for transferring along
@@ -158,10 +154,19 @@ SmartBuffer PackOpRepDevice(OpRepDevice device);
 SmartBuffer PackOpRepDevlistHeader(OpRepDevlistHeader devlist_header);
 SmartBuffer PackOpRepDevlist(OpRepDevlist devlist);
 SmartBuffer PackOpRepImport(OpRepImport message);
-SmartBuffer PackBindRequest(BindRequest request);
-SmartBuffer PackDeviceData(DeviceData data);
+SmartBuffer PackOpRepDevInfo(OpRepDevInfo& info);
+SmartBuffer PackBindRequest(BindRequest& request);
 
 OpHeader UnpackOpHeader(SmartBuffer* buf);
-void UnpackDeviceData(DeviceData* header);
+void UnpackOpHeader(OpHeader* header);
+OpHeader UnpackOpHeader(SmartBuffer* buf);
+void UnpackOpRepDevInfo(OpRepDevInfo* device_info);
+
+OpRepDeviceInterface UnpackOpRepDeviceInterface(SmartBuffer* buf);
+void UnpackOpRepDevice(OpRepDevice* device);
+OpRepDevice UnpackOpRepDevice(SmartBuffer* buf);
+void UnpackOpRepDevlistHeader(OpRepDevlistHeader* header);
+OpRepDevlist UnpackOpRepDevlist(SmartBuffer* buf);
+OpRepDevlistHeader UnpackOpRepDevlistHeader(SmartBuffer* buf);
 
 #endif  // VIRTUAL_USB_DEVICE_OP_COMMANDS_H_

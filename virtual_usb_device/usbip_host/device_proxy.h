@@ -8,11 +8,14 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <vector>
+#include <string>
 
 #include <base/notreached.h>
 
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip.h"
+#include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 
 // This class act as a proxy for actual usb device similar to
 // dbus proxy classes. It communicates with actual usb device via socket and
@@ -20,18 +23,21 @@
 // There is single DeviceProxy for each usb device registered with UsbIpHost.
 class DeviceProxy {
  public:
-  // Takes device listening port number, device type
-  // and device id, as params and create Object.
-  // TODO(santo): We may need to change it as per requirement.
-  DeviceProxy(const uint16_t port, const uint16_t type, const uint32_t id);
+  // Create a proxy object for usb device which listens on
+  // `port` with usb information `info`
+  DeviceProxy(const uint16_t port, const OpRepDevInfo& info);
 
   // Connect with usb devices process via socket.
   bool Connect();
   // Close socket connection to usb devices.
   void Disconnect();
 
-  // Handle usb control commands.
-  SmartBuffer HandleUsbControl(const UsbControlRequest& control_request);
+  // Attach a socket to this proxy. All messages on this socket will be handled
+  // by this proxy.
+  void AttachConnection(int sockfd);
+  int GetAttachedSocket() const { return attached_socket_; }
+
+  SmartBuffer HandleUsbDeviceRequest(const UsbipCmdSubmit& _usb_request);
 
   // Return the usb device descriptors. Descriptors are obtained by interacting
   // with usb device implementation via socket.
@@ -43,17 +49,23 @@ class DeviceProxy {
   // Return port number on which usb device is listening.
   uint16_t GetPort() const { return port_; }
 
+  std::string BusId() const { return std::string(device_info_.device.busID); }
+
   // Return whether this proxy is connected with actual usb device.
   bool IsConnected() const { return is_connected_; }
+
+  OpRepDevInfo GetOpRepDevInfo() { return device_info_; }
 
  private:
   // port on which actual usb device is listening.
   uint16_t port_;
-  uint16_t type_;
-  uint32_t id_;
 
-  int client_fd_;  // socket descriptor use to talk with device.
+  int client_fd_;  // socket descriptor used to communicate with device.
   struct sockaddr_in serv_addr;
   bool is_connected_ = false;
+
+  OpRepDevInfo device_info_;
+
+  int attached_socket_ = -1;
 };
 #endif  // VIRTUAL_USB_DEVICE_USBIP_HOST_DEVICE_PROXY_H_

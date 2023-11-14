@@ -10,19 +10,15 @@
 
 #include <base/logging.h>
 
-#include "device_descriptors.h"
 #include "smart_buffer.h"
 #include "usbip_constants.h"
 
 // These are constants used to describe the exported device. They are used to
 // populate the OpRepDevice message used when responding to OpReqDevlist and
 // OpReqImport requests.
-const char kUsbPath[] = "/sys/devices/pci0000:00/0000:00:01.2/usb1/1-1";
-const char kBusId[] = "1-1";
 constexpr int kBusnum = 1;
 constexpr int kDevnum = 2;
 constexpr int kSpeed = 3;  // Represents a high-speed USB device.
-constexpr uint16_t kUsbipVersion = 0x0111;  // usbip version in BCD.
 
 void SetOpHeader(uint16_t command, int status, OpHeader* header) {
   header->version = kUsbipVersion;
@@ -43,9 +39,7 @@ void SetOpRepDevice(const UsbDeviceDescriptor& dev_dsc,
                     OpRepDevice* device) {
   // Set constants.
   memset(device->usbPath, 0, sizeof(device->usbPath));
-  snprintf(device->usbPath, sizeof(device->usbPath), "%s", kUsbPath);
   memset(device->busID, 0, sizeof(device->busID));
-  snprintf(device->busID, sizeof(device->busID), "%s", kBusId);
 
   device->busnum = kBusnum;
   device->devnum = kDevnum;
@@ -65,12 +59,12 @@ void SetOpRepDevice(const UsbDeviceDescriptor& dev_dsc,
   device->bNumInterfaces = config.bNumInterfaces;
 }
 
-void SetOpRepDevlistInterfaces(
+void SetOpRepDeviceInterfaces(
     const std::vector<UsbInterfaceDescriptor>& interfaces,
-    OpRepDevlistInterface** rep_interfaces) {
+    OpRepDeviceInterface** rep_interfaces) {
   // TODO(daviev): Change this to use a smart pointer at some point.
-  *rep_interfaces = reinterpret_cast<OpRepDevlistInterface*>(
-      malloc(interfaces.size() * sizeof(OpRepDevlistInterface)));
+  *rep_interfaces = reinterpret_cast<OpRepDeviceInterface*>(
+      malloc(interfaces.size() * sizeof(OpRepDeviceInterface)));
   for (size_t i = 0; i < interfaces.size(); ++i) {
     const auto& interface = interfaces[i];
     (*rep_interfaces)[i].bInterfaceClass = interface.bInterfaceClass;
@@ -86,19 +80,17 @@ void CreateOpRepDevlistHeader(uint16_t numExportedDevices,
                         &message->header);
 }
 
-void SetOpRepDevInfo(const UsbDeviceDescriptor& device,
-                     const UsbConfigurationDescriptor& config,
-                     const std::vector<UsbInterfaceDescriptor>& interfaces,
-                     OpRepDevInfo* info) {
+void CreateOpRepDevInfo(const UsbDeviceDescriptor& device,
+                        const UsbConfigurationDescriptor& config,
+                        const std::vector<UsbInterfaceDescriptor>& interfaces,
+                        OpRepDevInfo* info) {
   SetOpRepDevice(device, config, &info->device);
-  SetOpRepDevlistInterfaces(interfaces, &info->interfaces);
+  SetOpRepDeviceInterfaces(interfaces, &info->interfaces);
 }
 
-void CreateOpRepImport(const UsbDeviceDescriptor& dev_dsc,
-                       const UsbConfigurationDescriptor& config,
-                       OpRepImport* rep) {
+void CreateOpRepImport(const OpRepDevInfo& devinfo, OpRepImport* rep) {
   SetOpHeader(OP_REP_IMPORT_CMD, 0, &rep->header);
-  SetOpRepDevice(dev_dsc, config, &rep->device);
+  rep->device = devinfo.device;
 }
 
 SmartBuffer PackOpHeader(OpHeader header) {
@@ -125,34 +117,112 @@ SmartBuffer PackOpRepDevice(OpRepDevice device) {
 SmartBuffer PackOpRepDevlistHeader(OpRepDevlistHeader devlist_header) {
   SmartBuffer packed_op_header = PackOpHeader(devlist_header.header);
   devlist_header.numExportedDevices = htonl(devlist_header.numExportedDevices);
-
   SmartBuffer packed_header(sizeof(OpRepDevlistHeader));
   packed_header.Add(packed_op_header);
   packed_header.Add(devlist_header.numExportedDevices);
   return packed_header;
 }
 
-SmartBuffer PackOpRepDevInfo(OpRepDevInfo info) {
-  SmartBuffer packed_device = PackOpRepDevice(info.device);
-  size_t interfaces_size =
-      sizeof(*info.interfaces) * info.device.bNumInterfaces;
-  size_t buffer_size = sizeof(info.device) + interfaces_size;
-  SmartBuffer packed_devinfo(buffer_size);
-  packed_devinfo.Add(packed_device);
-  packed_devinfo.Add(info.interfaces, interfaces_size);
-  return packed_devinfo;
+void UnpackOpRepDeviceInterface(OpRepDeviceInterface* interface) {
+  interface->bInterfaceClass = ntohs(interface->bInterfaceClass);
+  interface->bInterfaceSubClass = ntohs(interface->bInterfaceSubClass);
+  interface->bInterfaceProtocol = ntohs(interface->bInterfaceProtocol);
+  interface->padding = ntohs(interface->padding);
+}
+
+OpRepDeviceInterface UnpackOpRepDeviceInterface(SmartBuffer* buf) {
+  OpRepDeviceInterface interface;
+  CHECK(buf->size() >= sizeof(OpRepDeviceInterface));
+  memcpy(&interface, buf->data(), sizeof(interface));
+  buf->Erase(0, sizeof(interface));
+
+  UnpackOpRepDeviceInterface(&interface);
+  return interface;
+}
+
+SmartBuffer PackOpRepDeviceInterface(OpRepDeviceInterface interface) {
+  SmartBuffer packed_buf;
+  interface.bInterfaceClass = htons(interface.bInterfaceClass);
+  interface.bInterfaceSubClass = htons(interface.bInterfaceSubClass);
+  interface.bInterfaceProtocol = htons(interface.bInterfaceProtocol);
+  interface.padding = ntohs(interface.padding);
+  packed_buf.Add(interface);
+  return packed_buf;
+}
+
+SmartBuffer PackOpRepDevInfo(OpRepDevInfo& info) {
+  SmartBuffer packed_info = PackOpRepDevice(info.device);
+  const size_t num = info.device.bNumInterfaces;
+  for (size_t i = 0; i < num; ++i) {
+    packed_info.Add(PackOpRepDeviceInterface(info.interfaces[i]));
+  }
+
+  return packed_info;
+}
+
+OpRepDevInfo UnpackOpRepDevInfo(SmartBuffer* buf) {
+  OpRepDevInfo devinfo;
+  CHECK(buf->size() >= sizeof(devinfo.device));
+  memcpy(&devinfo.device, buf->data(), sizeof(devinfo.device));
+  buf->Erase(0, sizeof(devinfo.device));
+  UnpackOpRepDevice(&devinfo.device);
+
+  const size_t interface_size =
+      sizeof(OpRepDeviceInterface) * devinfo.device.bNumInterfaces;
+
+  devinfo.interfaces =
+      reinterpret_cast<OpRepDeviceInterface*>(malloc(interface_size));
+  memcpy(devinfo.interfaces, buf->data(), interface_size);
+  const size_t num = devinfo.device.bNumInterfaces;
+  for (size_t i = 0; i < num; ++i) {
+    UnpackOpRepDeviceInterface(devinfo.interfaces + i);
+  }
+  buf->Erase(0, interface_size);
+  return devinfo;
+}
+
+void UnpackOpRepDevInfo(OpRepDevInfo* device_info) {
+  UnpackOpRepDevice(&device_info->device);
+  const size_t num = device_info->device.bNumInterfaces;
+  for (size_t i = 0; i < num; ++i) {
+    UnpackOpRepDeviceInterface(&device_info->interfaces[i]);
+  }
 }
 
 SmartBuffer PackOpRepDevlist(OpRepDevlist list) {
   SmartBuffer packed_header = PackOpRepDevlistHeader(list.header);
-  LOG(INFO) << "Nofodevice: " << list.header.numExportedDevices;
-
   SmartBuffer packed_devlist;
   packed_devlist.Add(packed_header);
   for (auto& v : list.devices) {
     packed_devlist.Add(PackOpRepDevInfo(v));
   }
   return packed_devlist;
+}
+
+void UnpackOpRepDevlistHeader(OpRepDevlistHeader* header) {
+  UnpackOpHeader(&header->header);
+  header->numExportedDevices = ntohl(header->numExportedDevices);
+}
+
+OpRepDevlistHeader UnpackOpRepDevlistHeader(SmartBuffer* buf) {
+  OpRepDevlistHeader header;
+  CHECK(buf->size() >= sizeof(header));
+  memcpy(&header, buf->data(), sizeof(header));
+  buf->Erase(0, sizeof(header));
+  UnpackOpRepDevlistHeader(&header);
+  return header;
+}
+
+OpRepDevlist UnpackOpRepDevlist(SmartBuffer* buf) {
+  OpRepDevlist list;
+  CHECK(buf->size() >= sizeof(list));
+  memcpy(&list, buf->data(), sizeof(list));
+  buf->Erase(0, sizeof(list));
+  UnpackOpRepDevlistHeader(&list.header);
+  for (int i = 0; i < list.header.numExportedDevices; ++i) {
+    UnpackOpRepDevInfo(&list.devices[i]);
+  }
+  return list;
 }
 
 SmartBuffer PackOpRepImport(OpRepImport import) {
@@ -162,6 +232,12 @@ SmartBuffer PackOpRepImport(OpRepImport import) {
   packed_import.Add(packed_header);
   packed_import.Add(packed_device);
   return packed_import;
+}
+
+void UnpackOpHeader(OpHeader* header) {
+  header->version = ntohs(header->version);
+  header->command = ntohs(header->command);
+  header->status = ntohl(header->status);
 }
 
 OpHeader UnpackOpHeader(SmartBuffer* buf) {
@@ -175,26 +251,33 @@ OpHeader UnpackOpHeader(SmartBuffer* buf) {
   return result;
 }
 
-void UnpackDeviceData(DeviceData* data) {
-  data->port = ntohs(data->port);
-  data->device_type = ntohs(data->device_type);
-  data->device_id = ntohs(data->device_id);
+OpRepDevice UnpackOpRepDevice(SmartBuffer* buf) {
+  OpRepDevice device;
+  CHECK(buf->size() >= sizeof(device));
+  memcpy(&device, buf->data(), sizeof(device));
+  buf->Erase(0, sizeof(device));
+  device.busnum = ntohl(device.busnum);
+  device.devnum = ntohl(device.devnum);
+  device.speed = ntohl(device.speed);
+  device.idVendor = ntohs(device.idVendor);
+  device.idProduct = ntohs(device.idProduct);
+  device.bcdDevice = ntohs(device.bcdDevice);
+  return device;
 }
 
-SmartBuffer PackDeviceData(DeviceData data) {
-  data.port = htons(data.port);
-  data.device_type = htons(data.device_type);
-  data.device_id = htons(data.device_id);
-  SmartBuffer packed_devdata(sizeof(data));
-  packed_devdata.Add(&data, sizeof(data));
-  return packed_devdata;
+void UnpackOpRepDevice(OpRepDevice* device) {
+  device->busnum = ntohl(device->busnum);
+  device->devnum = ntohl(device->devnum);
+  device->speed = ntohl(device->speed);
+  device->idVendor = ntohs(device->idVendor);
+  device->idProduct = ntohs(device->idProduct);
+  device->bcdDevice = ntohs(device->bcdDevice);
 }
 
-SmartBuffer PackBindRequest(BindRequest request) {
-  SmartBuffer packed_bind;
-  SmartBuffer packed_header = PackOpHeader(request.header);
-  SmartBuffer packed_devdata = PackDeviceData(request.device_data);
-  packed_bind.Add(packed_header);
-  packed_bind.Add(packed_devdata);
-  return packed_bind;
+SmartBuffer PackBindRequest(BindRequest& request) {
+  SmartBuffer buf;
+  buf.Add(PackOpHeader(request.header));
+  buf.Add(htons(request.port));
+  buf.Add(PackOpRepDevInfo(request.device_desc));
+  return buf;
 }

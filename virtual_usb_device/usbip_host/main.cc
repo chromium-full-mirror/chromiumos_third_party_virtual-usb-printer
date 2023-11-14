@@ -8,7 +8,7 @@
 int main(int argc, char* argv[]) {
   // Create a threadpool instance for this process.
   base::ThreadPoolInstance::Create("UsbIpHost Threadpool");
-  const size_t max_num_foreground_threads = 8;  // Chosen randomly.
+  constexpr size_t max_num_foreground_threads = 8;  // Chosen randomly.
   base::ThreadPoolInstance::InitParams init_params(max_num_foreground_threads);
   base::ThreadPoolInstance::Get()->Start(init_params);
 

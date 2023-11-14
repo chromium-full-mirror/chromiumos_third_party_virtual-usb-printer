@@ -27,7 +27,7 @@ class UsbPrinter : public UsbDevice {
                        const UsbipCmdSubmit& usb_request,
                        const UsbControlRequest& control_request) const override;
 
-  // Handle usb plain data received.
+  // Handle usb data received on `sockfd`.
   void HandleUsbData(int sockfd,
                      const UsbipCmdSubmit& usb_request) const override;
 

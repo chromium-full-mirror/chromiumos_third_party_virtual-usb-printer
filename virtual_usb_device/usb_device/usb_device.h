@@ -149,10 +149,10 @@ class UsbDevice {
   // on fixed port. Usb configuration are read from `descriptors_path`.
   UsbDevice(const std::string& descriptors_path, uint32_t port);
 
-  // Starts the tcp server and listen for usb commands
+  // Starts the tcp server and listen for usb commands.
   void Run();
 
-  // Return different usb descriptors
+  // Return different usb descriptors.
   const UsbDeviceDescriptor& device_descriptor() const {
     return usb_descriptors_.device_descriptor();
   }
@@ -185,6 +185,7 @@ class UsbDevice {
   // control request and defers to the corresponding function.
   void HandleUsbControl(int sockfd, const UsbipCmdSubmit& usb_request) const;
 
+  // Handles raw usb data.
   virtual void HandleUsbData(int sockfd,
                              const UsbipCmdSubmit& usb_request) const;
 

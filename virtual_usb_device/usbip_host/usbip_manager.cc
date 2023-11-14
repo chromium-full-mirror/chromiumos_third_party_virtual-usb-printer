@@ -24,40 +24,82 @@ void UsbIpManager::Run() {
   server_->Start();
 }
 
+void UsbIpManager::RespondBind(const base::ScopedFD& connection, bool status) {
+  OpHeader response;
+  SetOpHeader(OP_REP_BIND_CMD, (status ? 0 : 1 /*error*/), &response);
+  SmartBuffer res = PackOpHeader(response);
+  SendBuffer(connection.get(), res);
+}
+
 void UsbIpManager::HandleBind(const base::ScopedFD& connection) {
-  DeviceData devdata;
-  ssize_t received = recv(connection.get(), &devdata, sizeof(devdata), 0);
-  if (received != sizeof(devdata)) {
-    printf("Receive error :%s\n", strerror(errno));
-    exit(1);
+  uint16_t port = 0;
+  SmartBuffer port_buffer = ReceiveBuffer(connection.get(), sizeof(port));
+  if (port_buffer.size() != sizeof(port)) {
+    LOG(ERROR) << "Failed reading port value";
+    RespondBind(connection, false);
+    return;
+  }
+  memcpy(&port, port_buffer.data(), sizeof(uint16_t));
+  port = ntohs(port);
+
+  OpRepDevInfo device_info;
+  SmartBuffer device_buffer =
+      ReceiveBuffer(connection.get(), sizeof(OpRepDevice));
+  if (device_buffer.size() != sizeof(device_info.device)) {
+    LOG(ERROR) << "Failed reading devinfo value";
+    RespondBind(connection, false);
+    return;
+  }
+  device_info.device = UnpackOpRepDevice(&device_buffer);
+
+  const size_t interface_size =
+      sizeof(OpRepDeviceInterface) * device_info.device.bNumInterfaces;
+  SmartBuffer interface_buffer =
+      ReceiveBuffer(connection.get(), interface_size);
+  if (interface_buffer.size() != interface_size) {
+    LOG(ERROR) << "Failed reading devinfo value";
+    RespondBind(connection, false);
+    return;
+  }
+  device_info.interfaces =
+      reinterpret_cast<OpRepDeviceInterface*>(malloc(interface_size));
+  for (size_t i = 0; i < device_info.device.bNumInterfaces; ++i) {
+    *(device_info.interfaces + i) =
+        UnpackOpRepDeviceInterface(&interface_buffer);
   }
 
-  UnpackDeviceData(&devdata);
-  RegisterDevice(devdata.port, devdata.device_type, devdata.device_id);
+  RespondBind(connection, true);
+
+  UpdateDeviceParameter(&device_info.device);
+  RegisterDevice(port, device_info);
+}
+
+void UsbIpManager::UpdateDeviceParameter(OpRepDevice* device) {
+  snprintf(device->busID, sizeof(device->busID), "1-%zu", (device_count + 1));
+
+  snprintf(device->usbPath, sizeof(device->usbPath),
+           "/sys/devices/pci0000:00/0000:00:01.2/usb1/%s", device->busID);
+
+  device->devnum = device_count + 1;
 }
 
 bool UsbIpManager::HandleOpRequest(const base::ScopedFD& connection,
-                                   bool* attached,
-                                   bool* connection_open) {
-  bool status = false;
-  SmartBuffer received = ReceiveBuffer(connection.get(), sizeof(OpHeader));
-  if (received.size() != sizeof(OpHeader)) {
-    printf("Receive error :%s\n", strerror(errno));
-    exit(1);
+                                   bool* attached) {
+  SmartBuffer buf = ReceiveBuffer(connection.get(), sizeof(OpHeader));
+  if (buf.size() != sizeof(OpHeader)) {
+    return false;
   }
 
-  OpHeader request = UnpackOpHeader(&received);
-  // Custom request (not usbip protocol defined) use to bind the usb device.
+  OpHeader request = UnpackOpHeader(&buf);
   if (request.command == OP_REQ_BIND_CMD) {
     HandleBind(connection);
-    *connection_open = false;
   } else if (request.command == OP_REQ_DEVLIST_CMD) {
-    status = HandleDeviceList(connection);
-    *connection_open = false;
+    HandleDeviceList(connection);
   } else if (request.command == OP_REQ_IMPORT_CMD) {
-    HandleAttach(connection);
-    *attached = true;
-    *connection_open = true;
+    *attached = HandleAttach(connection);
+    return *attached;
+  } else {
+    LOG(WARNING) << "Unknown usbip command";
   }
   return true;
 }
@@ -86,7 +128,7 @@ void UsbIpManager::HandleConnection(base::ScopedFD connection) {
 
   while (connection_open) {
     if (!attached) {
-      HandleOpRequest(connection, &attached, &connection_open);
+      connection_open = HandleOpRequest(connection, &attached);
     } else {
       HandleUsbRequest(connection, &connection_open);
     }
@@ -94,18 +136,22 @@ void UsbIpManager::HandleConnection(base::ScopedFD connection) {
 }
 
 void UsbIpManager::RegisterDevice(const uint16_t port,
-                                  const uint16_t device_type,
-                                  const uint16_t device_id) {
-  auto client_ = std::make_unique<DeviceProxy>(port, device_type, device_id);
-  if (client_->Connect())
-    clients.push_back(std::move(client_));
+                                  const OpRepDevInfo& device_info) {
+  auto client_ = std::make_unique<DeviceProxy>(port, device_info);
+  proxy_list.push_back(std::move(client_));
+  LOG(INFO) << "USB Device (port:" << port << ")"
+            << "registered";
+  device_count++;
 }
 
+// TODO(santo) : Need to figure out when and how this should be called.
+// There is no detach/unbind USB/IP message for now. Probably
+// listening to udev event and calling this will be better.
 void UsbIpManager::DeregisterDevice(const uint16_t port) {
-  for (auto it = clients.begin(); it != clients.end();) {
+  for (auto it = proxy_list.begin(); it != proxy_list.end();) {
     if ((*it)->GetPort() == port) {
       (*it)->Disconnect();
-      it = clients.erase(it);
+      it = proxy_list.erase(it);
     } else {
       ++it;
     }
@@ -115,87 +161,70 @@ void UsbIpManager::DeregisterDevice(const uint16_t port) {
 // We use port number instead of busid for usbip attach command.
 // Thus 32 bytes contains port number as char string, which is conveted
 // to port number as integer.
-int UsbIpManager::ReadPort(const base::ScopedFD& sockfd) {
+int UsbIpManager::ReadBusId(const base::ScopedFD& sockfd) {
   // 32 byte are sent by usbip command for busid information.
-  char busid[32];
-  ssize_t received = recv(sockfd.get(), &busid, 32, 0);
-  if (received != 32) {
+  SmartBuffer buf =
+      ReceiveBuffer(sockfd.get(), 32);  // busid array size is 32 byte.
+  if (buf.size() != 32) {
     printf("Receive error :%s\n", strerror(errno));
-    exit(1);
+    return -1;
   }
 
-  uint16_t port = std::stoi(busid);
+  std::string busid(reinterpret_cast<const char*>(buf.data()));
 
-  for (size_t i = 0; i < clients.size(); ++i) {
-    if (clients[i]->GetPort() == port) {
+  LOG(INFO) << "BusID : " << busid;
+
+  for (size_t i = 0; i < proxy_list.size(); ++i) {
+    if (busid.compare(proxy_list[i]->BusId()) == 0) {
       return i;
     }
   }
   return -1;
 }
 
-void UsbIpManager::HandleAttach(const base::ScopedFD& connection) {
-  uint32_t proxy_index = ReadPort(connection);
-  if (proxy_index == -1)
-    return;
-
-  attachments_[connection.get()] = proxy_index;
-
+bool UsbIpManager::HandleAttach(const base::ScopedFD& connection) {
   OpRepImport rep;
-  if (clients[proxy_index]->IsConnected()) {
-    CreateOpRepImport(clients[proxy_index]->device_descriptor(),
-                      clients[proxy_index]->configuration_descriptor(), &rep);
-  } else {
-    SetOpHeader(OP_REP_IMPORT_CMD, 1 /*error*/, &rep.header);
+  int status = -1;
+
+  int proxy_index = ReadBusId(connection);
+  LOG(INFO) << "Device proxy index: " << proxy_index;
+
+  if (proxy_index != -1) {
+    auto& device = proxy_list[proxy_index];
+    if (!device->IsConnected() && device->Connect()) {
+      device->AttachConnection(connection.get());
+      CreateOpRepImport(device->GetOpRepDevInfo(), &rep);
+      status = 0;
+    }
   }
+  SetOpHeader(OP_REP_IMPORT_CMD, status, &rep.header);
 
   SmartBuffer packed_import = PackOpRepImport(rep);
   SendBuffer(connection.get(), packed_import);
+  return status == 0 ? true : false;
 }
 
 bool UsbIpManager::HandleDeviceList(const base::ScopedFD& connection) {
-  LOG(INFO) << "Listing devices..." << clients.size();
+  LOG(INFO) << "Listing devices..." << proxy_list.size();
 
   OpRepDevlist list{};
-  CreateOpRepDevlistHeader(clients.size(), &list);
-  for (size_t i = 0; i < clients.size(); i++) {
-    if (clients[i]->IsConnected()) {
-      SetOpRepDevInfo(clients[i]->device_descriptor(),
-                      clients[i]->configuration_descriptor(),
-                      clients[i]->interface_descriptors(), &list.devices[i]);
-    }
+  CreateOpRepDevlistHeader(proxy_list.size(), &list);
+  for (size_t i = 0; i < proxy_list.size(); i++) {
+    list.devices.push_back(proxy_list[i]->GetOpRepDevInfo());
   }
 
   SmartBuffer packed_devlist = PackOpRepDevlist(list);
   SendBuffer(connection.get(), packed_devlist);
+  LOG(INFO) << "Sent: " << packed_devlist.size();
   return true;
 }
 
 void UsbIpManager::HandleUsbCommand(int sockfd,
                                     const UsbipCmdSubmit& usb_request) {
-  // Endpoint 0 is used for USB control requests.
-  if (usb_request.header.ep == 0) {
-    HandleUsbControl(sockfd, usb_request);
-  } else {
-    /* TODO(santo) : old code, replace with new implementation
-    if (usb_request.header.direction == 1) {
-      HandleBulkInRequest(sockfd, usb_request);
-    } else {
-      if (attachments_[sockfd]->IsIPP()) {
-        HandleIppUsbData(sockfd, usb_request);
-      } else {
-        HandleUsbData(sockfd, usb_request);
-      }
+  for (auto& proxy : proxy_list) {
+    if (proxy->GetAttachedSocket() == sockfd) {
+      SmartBuffer buf = proxy->HandleUsbDeviceRequest(usb_request);
+      SendUsbControlResponse(sockfd, usb_request, buf.data(), buf.size());
     }
-    */
   }
-}
-
-void UsbIpManager::HandleUsbControl(int sockfd,
-                                    const UsbipCmdSubmit& usb_request) {
-  UsbControlRequest control_request =
-      CreateUsbControlRequest(usb_request.setup);
-  auto& client = clients[attachments_[sockfd]];
-  SmartBuffer buf = client->HandleUsbControl(control_request);
-  SendUsbControlResponse(sockfd, usb_request, buf.data(), buf.size());
 }

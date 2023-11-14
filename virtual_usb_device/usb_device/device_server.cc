@@ -55,29 +55,26 @@ bool DeviceServer::RegisterToHost() {
   }
 
   BindRequest request;
-  request.header.version = 2;
+  request.header.version = kUsbipVersion;
   request.header.command = OP_REQ_BIND_CMD;
-  request.device_data.port = GetListenPort();
-  // TODO(santo): These value should be popluated from
-  // usb descriptors provided in json file(e.g config/usb_printer.json)
-  request.device_data.device_type = 1;  /// random value, should be printer type
-  request.device_data.device_id = 2345;  // randome value, sould be printer id
+  request.port = GetListenPort();
+  CreateOpRepDevInfo(device_->device_descriptor(),
+                     device_->configuration_descriptor(),
+                     device_->interface_descriptors(), &request.device_desc);
 
   SmartBuffer buf = PackBindRequest(request);
   SendBuffer(sock, buf);
 
   SmartBuffer res = ReceiveBuffer(sock, sizeof(OpHeader));
-  if (res.size() == 0) {
+  if (res.size() != sizeof(OpHeader)) {
     exit(1);  // connection closed before sending all data.
   } else {
     OpHeader response = UnpackOpHeader(&res);
     if (response.status) {
-      LOG(ERROR) << "Failed: binding usb device with port: "
-                 << request.device_data.port;
+      LOG(ERROR) << "Failed: binding usb device with port: " << request.port;
       exit(1);
     } else {
-      LOG(INFO) << "Success:  binding usb device with port: "
-                << request.device_data.port;
+      LOG(INFO) << "Success:  binding usb device with port: " << request.port;
     }
   }
 
