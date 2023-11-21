@@ -148,7 +148,7 @@ SmartBuffer ReceiveBuffer(int sockfd, size_t size) {
     size_t to_receive = std::min<size_t>(remaining, 512UL);
     ssize_t received = recv(sockfd, buf.get() + total, to_receive, 0);
     if (received == 0 && size != 0) {
-      LOG(ERROR) << "Client has closed connection";
+      LOG(INFO) << "Client has closed connection";
       return smart_buffer;
     }
     CHECK_GE(remaining, received) << "Received more data than expected";

@@ -47,6 +47,9 @@ class UsbIpManager {
   void RegisterDevice(const uint16_t port, const OpRepDevInfo& device_info);
   // TODO(santo): Figure out when to deregister.
   void DeregisterDevice(const uint16_t port);
+  // Disconnects with the attached usb device and is triggered by `usbip detach`
+  // command.
+  void DetachUsbDevice(const base::ScopedFD& connection);
 
   // Handles OP_REQ_DEVLIST command by responding with the list of exported usb
   // devices.
@@ -62,8 +65,7 @@ class UsbIpManager {
   // Requests could be of following type: control, bulk, ipp, raw usb data.
   // A true return value means connection to the client should
   // be kept open after servicing the request.
-  bool HandleUsbRequest(const base::ScopedFD& connection,
-                        bool* connection_open);
+  bool HandleUsbRequest(const base::ScopedFD& connection);
 
   // Handles following usbip OP requests.
   // OP_REQ_BIND_CMD : custom defined for registeration.

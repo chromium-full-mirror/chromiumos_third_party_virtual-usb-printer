@@ -113,10 +113,15 @@ bool UsbIpManager::HandleOpRequest(const base::ScopedFD& connection,
   return false;
 }
 
-bool UsbIpManager::HandleUsbRequest(const base::ScopedFD& connection,
-                                    bool* connection_open) {
+bool UsbIpManager::HandleUsbRequest(const base::ScopedFD& connection) {
   SmartBuffer received =
       ReceiveBuffer(connection.get(), sizeof(UsbipCmdSubmit));
+  if (received.size() == 0) {
+    // Connection is closed by usbip detach <port> command
+    DetachUsbDevice(connection);
+    return false;
+  }
+
   if (received.size() != sizeof(UsbipCmdSubmit))
     return false;
 
@@ -143,7 +148,7 @@ void UsbIpManager::HandleConnection(base::ScopedFD connection) {
     if (!attached) {
       connection_open = HandleOpRequest(connection, &attached);
     } else {
-      connection_open = HandleUsbRequest(connection, &connection_open);
+      connection_open = HandleUsbRequest(connection);
     }
   }
 }
@@ -167,6 +172,15 @@ void UsbIpManager::DeregisterDevice(const uint16_t port) {
       it = proxy_list.erase(it);
     } else {
       ++it;
+    }
+  }
+}
+
+void UsbIpManager::DetachUsbDevice(const base::ScopedFD& connection) {
+  for (auto it = proxy_list.begin(); it != proxy_list.end(); ++it) {
+    if ((*it)->GetAttachedSocket() == connection.get()) {
+      (*it)->Disconnect();
+      return;
     }
   }
 }

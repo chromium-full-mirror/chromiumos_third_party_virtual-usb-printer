@@ -53,6 +53,7 @@ void DeviceProxy::Disconnect() {
     LOG(ERROR) << "Closing connection Failed";
   }
   is_connected_ = false;
+  LOG(INFO) << "Disconnected with device on port: " << port_;
 }
 
 void DeviceProxy::AttachConnection(int sockfd) {
