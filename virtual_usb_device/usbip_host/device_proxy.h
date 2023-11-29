@@ -7,6 +7,7 @@
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <memory>
 #include <vector>
 #include <string>
 
@@ -28,15 +29,21 @@ class DeviceProxy {
   // Create a proxy object for usb device which listens on
   // `port` with usb information `info`
   DeviceProxy(const uint16_t port, const OpRepDevInfo& info);
+  ~DeviceProxy() = default;
 
   // Connect with usb devices process via socket.
   bool Connect();
   // Close socket connection to usb devices.
   void Disconnect();
 
-  // Attach a socket to this proxy. All messages on this socket will be handled
-  // by this proxy.
-  void AttachConnection(int sockfd);
+  // Connects with the device server and attaches a connection to this proxy.
+  // All requests received on the connection will be handled by this proxy.
+  bool Attach(int sockfd);
+
+  // Disconnect with the device server and removes the attached connection.
+  void Detach();
+
+  // Returns the attached socket descriptor.
   int GetAttachedSocket() const { return attached_socket_; }
 
   // Sends the urb request to the usb device for handling and receives the

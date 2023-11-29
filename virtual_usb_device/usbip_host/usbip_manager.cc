@@ -73,6 +73,14 @@ void UsbIpManager::HandleBind(const base::ScopedFD& connection) {
 
   UpdateDeviceParameter(&device_info.device);
   RegisterDevice(port, device_info);
+
+  // We need to track when device process is dead, so we call `ReceiveBuffer`.
+  // This call will block since there is no data to receive but returns when
+  // device process is dead.
+  SmartBuffer status_buffer = ReceiveBuffer(connection.get(), sizeof(uint16_t));
+  if (status_buffer.size() == 0) {
+    DeregisterDevice(port);
+  }
 }
 
 void UsbIpManager::UpdateDeviceParameter(OpRepDevice* device) {
@@ -155,8 +163,8 @@ void UsbIpManager::HandleConnection(base::ScopedFD connection) {
 
 void UsbIpManager::RegisterDevice(const uint16_t port,
                                   const OpRepDevInfo& device_info) {
-  auto client_ = std::make_unique<DeviceProxy>(port, device_info);
-  proxy_list.push_back(std::move(client_));
+  auto client = std::make_unique<DeviceProxy>(port, device_info);
+  proxy_list.push_back(std::move(client));
   LOG(INFO) << "USB Device (port:" << port << ")"
             << "registered";
   device_count++;
@@ -168,8 +176,12 @@ void UsbIpManager::RegisterDevice(const uint16_t port,
 void UsbIpManager::DeregisterDevice(const uint16_t port) {
   for (auto it = proxy_list.begin(); it != proxy_list.end();) {
     if ((*it)->GetPort() == port) {
-      (*it)->Disconnect();
+      if ((*it)->GetAttachedSocket() != -1) {
+        LOG(ERROR) << "Detaching of usb device not done";
+      }
       it = proxy_list.erase(it);
+      device_count--;
+      LOG(INFO) << "usb device with port:" << port << " Deregistered";
     } else {
       ++it;
     }
@@ -179,7 +191,7 @@ void UsbIpManager::DeregisterDevice(const uint16_t port) {
 void UsbIpManager::DetachUsbDevice(const base::ScopedFD& connection) {
   for (auto it = proxy_list.begin(); it != proxy_list.end(); ++it) {
     if ((*it)->GetAttachedSocket() == connection.get()) {
-      (*it)->Disconnect();
+      (*it)->Detach();
       return;
     }
   }
@@ -218,13 +230,13 @@ bool UsbIpManager::HandleAttach(const base::ScopedFD& connection) {
 
   if (proxy_index != -1) {
     auto& device = proxy_list[proxy_index];
-    if (!device->IsConnected() && device->Connect()) {
-      device->AttachConnection(connection.get());
+    if (!device->IsConnected() && device->Attach(connection.get())) {
       CreateOpRepImport(device->GetOpRepDevInfo(), &rep);
       LOG(INFO) << "USB device on port: " << device->GetPort() << " attached";
       status = 0;  // success
     }
   }
+
   SetOpHeader(OP_REP_IMPORT_CMD, status, &rep.header);
 
   SmartBuffer packed_import = PackOpRepImport(rep);

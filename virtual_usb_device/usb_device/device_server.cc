@@ -18,8 +18,10 @@
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
 DeviceServer::DeviceServer(UsbDevice* device, uint16_t port, uint16_t host_port)
-    : Server(port), device_(device),
-	  host_connection_(ConnectionFactory::instance().MakeClientConnection(host_port)) {}
+    : Server(port),
+      device_(device),
+      host_connection_(
+          ConnectionFactory::instance().MakeClientConnection(host_port)) {}
 
 void DeviceServer::OnServerStarted() {
   if (!RegisterToHost()) {
@@ -43,7 +45,7 @@ void DeviceServer::HandleConnection(base::ScopedFD connection) {
 
 bool DeviceServer::RegisterToHost() {
   if (!host_connection_->Start())
-	  return false;
+    return false;
 
   BindRequest request;
   request.header.version = kUsbipVersion;
@@ -68,7 +70,6 @@ bool DeviceServer::RegisterToHost() {
       LOG(INFO) << "Success:  binding usb device with port: " << request.port;
     }
   }
-  host_connection_->Stop();
 
   return true;
 }

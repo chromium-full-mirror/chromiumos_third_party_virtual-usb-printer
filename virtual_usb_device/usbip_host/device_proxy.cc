@@ -8,8 +8,6 @@
 #include <sys/socket.h>
 #include <vector>
 
-#include <base/notreached.h>
-
 #include "virtual-usb-printer/virtual_usb_device/server.h"
 #include "virtual-usb-printer/virtual_usb_device/device_request.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
@@ -22,7 +20,7 @@ DeviceProxy::DeviceProxy(const uint16_t port, const OpRepDevInfo& info)
 bool DeviceProxy::Connect() {
   is_connected_ = connection_->Start();
   if (is_connected_)
-	  LOG(INFO) << "Connected with device on port: " << connection_->get_port();
+    LOG(INFO) << "Connected with usb device on port: " << GetPort();
 
   return is_connected_;
 }
@@ -30,11 +28,20 @@ bool DeviceProxy::Connect() {
 void DeviceProxy::Disconnect() {
   connection_->Stop();
   is_connected_ = false;
-  LOG(INFO) << "Disconnected with device on port: " << port_;
+  LOG(INFO) << "Disconnected with usb device on port: " << GetPort();
 }
 
-void DeviceProxy::AttachConnection(int sockfd) {
+bool DeviceProxy::Attach(int sockfd) {
+  bool status = Connect();
   attached_socket_ = sockfd;
+  LOG(INFO) << "UsbDevice with port:" << GetPort() << " Attached";
+  return status;
+}
+
+void DeviceProxy::Detach() {
+  Disconnect();
+  attached_socket_ = -1;
+  LOG(INFO) << "UsbDevice with port:" << GetPort() << " Detached";
 }
 
 SmartBuffer DeviceProxy::HandleUsbDeviceRequest(const Urb& urb_request) {
