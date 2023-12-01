@@ -10,6 +10,7 @@
 
 #include <base/files/scoped_file.h>
 
+#include "connection_factory.h"
 #include "smart_buffer.h"
 
 // Abstraction over socket::send which send SmartBuffer in chunks.
@@ -43,7 +44,7 @@ class Server {
   virtual void HandleConnection(base::ScopedFD connection) = 0;
 
   // Returns the port number on which this server is listening.
-  uint16_t GetListenPort() const { return port_; }
+  uint16_t GetListenPort() const { return connection_->get_port(); }
 
  private:
   // Creates a socket and start listening for connections.
@@ -51,8 +52,7 @@ class Server {
   // Loops and accept connections.
   void HandleLoop();
 
-  uint16_t port_;
-  base::ScopedFD server_fd_;
+  std::unique_ptr<IServerConnection> connection_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_SERVER_H_

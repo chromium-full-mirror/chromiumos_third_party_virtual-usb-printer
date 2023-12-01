@@ -17,6 +17,8 @@
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 
+#include "virtual-usb-printer/virtual_usb_device/connection_factory.h"
+
 // This class act as a proxy for actual usb device similar to
 // dbus proxy classes. It communicates with actual usb device via socket and
 // receives responses.
@@ -42,7 +44,7 @@ class DeviceProxy {
   SmartBuffer HandleUsbDeviceRequest(const Urb& urb_request);
 
   // Returns port number on which usb device is listening.
-  uint16_t GetPort() const { return port_; }
+  uint16_t GetPort() const { return connection_->get_port(); }
 
   // Returns bus id of device.
   std::string BusId() const { return std::string(device_info_.device.busID); }
@@ -53,11 +55,9 @@ class DeviceProxy {
   OpRepDevInfo GetOpRepDevInfo() { return device_info_; }
 
  private:
-  // port on which actual usb device is listening.
-  uint16_t port_;
+  // connection to device server
+  std::unique_ptr<IConnection> connection_;
 
-  int client_fd_;  // socket descriptor used to communicate with device.
-  struct sockaddr_in serv_addr;
   bool is_connected_ = false;
 
   OpRepDevInfo device_info_;

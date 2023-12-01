@@ -18,7 +18,8 @@
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
 DeviceServer::DeviceServer(UsbDevice* device, uint16_t port, uint16_t host_port)
-    : Server(port), device_(device), host_port_(host_port) {}
+    : Server(port), device_(device),
+	  host_connection_(ConnectionFactory::instance().MakeClientConnection(host_port)) {}
 
 void DeviceServer::OnServerStarted() {
   if (!RegisterToHost()) {
@@ -41,18 +42,8 @@ void DeviceServer::HandleConnection(base::ScopedFD connection) {
 }
 
 bool DeviceServer::RegisterToHost() {
-  int sock = socket(AF_INET, SOCK_STREAM, 0);
-  struct sockaddr_in serv_addr;
-  memset(&serv_addr, '0', sizeof(serv_addr));
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-  serv_addr.sin_port = htons(host_port_);  // Port on which UsbIpHost listens.
-
-  int status = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
-  if (status < 0) {
-    LOG(ERROR) << "Can't connect to usbip host";
-    return false;
-  }
+  if (!host_connection_->Start())
+	  return false;
 
   BindRequest request;
   request.header.version = kUsbipVersion;
@@ -63,9 +54,9 @@ bool DeviceServer::RegisterToHost() {
                      device_->interface_descriptors(), &request.device_desc);
 
   SmartBuffer buf = PackBindRequest(request);
-  SendBuffer(sock, buf);
+  host_connection_->Send(buf);
 
-  SmartBuffer res = ReceiveBuffer(sock, sizeof(OpHeader));
+  SmartBuffer res = host_connection_->Receive(sizeof(OpHeader));
   if (res.size() != sizeof(OpHeader)) {
     exit(1);  // connection closed before sending all data.
   } else {
@@ -77,10 +68,7 @@ bool DeviceServer::RegisterToHost() {
       LOG(INFO) << "Success:  binding usb device with port: " << request.port;
     }
   }
+  host_connection_->Stop();
 
-  status = close(sock);
-  if (status < 0) {
-    LOG(WARNING) << "Couldn't close socket";
-  }
   return true;
 }

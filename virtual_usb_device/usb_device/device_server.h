@@ -35,7 +35,7 @@ class DeviceServer : public Server {
   void HandleConnection(base::ScopedFD connection) final;
 
   base::raw_ptr<UsbDevice> device_;
-  uint16_t host_port_;
+  std::unique_ptr<IConnection> host_connection_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USB_DEVICE_DEVICE_SERVER_H_
