@@ -207,7 +207,8 @@ bool UsbIpManager::HandleAttach(const base::ScopedFD& connection) {
     if (!device->IsConnected() && device->Connect()) {
       device->AttachConnection(connection.get());
       CreateOpRepImport(device->GetOpRepDevInfo(), &rep);
-      status = 0;
+      LOG(INFO) << "USB device on port: " << device->GetPort() << " attached";
+      status = 0;  // success
     }
   }
   SetOpHeader(OP_REP_IMPORT_CMD, status, &rep.header);

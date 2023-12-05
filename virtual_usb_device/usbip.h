@@ -54,6 +54,7 @@ struct UsbipRetSubmit {
   uint32_t start_frame;        // Iniitial frame for iso or interrupt transfers.
   uint32_t number_of_packets;  // Number of iso packets.
   uint32_t error_count;        // Number of errors for iso transfers.
+  uint64_t setup;              // Contains a USB SETUP packet.
 } __attribute__((packed));
 
 // Populate Urb (USB request block) with usbip request

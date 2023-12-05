@@ -30,6 +30,7 @@ SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply) {
   serialized.Add(htonl(reply.start_frame));
   serialized.Add(htonl(reply.number_of_packets));
   serialized.Add(htonl(reply.error_count));
+  serialized.Add(htobe64(reply.setup));
 
   return serialized;
 }
