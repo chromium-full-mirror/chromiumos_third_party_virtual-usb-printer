@@ -180,18 +180,18 @@ class UsbDevice {
 
   // Determines whether `usb_request` is either a control or data request and
   // defers to the corresponding function.
-  void HandleUsbRequest(int sockfd, const Urb& usb_request);
+  void HandleUsbRequest(IConnection* conn, const Urb& usb_request);
 
   // Responds to the USB data request `usb_request` message that uses `received`
   // to indicate how many uint8_t's were successfully received.
-  void SendUsbDataResponse(int sockfd,
+  void SendUsbDataResponse(IConnection* conn,
                            const Urb& usb_request,
                            size_t received) const;
 
-  // Send `UrbReply` message to the socket described by `sockfd`.
+  // Send `UrbReply` message to the socket described by `connection`.
   // `usb_request` is used to create the `UrbReply` header and `data`
   // contains the actual URB response data.
-  void SendUsbControlResponse(int sockfd,
+  void SendUsbControlResponse(IConnection* conn,
                               const Urb& usb_request,
                               const uint8_t* data,
                               size_t size) const;
@@ -199,25 +199,25 @@ class UsbDevice {
  private:
   // Determines whether `usb_request` is either a standard or class-specific
   // control request and defers to the corresponding function.
-  void HandleUsbControl(int sockfd, const Urb& usb_request) const;
+  void HandleUsbControl(IConnection* conn, const Urb& usb_request) const;
 
   // Handles raw usb data.
-  virtual void HandleUsbData(int sockfd, const Urb& usb_request) const;
+  virtual void HandleUsbData(IConnection* conn, const Urb& usb_request) const;
 
   // Handles usb requests of type=STANDARD_TYPE.
-  void HandleStandardControl(int sockfd,
+  void HandleStandardControl(IConnection* conn,
                              const Urb& usb_request,
                              const UsbControlRequest& control_request) const;
 
   // Standard control request handlers for GET_STATUS, GET_DESCRIPTOR,
   // GET_CONFIGURATION requests.
-  virtual void HandleGetStatus(int sockfd,
+  virtual void HandleGetStatus(IConnection* conn,
                                const Urb& usb_request,
                                const UsbControlRequest& control_request) const;
-  void HandleGetDescriptor(int sockfd,
+  void HandleGetDescriptor(IConnection* conn,
                            const Urb& usb_request,
                            const UsbControlRequest& control_request) const;
-  void HandleGetConfiguration(int sockfd,
+  void HandleGetConfiguration(IConnection* conn,
                               const Urb& usb_request,
                               const UsbControlRequest& control_request) const;
 
@@ -225,39 +225,40 @@ class UsbDevice {
   // The descriptors category are: device descriptors, configuration
   // descriptors, string descriptors, device qualifier descriptors.
   void HandleGetDeviceDescriptor(
-      int sockfd,
+      IConnection* conn,
       const Urb& usb_request,
       const UsbControlRequest& control_request) const;
   void HandleGetConfigurationDescriptor(
-      int sockfd,
+      IConnection* conn,
       const Urb& usb_request,
       const UsbControlRequest& control_request) const;
   void HandleGetDeviceQualifierDescriptor(
-      int sockfd,
+      IConnection* conn,
       const Urb& usb_request,
       const UsbControlRequest& control_request) const;
   void HandleGetStringDescriptor(
-      int sockfd,
+      IConnection* conn,
       const Urb& usb_request,
       const UsbControlRequest& control_request) const;
 
   // Handles device control specific USB requests.
-  void HandleDeviceControl(int sockfd,
+  void HandleDeviceControl(IConnection* conn,
                            const Urb& usb_request,
                            const UsbControlRequest& control_request) const;
-  // Resonds with the ieee device id of usb device.
-  void HandleGetDeviceId(int sockfd,
+
+  // Responds with the ieee device id of usb device.
+  void HandleGetDeviceId(IConnection* conn,
                          const Urb& usb_request,
                          const UsbControlRequest& control_request) const;
 
   // Used to send an empty response to control requests which are not supported.
-  void HandleUnsupportedRequest(int sockfd,
+  void HandleUnsupportedRequest(IConnection* conn,
                                 const Urb& usb_request,
                                 const UsbControlRequest& control_request) const;
 
   // Responds to a BULK_IN request by replying with the message at the front of
   // `message_queue_`.
-  void HandleBulkInRequest(int sockfd, const Urb& usb_request);
+  void HandleBulkInRequest(IConnection* conn, const Urb& usb_request);
 
   UsbDescriptors usb_descriptors_;
   base::FilePath document_output_path_;

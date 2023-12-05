@@ -31,9 +31,9 @@ void DeviceProxy::Disconnect() {
   LOG(INFO) << "Disconnected with usb device on port: " << GetPort();
 }
 
-bool DeviceProxy::Attach(int sockfd) {
+bool DeviceProxy::Attach(IConnection* conn) {
   bool status = Connect();
-  attached_socket_ = sockfd;
+  attached_socket_ = conn->FD();
   LOG(INFO) << "UsbDevice with port:" << GetPort() << " Attached";
   return status;
 }

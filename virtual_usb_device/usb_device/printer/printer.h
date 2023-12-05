@@ -29,24 +29,24 @@ class UsbPrinter : public UsbDevice {
              const base::FilePath& document_output_path);
 
   // `UsbDevice` interface implementation for usb printer.
-  void HandleGetStatus(int sockfd,
+  void HandleGetStatus(IConnection* conn,
                        const Urb& usb_request,
                        const UsbControlRequest& control_request) const override;
-  void HandleUsbData(int sockfd, const Urb& usb_request) const override;
+  void HandleUsbData(IConnection* conn, const Urb& usb_request) const override;
 
  private:
   // Handles printer control specific USB requests.
-  void HandleDeviceControl(int sockfd,
+  void HandleDeviceControl(IConnection* conn,
                            const Urb& usb_request,
                            const UsbControlRequest& control_request) const;
 
   // Responds with ieee device id of the printer.
-  void HandleGetDeviceId(int sockfd,
+  void HandleGetDeviceId(IConnection* conn,
                          const Urb& usb_request,
                          const UsbControlRequest& control_request) const;
 
   // Used to send an empty response to control requests which are not supported.
-  void HandleUnsupportedRequest(int sockfd,
+  void HandleUnsupportedRequest(IConnection* conn,
                                 const Urb& usb_request,
                                 const UsbControlRequest& control_request) const;
 

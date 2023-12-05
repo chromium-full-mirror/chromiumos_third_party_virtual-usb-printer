@@ -25,9 +25,9 @@ void Server::Stop() {
 
 void Server::HandleLoop() {
   while (true) {
-    base::ScopedFD connection(connection_->Accept()->FD());
+    auto conn = connection_->Accept();
     LOG(INFO) << "Connection accepted";
-    HandleConnection(std::move(connection));
+    HandleConnection(std::move(conn));
   }
 }
 

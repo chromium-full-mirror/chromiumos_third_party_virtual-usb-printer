@@ -34,12 +34,12 @@ class UsbIpManager {
   void Stop() { server_->Stop(); }
 
   // Loops and process usbip message received on connection.
-  void HandleConnection(base::ScopedFD connection);
+  void HandleConnection(std::unique_ptr<IConnection> conn);
 
   // Process OP_REQ_BIND_CMD usbip message by registering the usb device with
   // `UsbIpManager`.
   // Note: OP_REQ_BIND_CMD is custom defined usbip message.
-  void HandleBind(const base::ScopedFD& connection);
+  void HandleBind(IConnection* conn);
 
   // Registers the usb device with `UsbIpManager`.
   // Once this is called, a proxy of actual usb device is created and
@@ -49,23 +49,23 @@ class UsbIpManager {
   void DeregisterDevice(const uint16_t port);
   // Disconnects with the attached usb device and is triggered by `usbip detach`
   // command.
-  void DetachUsbDevice(const base::ScopedFD& connection);
+  void DetachUsbDevice(IConnection* conn);
 
   // Handles OP_REQ_DEVLIST command by responding with the list of exported usb
   // devices.
-  void HandleDeviceList(const base::ScopedFD& connection);
+  void HandleDeviceList(IConnection* conn);
   // Handles OP_REQ_IMPORT command by attaching a usb device for further
   // communication. Internally, a `DeviceProxy` is used to make tcp connection
   // to the usb device server. Any subsequent usb messages on that proxy will be
   // forwarded to attached usb device.
   // Returns whether usb device is successfully attached or not.
-  bool HandleAttach(const base::ScopedFD& connection);
+  bool HandleAttach(IConnection* conn);
 
   // Handles usb requests after usb device is attached.
   // Requests could be of following type: control, bulk, ipp, raw usb data.
-  // A true return value means connection to the client should
+  // A true return value means conn to the client should
   // be kept open after servicing the request.
-  bool HandleUsbRequest(const base::ScopedFD& connection);
+  bool HandleUsbRequest(IConnection* conn);
 
   // Handles following usbip OP requests.
   // OP_REQ_BIND_CMD : custom defined for registeration.
@@ -74,23 +74,22 @@ class UsbIpManager {
   // receive usb command directly.
   // A true return value means connection to the client should
   // be kept open after servicing the request.
-  bool HandleOpRequest(const base::ScopedFD& connection, bool* attached);
+  bool HandleOpRequest(IConnection* conn, bool* attached);
 
  private:
   // Responds with the status of OP_REQ_BIND_CMD usbip message.
-  void RespondBind(const base::ScopedFD& connection, bool status);
+  void RespondBind(IConnection* conn, bool status);
   // Reads busid from `sockfd` and returns DeviceProxy index
   // associated with the busid.
-  int ReadBusId(const base::ScopedFD& sockfd);
+  int ReadBusId(IConnection* conn);
 
   // Handles usbip requests after the device is attached.
   // It retrieves the usb command and forward it to the `UsbIpManager`.
-  void HandleUsbCommand(const base::ScopedFD& sockfd,
-                        const UsbipCmdSubmit& usb_request);
+  void HandleUsbCommand(IConnection* conn, const UsbipCmdSubmit& usb_request);
 
   //  Sends a usbip response on socket `sockfd`. The `data` are
   //  response data with size `data_size`.
-  void SendUsbipControlResponse(const base::ScopedFD& sockfd,
+  void SendUsbipControlResponse(IConnection* conn,
                                 const UsbipCmdSubmit& usb_request,
                                 const uint8_t* data,
                                 size_t data_size);

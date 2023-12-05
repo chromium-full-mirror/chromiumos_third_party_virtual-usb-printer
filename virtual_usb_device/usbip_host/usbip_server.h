@@ -19,7 +19,7 @@ class UsbIpServer : public Server {
   UsbIpServer(UsbIpManager* manager, int port);
 
   // Process each incoming usbip message on a new thread.
-  void HandleConnection(base::ScopedFD connection) final;
+  void HandleConnection(std::unique_ptr<IConnection> conn) final;
 
  private:
   raw_ptr<UsbIpManager> manager_;

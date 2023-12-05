@@ -45,12 +45,12 @@ UsbPrinter::UsbPrinter(const std::string descriptors_path,
     : UsbDevice(descriptors_path, port, host_port),
       document_output_path_(document_output_path) {}
 
-void UsbPrinter::HandleUsbData(int sockfd, const Urb& usb_request) const {
-  SmartBuffer data = ReceiveBuffer(sockfd, usb_request.transfer_buffer_length);
+void UsbPrinter::HandleUsbData(IConnection* conn, const Urb& usb_request) const {
+  SmartBuffer data = conn->Receive(usb_request.transfer_buffer_length);
   size_t received = data.size();
   LOG(INFO) << "Received " << received << " bytes";
   // Acknowledge receipt of BULK transfer.
-  SendUsbDataResponse(sockfd, usb_request, received);
+  SendUsbDataResponse(conn, usb_request, received);
   if (!document_output_path_.empty()) {
     LOG(INFO) << "Recording document...";
     AppendToFile(document_output_path_, data);
@@ -58,7 +58,7 @@ void UsbPrinter::HandleUsbData(int sockfd, const Urb& usb_request) const {
 }
 
 void UsbPrinter::HandleGetStatus(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetStatus " << unsigned{control_request.wValue1} << "["
@@ -66,22 +66,22 @@ void UsbPrinter::HandleGetStatus(
   constexpr uint16_t status = 0x1;  // Self-powered.
   SmartBuffer response(sizeof(status));
   response.Add(&status, sizeof(status));
-  SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
+  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbPrinter::HandleUnsupportedRequest(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleUnsupportedRequest "
           << StandardDeviceRequestString(control_request.bRequest) << ": "
           << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
-  SendUsbControlResponse(sockfd, usb_request, 0, 0);
+  SendUsbControlResponse(conn, usb_request, 0, 0);
 }
 
 void UsbPrinter::HandleGetDeviceId(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDeviceId " << unsigned{control_request.wValue1} << "["
@@ -89,7 +89,7 @@ void UsbPrinter::HandleGetDeviceId(
 
   SmartBuffer response(ieee_device_id().size());
   response.Add(ieee_device_id());
-  SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
+  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
 }
 
 int main(int argc, char* argv[]) {

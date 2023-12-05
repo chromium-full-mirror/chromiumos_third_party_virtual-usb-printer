@@ -13,11 +13,6 @@
 #include "connection_factory.h"
 #include "smart_buffer.h"
 
-// Abstraction over socket::send which send SmartBuffer in chunks.
-void SendBuffer(int sockfd, const SmartBuffer& smart_buffer);
-// Abstraction over socket::recv which receives buffers in chunks.
-SmartBuffer ReceiveBuffer(int sockfd, size_t size);
-
 // Generic TCP/IP server.
 // TODO(santo): Move socket related code in seperate class
 // so that it this class could be mocked on unit tests.
@@ -40,8 +35,9 @@ class Server {
   // This function is called after server started to listen.
   // Called from `Start` function.
   virtual void OnServerStarted() {}
+
   // Processes all incoming message on connected socket.
-  virtual void HandleConnection(base::ScopedFD connection) = 0;
+  virtual void HandleConnection(std::unique_ptr<IConnection> conn) = 0;
 
   // Returns the port number on which this server is listening.
   uint16_t GetListenPort() const { return connection_->get_port(); }

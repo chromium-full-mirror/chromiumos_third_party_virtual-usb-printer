@@ -14,9 +14,8 @@
 UsbIpServer::UsbIpServer(UsbIpManager* manager, int port)
     : Server(port), manager_(manager) {}
 
-void UsbIpServer::HandleConnection(base::ScopedFD connection) {
+void UsbIpServer::HandleConnection(std::unique_ptr<IConnection> conn) {
   base::ThreadPool::PostTask(
-      FROM_HERE,
-      base::BindOnce(&UsbIpManager::HandleConnection,
-                     base::Unretained(manager_), std::move(connection)));
+      FROM_HERE, base::BindOnce(&UsbIpManager::HandleConnection,
+                                base::Unretained(manager_), std::move(conn)));
 }

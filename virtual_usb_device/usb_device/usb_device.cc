@@ -88,29 +88,30 @@ void UsbDevice::Run() {
   server_->Start();
 }
 
-void UsbDevice::HandleUsbRequest(int sockfd, const Urb& usb_request) {
+void UsbDevice::HandleUsbRequest(IConnection* conn, const Urb& usb_request) {
   // Endpoint 0 is used for USB control requests.
   if (usb_request.ep == 0) {
-    HandleUsbControl(sockfd, usb_request);
+    HandleUsbControl(conn, usb_request);
   } else {
     if (usb_request.direction == 1) {
-      HandleBulkInRequest(sockfd, usb_request);
+      HandleBulkInRequest(conn, usb_request);
     } else {
-      HandleUsbData(sockfd, usb_request);
+      HandleUsbData(conn, usb_request);
     }
   }
 }
 
-void UsbDevice::HandleUsbControl(int sockfd, const Urb& usb_request) const {
+void UsbDevice::HandleUsbControl(IConnection* conn,
+                                 const Urb& usb_request) const {
   UsbControlRequest control_request =
       CreateUsbControlRequest(usb_request.setup);
   int request_type = GetControlType(control_request.bmRequestType);
   switch (request_type) {
     case STANDARD_TYPE:
-      HandleStandardControl(sockfd, usb_request, control_request);
+      HandleStandardControl(conn, usb_request, control_request);
       break;
     case CLASS_TYPE:
-      HandleDeviceControl(sockfd, usb_request, control_request);
+      HandleDeviceControl(conn, usb_request, control_request);
       break;
     case VENDOR_TYPE:
     case RESERVED_TYPE:
@@ -121,18 +122,18 @@ void UsbDevice::HandleUsbControl(int sockfd, const Urb& usb_request) const {
 }
 
 void UsbDevice::HandleStandardControl(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   switch (control_request.bRequest) {
     case GET_STATUS:
-      HandleGetStatus(sockfd, usb_request, control_request);
+      HandleGetStatus(conn, usb_request, control_request);
       break;
     case GET_DESCRIPTOR:
-      HandleGetDescriptor(sockfd, usb_request, control_request);
+      HandleGetDescriptor(conn, usb_request, control_request);
       break;
     case GET_CONFIGURATION:
-      HandleGetConfiguration(sockfd, usb_request, control_request);
+      HandleGetConfiguration(conn, usb_request, control_request);
       break;
     case CLEAR_FEATURE:
     case SET_FEATURE:
@@ -142,7 +143,7 @@ void UsbDevice::HandleStandardControl(
     case GET_INTERFACE:
     case SET_INTERFACE:
     case SET_FRAME:
-      HandleUnsupportedRequest(sockfd, usb_request, control_request);
+      HandleUnsupportedRequest(conn, usb_request, control_request);
       break;
     default:
       LOG(ERROR) << "Received unknown control request "
@@ -152,12 +153,12 @@ void UsbDevice::HandleStandardControl(
 }
 
 void UsbDevice::HandleDeviceControl(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   switch (control_request.bRequest) {
     case GET_DEVICE_ID:
-      HandleGetDeviceId(sockfd, usb_request, control_request);
+      HandleGetDeviceId(conn, usb_request, control_request);
       break;
     case GET_PORT_STATUS:
       NOTIMPLEMENTED();
@@ -172,7 +173,7 @@ void UsbDevice::HandleDeviceControl(
 }
 
 void UsbDevice::HandleGetStatus(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetStatus " << unsigned{control_request.wValue1} << "["
@@ -180,11 +181,11 @@ void UsbDevice::HandleGetStatus(
   uint16_t status = 0x1;  // Self-powered.
   SmartBuffer response(sizeof(status));
   response.Add(&status, sizeof(status));
-  SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
+  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetDescriptor(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDescriptor "
@@ -193,32 +194,32 @@ void UsbDevice::HandleGetDescriptor(
 
   switch (control_request.wValue1) {
     case USB_DESCRIPTOR_DEVICE:
-      HandleGetDeviceDescriptor(sockfd, usb_request, control_request);
+      HandleGetDeviceDescriptor(conn, usb_request, control_request);
       break;
     case USB_DESCRIPTOR_CONFIGURATION:
-      HandleGetConfigurationDescriptor(sockfd, usb_request, control_request);
+      HandleGetConfigurationDescriptor(conn, usb_request, control_request);
       break;
     case USB_DESCRIPTOR_STRING:
-      HandleGetStringDescriptor(sockfd, usb_request, control_request);
+      HandleGetStringDescriptor(conn, usb_request, control_request);
       break;
     case USB_DESCRIPTOR_INTERFACE:
     case USB_DESCRIPTOR_ENDPOINT:
     case USB_DESCRIPTOR_DEBUG:
       // Types that are known and not handled.
-      HandleUnsupportedRequest(sockfd, usb_request, control_request);
+      HandleUnsupportedRequest(conn, usb_request, control_request);
       break;
     case USB_DESCRIPTOR_DEVICE_QUALIFIER:
-      HandleGetDeviceQualifierDescriptor(sockfd, usb_request, control_request);
+      HandleGetDeviceQualifierDescriptor(conn, usb_request, control_request);
       break;
     default:
       LOG(ERROR) << "Unknown descriptor type request: "
                  << unsigned{control_request.wValue1};
-      HandleUnsupportedRequest(sockfd, usb_request, control_request);
+      HandleUnsupportedRequest(conn, usb_request, control_request);
   }
 }
 
 void UsbDevice::HandleGetDeviceDescriptor(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDeviceDescriptor "
@@ -236,11 +237,11 @@ void UsbDevice::HandleGetDeviceDescriptor(
     response.Add(dev);
   }
 
-  SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
+  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetConfigurationDescriptor(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetConfigurationDescriptor "
@@ -253,8 +254,7 @@ void UsbDevice::HandleGetConfigurationDescriptor(
   if (control_request.wLength == sizeof(configuration_descriptor())) {
     // Only the configuration descriptor itself has been requested.
     VLOG(1) << "Only configuration descriptor requested";
-    SendUsbControlResponse(sockfd, usb_request, response.data(),
-                           response.size());
+    SendUsbControlResponse(conn, usb_request, response.data(), response.size());
     return;
   }
 
@@ -281,11 +281,11 @@ void UsbDevice::HandleGetConfigurationDescriptor(
       << "Response length does not match requested number of bytes";
   // After filling the buffer with all of the necessary descriptors we can send
   // a response.
-  SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
+  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetDeviceQualifierDescriptor(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDeviceQualifierDescriptor "
@@ -294,11 +294,11 @@ void UsbDevice::HandleGetDeviceQualifierDescriptor(
 
   SmartBuffer response(sizeof(qualifier_descriptor()));
   response.Add(qualifier_descriptor());
-  SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
+  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetStringDescriptor(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetStringDescriptor "
@@ -310,11 +310,11 @@ void UsbDevice::HandleGetStringDescriptor(
   CHECK(index < strings.size());
   SmartBuffer response(strings[index][0]);
   response.Add(strings[index].data(), strings[index][0]);
-  SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
+  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetConfiguration(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetConfiguration " << unsigned{control_request.wValue1}
@@ -326,22 +326,22 @@ void UsbDevice::HandleGetConfiguration(
   SmartBuffer response(sizeof(configuration.bConfigurationValue));
   response.Add(&configuration.bConfigurationValue,
                sizeof(configuration.bConfigurationValue));
-  SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
+  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleUnsupportedRequest(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleUnsupportedRequest "
           << StandardDeviceRequestString(control_request.bRequest) << ": "
           << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
-  SendUsbControlResponse(sockfd, usb_request, 0, 0);
+  SendUsbControlResponse(conn, usb_request, 0, 0);
 }
 
 void UsbDevice::HandleGetDeviceId(
-    int sockfd,
+    IConnection* conn,
     const Urb& usb_request,
     const UsbControlRequest& control_request) const {
   VLOG(1) << "HandleGetDeviceId " << unsigned{control_request.wValue1} << "["
@@ -349,24 +349,24 @@ void UsbDevice::HandleGetDeviceId(
 
   SmartBuffer response(ieee_device_id().size());
   response.Add(ieee_device_id());
-  SendUsbControlResponse(sockfd, usb_request, response.data(), response.size());
+  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
 }
 
-void UsbDevice::HandleUsbData(int sockfd, const Urb& usb_request) const {
+void UsbDevice::HandleUsbData(IConnection* conn, const Urb& usb_request) const {
   NOTIMPLEMENTED();
 }
 
-void UsbDevice::HandleBulkInRequest(int sockfd, const Urb& usb_request) {
+void UsbDevice::HandleBulkInRequest(IConnection* conn, const Urb& usb_request) {
   NOTIMPLEMENTED();
 }
 
-void UsbDevice::SendUsbDataResponse(int sockfd,
+void UsbDevice::SendUsbDataResponse(IConnection* conn,
                                     const Urb& usb_request,
                                     size_t received) const {
   NOTIMPLEMENTED();
 }
 
-void UsbDevice::SendUsbControlResponse(int sockfd,
+void UsbDevice::SendUsbControlResponse(IConnection* conn,
                                        const Urb& usb_request,
                                        const uint8_t* data,
                                        size_t data_size) const {
@@ -381,5 +381,5 @@ void UsbDevice::SendUsbControlResponse(int sockfd,
   }
   LOG(INFO) << __func__ << " "
             << "data size: " << data_size;
-  SendBuffer(sockfd, buf);
+  conn->Send(buf);
 }

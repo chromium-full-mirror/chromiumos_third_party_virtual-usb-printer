@@ -30,16 +30,16 @@ void DeviceServer::OnServerStarted() {
   }
 }
 
-void DeviceServer::HandleConnection(base::ScopedFD connection) {
+void DeviceServer::HandleConnection(std::unique_ptr<IConnection> conn) {
   while (true) {
-    SmartBuffer received = ReceiveBuffer(connection.get(), sizeof(Urb));
+    SmartBuffer received = conn->Receive(sizeof(Urb));
     if (received.size() != sizeof(Urb)) {
       LOG(INFO) << "Received unknown size data - ignoring it";
       return;
     }
 
     Urb request = UnpackUrb(&received);
-    device_->HandleUsbRequest(connection.get(), request);
+    device_->HandleUsbRequest(conn.get(), request);
   }
 }
 

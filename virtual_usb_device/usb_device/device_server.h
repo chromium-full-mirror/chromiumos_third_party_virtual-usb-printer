@@ -41,7 +41,7 @@ class DeviceServer : public Server {
   bool RegisterToHost();
 
   // Read messages and forward it to devices for handling.
-  void HandleConnection(base::ScopedFD connection) final;
+  void HandleConnection(std::unique_ptr<IConnection> conn) final;
 
   base::raw_ptr<UsbDevice> device_;
   std::unique_ptr<IConnection> host_connection_;
