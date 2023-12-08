@@ -8,7 +8,6 @@
 #include <string>
 
 #include <base/strings/stringprintf.h>
-#include <base/strings/string_piece.h>
 #include <base/logging.h>
 #include <base/check.h>
 #include <base/check_op.h>
