@@ -5,9 +5,9 @@
 #include "libipp_helper.h"
 
 #include <cstddef>
+#include <string_view>
 
 #include <base/logging.h>
-#include <base/strings/string_piece.h>
 #include <base/strings/stringprintf.h>
 #include <base/format_macros.h>
 
@@ -132,7 +132,7 @@ void AddGroup(const ipp::GroupTag tag,
 
 }  // namespace
 
-void MultilineLogHolder::LogError(base::StringPiece preface) const {
+void MultilineLogHolder::LogError(std::string_view preface) const {
   if (lines.empty()) {
     return;
   }
@@ -144,7 +144,7 @@ void MultilineLogHolder::LogError(base::StringPiece preface) const {
   }
 }
 
-void MultilineLogHolder::Vlog(int level, base::StringPiece preface) const {
+void MultilineLogHolder::Vlog(int level, std::string_view preface) const {
   if (lines.empty()) {
     return;
   }

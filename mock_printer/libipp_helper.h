@@ -7,9 +7,9 @@
 
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include <base/strings/string_piece.h>
 #include <chromeos/libipp/frame.h>
 
 namespace mock_printer {
@@ -25,12 +25,12 @@ struct MultilineLogHolder {
   //
   // You can't parameterize the level here because there's some
   // preprocessor magic involved in base/logging.h.
-  void LogError(base::StringPiece preface = "") const;
+  void LogError(std::string_view preface = "") const;
 
   // `VLOG()`s the `preface` and all `lines` at the specified `level`.
   //
   // Does nothing if `lines` is empty.
-  void Vlog(int level, base::StringPiece preface = "") const;
+  void Vlog(int level, std::string_view preface = "") const;
 };
 
 // Returns a vector of lines that form a human-readable string

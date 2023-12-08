@@ -10,8 +10,6 @@
 
 #include <string>
 
-#include <base/strings/string_piece.h>
-
 #include "mock_printer/proto/ipp.pb.h"
 
 namespace mock_printer {

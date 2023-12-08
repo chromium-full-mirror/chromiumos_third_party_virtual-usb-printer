@@ -8,7 +8,6 @@
 #include <utility>
 
 #include <base/check.h>
-#include <base/strings/string_piece.h>
 #include <chromeos/libipp/attribute.h>
 #include <chromeos/libipp/frame.h>
 #include <gmock/gmock.h>
