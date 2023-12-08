@@ -10,7 +10,7 @@
 
 #include <base/files/scoped_file.h>
 
-#include "connection_factory.h"
+#include "connection/connection_factory.h"
 #include "smart_buffer.h"
 
 // Generic TCP/IP server.

@@ -8,7 +8,7 @@
 #include <memory>
 #include <cstdint>
 
-#include "smart_buffer.h"
+#include "../smart_buffer.h"
 
 // Connection interface - both server and client connections
 // implement this interface.
