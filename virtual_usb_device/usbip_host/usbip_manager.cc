@@ -132,7 +132,7 @@ bool UsbIpManager::HandleUsbRequest(IConnection* conn) {
   UsbipCmdSubmit command = UnpackUsbipCmdSubmit(&received);
   if (command.header.command == COMMAND_USBIP_CMD_SUBMIT) {
     PrintUsbipCmdSubmit(command);
-    HandleUsbCommand(conn, command);
+    HandleUsbCommandSubmit(conn, command);
     return true;
   }
 
@@ -252,16 +252,51 @@ void UsbIpManager::HandleDeviceList(IConnection* conn) {
   conn->Send(packed_devlist);
 }
 
-void UsbIpManager::HandleUsbCommand(IConnection* conn,
-                                    const UsbipCmdSubmit& usb_request) {
+void UsbIpManager::HandleUsbCommandSubmit(IConnection* conn,
+                                          const UsbipCmdSubmit& usb_request) {
   for (auto& proxy : proxy_list) {
     if (proxy->GetAttachedSocket() == conn->FD()) {
       Urb urb_request;
       usbip_to_urb(&usb_request, &urb_request);
-      SmartBuffer buf = proxy->HandleUsbDeviceRequest(urb_request);
-      SendUsbipControlResponse(conn, usb_request, buf.data(), buf.size());
+      LOG(INFO) << "Receive transfer buffer of size: "
+                << usb_request.transfer_buffer_length;
+      SmartBuffer data;
+      // If data transfer is from the host to device.
+      if (usb_request.header.direction == 0 /* host to device */ &&
+          usb_request.transfer_buffer_length != 0)
+        data = conn->Receive(usb_request.transfer_buffer_length);
+
+      size_t response_buffer_length =
+          proxy->HandleUsbDeviceRequest(urb_request, data);
+
+      SmartBuffer buf;
+      // If data transfer is from the device to host or there are control
+      // requests.
+      if ((usb_request.header.direction == 1 /* device to host */) ||
+          (usb_request.header.ep == 0 /* control requests */)) {
+        buf = proxy->ReceiveResponseBuffer(response_buffer_length);
+        SendUsbipControlResponse(conn, usb_request, buf.data(), buf.size());
+      } else {
+        // Acknowlewdge that usb device have received data.
+        SendUsbipDataReceivedAck(conn, usb_request, response_buffer_length);
+      }
     }
   }
+}
+
+void UsbIpManager::SendUsbipDataReceivedAck(IConnection* conn,
+                                            const UsbipCmdSubmit& usb_request,
+                                            size_t received) {
+  UsbipRetSubmit response = CreateUsbipRetSubmit(usb_request);
+  response.actual_length = received;
+
+  LOG(INFO) << "client sent data size: " << usb_request.transfer_buffer_length;
+  LOG(INFO) << "device received : " << received;
+
+  PrintUsbipRetSubmit(response);
+
+  SmartBuffer smart_buffer = PackUsbipRetSubmit(response);
+  conn->Send(smart_buffer);
 }
 
 void UsbIpManager::SendUsbipControlResponse(IConnection* conn,
@@ -270,6 +305,9 @@ void UsbIpManager::SendUsbipControlResponse(IConnection* conn,
                                             size_t data_size) {
   UsbipRetSubmit response = CreateUsbipRetSubmit(usb_request);
   response.actual_length = data_size;
+  LOG(INFO) << "client requested data size: "
+            << usb_request.transfer_buffer_length;
+  LOG(INFO) << "device receiving : " << data_size;
 
   PrintUsbipRetSubmit(response);
   SmartBuffer smart_buffer = PackUsbipRetSubmit(response);

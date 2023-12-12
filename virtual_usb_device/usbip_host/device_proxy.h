@@ -45,9 +45,13 @@ class DeviceProxy {
   // Returns the attached socket descriptor.
   int GetAttachedSocket() const { return attached_socket_; }
 
-  // Sends the urb request to the usb device for handling and receives the
-  // result which is returned.
-  SmartBuffer HandleUsbDeviceRequest(const Urb& urb_request);
+  // Sends the urb request to the usb device (which runs in different process)
+  // for handling and returns the size of response.
+  size_t HandleUsbDeviceRequest(const Urb& urb_request,
+                                const SmartBuffer& data);
+  // Receives `size` amount of response data. The size is determined by the
+  // `HandleUsbDeviceRequest` call.
+  SmartBuffer ReceiveResponseBuffer(size_t size);
 
   // Returns port number on which usb device is listening.
   uint16_t GetPort() const { return connection_->get_port(); }

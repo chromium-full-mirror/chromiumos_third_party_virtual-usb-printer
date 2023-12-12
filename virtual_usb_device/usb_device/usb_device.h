@@ -191,13 +191,13 @@ class UsbDevice {
                            const Urb& usb_request,
                            size_t received) const;
 
-  // Send `UrbReply` message to the socket described by `connection`.
+  // Sends `UrbReply` message to the socket described by `connection`.
   // `usb_request` is used to create the `UrbReply` header and `data`
   // contains the actual URB response data.
-  void SendUsbControlResponse(IConnection* conn,
-                              const Urb& usb_request,
-                              const uint8_t* data,
-                              size_t size) const;
+  void SendUsbResponse(IConnection* conn,
+                       const Urb& usb_request,
+                       const uint8_t* data,
+                       size_t size) const;
 
  private:
   // Determines whether `usb_request` is either a standard or class-specific

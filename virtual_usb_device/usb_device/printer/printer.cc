@@ -61,7 +61,7 @@ void UsbPrinter::HandleRawUsbData(IConnection* conn,
   size_t received = data.size();
   LOG(INFO) << "Received " << received << " bytes";
   // Acknowledge receipt of BULK transfer.
-  SendUsbDataResponse(conn, usb_request, received);
+  SendUsbResponse(conn, usb_request, nullptr, received);
   if (!document_output_path_.empty()) {
     LOG(INFO) << "Recording document...";
     AppendToFile(document_output_path_, data);
@@ -125,7 +125,7 @@ void UsbPrinter::HandleIppUsbData(IConnection* conn, const Urb& usb_request) {
   size_t received = message.size();
   LOG(INFO) << "Received " << received << " bytes";
   // Acknowledge receipt of BULK transfer.
-  SendUsbDataResponse(conn, usb_request, received);
+  SendUsbResponse(conn, usb_request, nullptr, received);
 
   HandleHttpData(usb_request, &message);
 }
@@ -186,7 +186,7 @@ void UsbPrinter::HandleGetStatus(
   constexpr uint16_t status = 0x1;  // Self-powered.
   SmartBuffer response(sizeof(status));
   response.Add(&status, sizeof(status));
-  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbPrinter::HandleUnsupportedRequest(
@@ -197,7 +197,7 @@ void UsbPrinter::HandleUnsupportedRequest(
           << StandardDeviceRequestString(control_request.bRequest) << ": "
           << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
-  SendUsbControlResponse(conn, usb_request, 0, 0);
+  SendUsbResponse(conn, usb_request, nullptr, 0);
 }
 
 void UsbPrinter::HandleGetDeviceId(
@@ -209,7 +209,7 @@ void UsbPrinter::HandleGetDeviceId(
 
   SmartBuffer response(ieee_device_id().size());
   response.Add(ieee_device_id());
-  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 int main(int argc, char* argv[]) {

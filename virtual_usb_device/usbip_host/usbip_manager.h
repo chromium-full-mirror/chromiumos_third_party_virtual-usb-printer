@@ -85,8 +85,13 @@ class UsbIpManager {
 
   // Handles usbip requests after the device is attached.
   // It retrieves the usb command and forward it to the `UsbIpManager`.
-  void HandleUsbCommand(IConnection* conn, const UsbipCmdSubmit& usb_request);
+  void HandleUsbCommandSubmit(IConnection* conn,
+                              const UsbipCmdSubmit& usb_request);
 
+  // Sends ackowledgement of data received by usb device.
+  void SendUsbipDataReceivedAck(IConnection* conn,
+                                const UsbipCmdSubmit& usb_request,
+                                size_t data_size);
   //  Sends a usbip response on socket `sockfd`. The `data` are
   //  response data with size `data_size`.
   void SendUsbipControlResponse(IConnection* conn,

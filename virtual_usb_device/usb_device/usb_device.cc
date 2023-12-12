@@ -233,7 +233,7 @@ void UsbDevice::HandleGetStatus(
   uint16_t status = 0x1;  // Self-powered.
   SmartBuffer response(sizeof(status));
   response.Add(&status, sizeof(status));
-  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetDescriptor(
@@ -289,7 +289,7 @@ void UsbDevice::HandleGetDeviceDescriptor(
     response.Add(dev);
   }
 
-  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetConfigurationDescriptor(
@@ -306,7 +306,7 @@ void UsbDevice::HandleGetConfigurationDescriptor(
   if (control_request.wLength == sizeof(configuration_descriptor())) {
     // Only the configuration descriptor itself has been requested.
     VLOG(1) << "Only configuration descriptor requested";
-    SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+    SendUsbResponse(conn, usb_request, response.data(), response.size());
     return;
   }
 
@@ -333,7 +333,7 @@ void UsbDevice::HandleGetConfigurationDescriptor(
       << "Response length does not match requested number of bytes";
   // After filling the buffer with all of the necessary descriptors we can send
   // a response.
-  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetDeviceQualifierDescriptor(
@@ -346,7 +346,7 @@ void UsbDevice::HandleGetDeviceQualifierDescriptor(
 
   SmartBuffer response(sizeof(qualifier_descriptor()));
   response.Add(qualifier_descriptor());
-  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetStringDescriptor(
@@ -362,7 +362,7 @@ void UsbDevice::HandleGetStringDescriptor(
   CHECK(index < strings.size());
   SmartBuffer response(strings[index][0]);
   response.Add(strings[index].data(), strings[index][0]);
-  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleGetConfiguration(
@@ -378,7 +378,7 @@ void UsbDevice::HandleGetConfiguration(
   SmartBuffer response(sizeof(configuration.bConfigurationValue));
   response.Add(&configuration.bConfigurationValue,
                sizeof(configuration.bConfigurationValue));
-  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleUnsupportedRequest(
@@ -389,7 +389,7 @@ void UsbDevice::HandleUnsupportedRequest(
           << StandardDeviceRequestString(control_request.bRequest) << ": "
           << unsigned{control_request.wValue1} << "["
           << unsigned{control_request.wValue0} << "]";
-  SendUsbControlResponse(conn, usb_request, 0, 0);
+  SendUsbResponse(conn, usb_request, nullptr, 0);
 }
 
 void UsbDevice::HandleGetDeviceId(
@@ -401,7 +401,7 @@ void UsbDevice::HandleGetDeviceId(
 
   SmartBuffer response(ieee_device_id().size());
   response.Add(ieee_device_id());
-  SendUsbControlResponse(conn, usb_request, response.data(), response.size());
+  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbDevice::HandleUsbData(IConnection* conn, const Urb& usb_request) {
@@ -412,7 +412,7 @@ void UsbDevice::HandleBulkInRequest(IConnection* conn, const Urb& usb_request) {
   InterfaceManager* im = GetInterfaceManager(usb_request.ep);
   if (im->QueueEmpty()) {
     LOG(ERROR) << "No queued messages, sending empty response.";
-    SendUsbControlResponse(conn, usb_request, 0, 0);
+    SendUsbResponse(conn, usb_request, nullptr, 0);
     return;
   }
 
@@ -429,8 +429,8 @@ void UsbDevice::HandleBulkInRequest(IConnection* conn, const Urb& usb_request) {
   }
   SmartBuffer response_buffer;
   response_buffer.Add(http_message);
-  SendUsbControlResponse(conn, usb_request, response_buffer.data(),
-                         response_buffer.size());
+  SendUsbResponse(conn, usb_request, response_buffer.data(),
+                  response_buffer.size());
 }
 
 void UsbDevice::SendUsbDataResponse(IConnection* conn,
@@ -439,17 +439,17 @@ void UsbDevice::SendUsbDataResponse(IConnection* conn,
   NOTIMPLEMENTED();
 }
 
-void UsbDevice::SendUsbControlResponse(IConnection* conn,
-                                       const Urb& usb_request,
-                                       const uint8_t* data,
-                                       size_t data_size) const {
+void UsbDevice::SendUsbResponse(IConnection* conn,
+                                const Urb& usb_request,
+                                const uint8_t* data,
+                                size_t data_size) const {
   UrbReply reply;
   reply.devid = usb_request.devid;
   reply.direction = usb_request.direction;
   reply.ep = usb_request.ep;
   reply.actual_size = data_size;
   SmartBuffer buf = PackUrbReply(reply);
-  if (data_size > 0) {
+  if (data && (data_size > 0)) {
     buf.Add(data, data_size);
   }
   LOG(INFO) << __func__ << " "

@@ -44,9 +44,11 @@ void DeviceProxy::Detach() {
   LOG(INFO) << "UsbDevice with port:" << GetPort() << " Detached";
 }
 
-SmartBuffer DeviceProxy::HandleUsbDeviceRequest(const Urb& urb_request) {
+size_t DeviceProxy::HandleUsbDeviceRequest(const Urb& urb_request,
+                                           const SmartBuffer& data) {
   // Send URB to device
   SmartBuffer buf = PackUrb(urb_request);
+  buf.Add(data);
   connection_->Send(buf);
 
   // Process response of URB
@@ -54,7 +56,13 @@ SmartBuffer DeviceProxy::HandleUsbDeviceRequest(const Urb& urb_request) {
   SmartBuffer reply_buf = connection_->Receive(sizeof(result));
   result = UnpackUrbReply(&reply_buf);
 
-  LOG(INFO) << "Rcv size: " << result.actual_size;
+  LOG(INFO) << "Data Rcv size from usb device: " << result.actual_size;
 
-  return connection_->Receive(result.actual_size);
+  return result.actual_size;
+}
+
+SmartBuffer DeviceProxy::ReceiveResponseBuffer(size_t size) {
+  LOG(INFO) << "Data reading from usb device: " << size;
+
+  return connection_->Receive(size);
 }
