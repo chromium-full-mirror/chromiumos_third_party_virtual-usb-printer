@@ -2,10 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef IPP_MANAGER_H__
-#define IPP_MANAGER_H__
+#ifndef VIRTUAL_USB_DEVICE_IPP_MANAGER_H_
+#define VIRTUAL_USB_DEVICE_IPP_MANAGER_H_
 
 #include <vector>
+#include <memory>
+#include <string>
 
 #include <base/files/file_path.h>
 
@@ -16,11 +18,17 @@
 // USB.
 class IppManager {
  public:
+  // Create IppManager after reading ipp attribute contents the
+  // `ipp_attributs_path` config file.
+  static std::unique_ptr<IppManager> Create(
+      const std::string& ipp_attributes_path,
+      const base::FilePath& document_output_path);
   IppManager() = default;
-  IppManager(std::vector<IppAttribute> operation_attributes,
-             std::vector<IppAttribute> printer_attributes,
-             std::vector<IppAttribute> job_attributes,
-             std::vector<IppAttribute> unsupported_attributes,
+  IppManager(std::vector<IppAttribute>& operation_attributes,
+             std::vector<IppAttribute>& printer_attributes,
+             std::vector<IppAttribute>& job_attributes,
+             std::vector<IppAttribute>& unsupported_attributes,
+             std::optional<base::Value> attributes_data_,
              const base::FilePath& document_output_path);
 
   // Returns a standard response based on the operation specified in
@@ -33,11 +41,16 @@ class IppManager {
   static const uint16_t kSuccessStatus;
 
  private:
+  // Handles `IPP_VALIDATE_JOB` ipp operation.
   SmartBuffer HandleValidateJob(const IppHeader& request_header) const;
+  // Handles `IPP_CREATE_JOB` ipp operation.
   SmartBuffer HandleCreateJob(const IppHeader& request_header) const;
+  // Handles `IPP_SEND_DOCUMENT` ipp operation.
   SmartBuffer HandleSendDocument(const IppHeader& request_header,
                                  const SmartBuffer& body) const;
+  // Handles `IPP_GET_JOB_ATTRIBUTES` ipp operation.
   SmartBuffer HandleGetJobAttributes(const IppHeader& request_header) const;
+  // Handles `IPP_GET_PRINTER_ATTRIBUTES` ipp operation.
   SmartBuffer HandleGetPrinterAttributes(const IppHeader& ipp_header) const;
 
   // Constant attributes that will be returned in response to requests from the
@@ -50,7 +63,9 @@ class IppManager {
   // report unsupported attributes if they were requested by the client.
   std::vector<IppAttribute> unsupported_attributes_;
 
+  std::optional<base::Value> attributes_data_;
+
   base::FilePath document_output_path_;
 };
 
-#endif  // IPP_MANAGER_H__
+#endif  // VIRTUAL_USB_DEVICE_IPP_MANAGER_H_

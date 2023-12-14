@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CUPS_CONSTANTS_H__
-#define CUPS_CONSTANTS_H__
+#ifndef VIRTUAL_USB_DEVICE_CUPS_CONSTANTS_H_
+#define VIRTUAL_USB_DEVICE_CUPS_CONSTANTS_H_
 
 #include <iostream>
 #include <type_traits>
@@ -56,4 +56,4 @@ enum class IppTag : uint8_t {
 
 std::ostream& operator<<(std::ostream& os, const IppTag& tag);
 
-#endif  // CUPS_CONSTANTS_H__
+#endif  // VIRTUAL_USB_DEVICE_CUPS_CONSTANTS_H_

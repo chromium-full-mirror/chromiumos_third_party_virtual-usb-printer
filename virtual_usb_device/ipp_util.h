@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef IPP_UTIL_H__
-#define IPP_UTIL_H__
+#ifndef VIRTUAL_USB_DEVICE_IPP_UTIL_H_
+#define VIRTUAL_USB_DEVICE_IPP_UTIL_H_
 
 #include <cstring>
 #include <optional>
@@ -155,4 +155,4 @@ void AddDate(const IppAttribute& attribute, SmartBuffer* buf);
 void AddRange(const IppAttribute& attribute, SmartBuffer* buf);
 void AddResolution(const IppAttribute& attribute, SmartBuffer* buf);
 
-#endif  // IPP_UTIL_H__
+#endif  // VIRTUAL_USB_DEVICE_IPP_UTIL_H_

@@ -8,6 +8,7 @@ pkg_config("target_defaults") {
   pkg_deps = [
     "libbrillo",
     "libchrome",
+    "libipp",
   ]
 }
 
@@ -72,6 +73,12 @@ executable("virtual-printer") {
     "device_descriptors.cc",
     "op_commands.h",
     "op_commands.cc",
+    "ipp_util.h",
+    "ipp_util.cc",
+    "ipp_manager.h",
+    "ipp_manager.cc",
+    "cups_constants.h",
+    "cups_constants.cc",
   ]
   configs += [ ":target_defaults"]
   deps = [

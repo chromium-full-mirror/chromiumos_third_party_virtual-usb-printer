@@ -17,9 +17,9 @@
 
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 #include "virtual-usb-printer/virtual_usb_device/http_util.h"
+#include "virtual-usb-printer/virtual_usb_device/server.h"
 #include "virtual-usb-printer/virtual_usb_device/smart_buffer.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
-#include "virtual-usb-printer/virtual_usb_device/server.h"
 
 // This class is responsible for managing an ippusb interface of a printer. It
 // keeps track of whether or not the interface is currently in the process of
@@ -178,6 +178,9 @@ class UsbDevice {
     return usb_descriptors_.endpoint_descriptors();
   }
 
+  // Returns `InterfaceManager` for specified endpoint.
+  InterfaceManager* GetInterfaceManager(int endpoint);
+
   // Determines whether `usb_request` is either a control or data request and
   // defers to the corresponding function.
   void HandleUsbRequest(IConnection* conn, const Urb& usb_request);
@@ -201,8 +204,8 @@ class UsbDevice {
   // control request and defers to the corresponding function.
   void HandleUsbControl(IConnection* conn, const Urb& usb_request) const;
 
-  // Handles raw usb data.
-  virtual void HandleUsbData(IConnection* conn, const Urb& usb_request) const;
+  // Handles raw or ipp usb data received by usb device.
+  virtual void HandleUsbData(IConnection* conn, const Urb& usb_request);
 
   // Handles usb requests of type=STANDARD_TYPE.
   void HandleStandardControl(IConnection* conn,

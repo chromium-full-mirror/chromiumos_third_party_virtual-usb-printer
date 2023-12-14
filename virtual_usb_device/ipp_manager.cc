@@ -4,22 +4,63 @@
 
 #include "ipp_manager.h"
 
+#include <utility>
+
 #include <base/files/file_util.h>
 #include <base/logging.h>
 #include <base/strings/stringprintf.h>
 #include <chromeos/libipp/ipp_enums.h>
+#include "virtual-usb-printer/virtual_usb_device/value_util.h"
 
 const uint16_t IppManager::kSuccessStatus = 0;
 
-IppManager::IppManager(std::vector<IppAttribute> operation_attributes,
-                       std::vector<IppAttribute> printer_attributes,
-                       std::vector<IppAttribute> job_attributes,
-                       std::vector<IppAttribute> unsupported_attributes,
+std::unique_ptr<IppManager> IppManager::Create(
+    const std::string& ipp_attributes_path,
+    const base::FilePath& document_output_path) {
+  std::optional<std::string> attributes_contents =
+      GetJSONContents(ipp_attributes_path);
+  if (!attributes_contents.has_value()) {
+    LOG(ERROR) << "Failed to load file contents for " << ipp_attributes_path;
+    return nullptr;
+  }
+  // The values inside the `attributes_data_` are referenced as pointer all
+  // the way, so this must exists till this object is alive.
+  std::optional<base::Value> attributes_data =
+      base::JSONReader::Read(*attributes_contents);
+  if (!attributes_data) {
+    LOG(ERROR) << "Failed to parse " << ipp_attributes_path;
+    return nullptr;
+  }
+  if (!attributes_data->is_dict()) {
+    LOG(ERROR) << "Failed to retrieve dictionary value from attributes";
+    return nullptr;
+  }
+
+  std::vector<IppAttribute> operation_attributes =
+      GetAttributes(attributes_data->GetDict(), kOperationAttributes);
+  std::vector<IppAttribute> printer_attributes =
+      GetAttributes(attributes_data->GetDict(), kPrinterAttributes);
+  std::vector<IppAttribute> job_attributes =
+      GetAttributes(attributes_data->GetDict(), kJobAttributes);
+  std::vector<IppAttribute> unsupported_attributes =
+      GetAttributes(attributes_data->GetDict(), kUnsupportedAttributes);
+
+  return std::make_unique<IppManager>(
+      operation_attributes, printer_attributes, job_attributes,
+      unsupported_attributes, std::move(attributes_data), document_output_path);
+}
+
+IppManager::IppManager(std::vector<IppAttribute>& operation_attributes,
+                       std::vector<IppAttribute>& printer_attributes,
+                       std::vector<IppAttribute>& job_attributes,
+                       std::vector<IppAttribute>& unsupported_attributes,
+                       std::optional<base::Value> attributes_data,
                        const base::FilePath& document_output_path)
     : operation_attributes_(operation_attributes),
       printer_attributes_(printer_attributes),
       job_attributes_(job_attributes),
       unsupported_attributes_(unsupported_attributes),
+      attributes_data_(std::move(attributes_data)),
       document_output_path_(document_output_path) {}
 
 SmartBuffer IppManager::HandleIppRequest(const IppHeader& ipp_header,

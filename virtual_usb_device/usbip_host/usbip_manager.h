@@ -10,8 +10,8 @@
 
 #include <base/containers/flat_map.h>
 
-#include "usbip_server.h"
 #include "device_proxy.h"
+#include "usbip_server.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
 
 // This class deals with usbip messages recevied from the user.

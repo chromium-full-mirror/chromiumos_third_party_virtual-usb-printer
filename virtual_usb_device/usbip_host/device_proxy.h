@@ -8,16 +8,16 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <base/notreached.h>
 
+#include "virtual-usb-printer/virtual_usb_device/connection/connection_factory.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
+#include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
-#include "virtual-usb-printer/virtual_usb_device/op_commands.h"
-#include "virtual-usb-printer/virtual_usb_device/connection/connection_factory.h"
 
 // This class act as a proxy for actual usb device similar to
 // dbus proxy classes. It communicates with actual usb device via socket and

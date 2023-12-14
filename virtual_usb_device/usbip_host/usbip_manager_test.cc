@@ -15,8 +15,8 @@
 #include <gtest/gtest.h>
 
 #include "virtual-usb-printer/virtual_usb_device/http_util.h"
-#include "virtual-usb-printer/virtual_usb_device/value_util.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
+#include "virtual-usb-printer/virtual_usb_device/value_util.h"
 
 class UsbIpManagerTest : public testing::Test {
  public:

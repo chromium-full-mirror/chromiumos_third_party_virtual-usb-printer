@@ -72,7 +72,7 @@ void UsbIpManager::HandleBind(IConnection* conn) {
   UpdateDeviceParameter(&device_info.device);
   RegisterDevice(port, device_info);
 
-  // We need to track when device process is dead, so we call `ReceiveBuffer`.
+  // We need to track when device process is dead, so we call `conn->Receive`.
   // This call will block since there is no data to receive but returns when
   // device process is dead.
   SmartBuffer status_buffer = conn->Receive(sizeof(uint16_t));
