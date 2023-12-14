@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <sys/un.h>
 
+#include <algorithm>
+
 #include <base/check_op.h>
 #include <base/logging.h>
 
@@ -39,14 +41,14 @@ SmartBuffer ReceiveBuffer(int sockfd, size_t size) {
   size_t total = 0;
   while (total < size) {
     size_t to_receive = std::min<size_t>(remaining, 512UL);
-    ssize_t received = recv(sockfd, buf.data() + total, to_receive, 0);
+    ssize_t received = recv(sockfd, buf.data(), to_receive, 0);
     if (received == 0 && size != 0) {
-      LOG(ERROR) << "Client has closed connection";
-      return smart_buffer;
+      LOG(INFO) << "Client has closed connection";
+      return SmartBuffer();
     }
-    // Save a received chunk to buf.data().
-    smart_buffer.Add(buf.data(), size);
     size_t received_unsigned = static_cast<size_t>(received);
+    // Save a received chunk.
+    smart_buffer.Add(buf.data(), received_unsigned);
     total += received_unsigned;
     remaining -= received_unsigned;
   }
