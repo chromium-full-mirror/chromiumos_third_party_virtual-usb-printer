@@ -37,7 +37,7 @@ class DeviceProxy {
 
   // Connects with the device server and attaches a connection to this proxy.
   // All requests received on the connection will be handled by this proxy.
-  bool Attach(IConnection* conn);
+  bool Attach(const IConnection* conn);
 
   // Disconnect with the device server and removes the attached connection.
   void Detach();

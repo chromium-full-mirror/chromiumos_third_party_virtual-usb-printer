@@ -18,6 +18,8 @@ executable("virtual-usbip-host") {
     "usbip_host/device_proxy.cc",
     "usbip_host/usbip_manager.h",
     "usbip_host/usbip_manager.cc",
+    "usbip_host/usbip_core.h",
+    "usbip_host/usbip_core.cc",
     "usbip_host/usbip_server.h",
     "usbip_host/usbip_server.cc",
     "usbip_host/main.cc",

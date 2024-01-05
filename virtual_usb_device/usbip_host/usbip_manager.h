@@ -9,16 +9,19 @@
 #include <vector>
 
 #include <base/containers/flat_map.h>
+#include <base/memory/scoped_refptr.h>
+#include <base/threading/thread.h>
+#include <base/task/sequenced_task_runner.h>
 
-#include "device_proxy.h"
-#include "usbip_server.h"
-#include "virtual-usb-printer/virtual_usb_device/usbip.h"
+#include "virtual-usb-printer/virtual_usb_device/server.h"
+#include "usbip_core.h"
 
-// This class deals with usbip messages recevied from the user.
-// It receives usbip messages, filter the usb command and forward them
-// to the registered usb device (which runs on seperate process).
-// It also maintains the list of proxy for each registered usb device
-// which is used to communicate with actual device process.
+// This class manages usbip connections and requests recevied from the user.
+// Each usbip requests is processed in the new `RequestThread`, which is created
+// and managed by `ConnectionThread`. `RequestThreads` are cleaned up once
+// requests are serviced. The usbip command are finally handled in `UsbIpCore`
+// class.
+// This class also owns any connection created by usbip client.
 class UsbIpManager {
  public:
   // Creates object which listens on `port` for usbip messages.
@@ -28,86 +31,76 @@ class UsbIpManager {
   UsbIpManager(const UsbIpManager&) = delete;
   UsbIpManager& operator=(const UsbIpManager&) = delete;
 
-  // Starts the server which listens on port.
+  // Starts the server which listens on usbip port and also launch
+  // ConnectionThread for handling socket connections.
   void Run();
-  // Stops the server.
-  void Stop() { server_->Stop(); }
+  // Stops the server and ConnectionThread.
+  void Stop();
 
   // Loops and process usbip message received on connection.
   void HandleConnection(std::unique_ptr<IConnection> conn);
 
-  // Process OP_REQ_BIND_CMD usbip message by registering the usb device with
-  // `UsbIpManager`.
+  // Posts the task in `UsbIpCore` task runner to handle `OP_REQ_BIND_CMD` usbip
+  // message.
   // Note: OP_REQ_BIND_CMD is custom defined usbip message.
-  void HandleBind(IConnection* conn);
+  void HandleBind(std::unique_ptr<IConnection> conn);
+  // Callback for `HandleBind` which is triggered in `RequestThread`.
+  // `status` notfies about whether HandleBind was successful or not.
+  // `port` is the port on which device is listening.
+  void OnHandleBindInternalDone(std::unique_ptr<IConnection> conn,
+                                uint16_t port,
+                                bool status);
 
-  // Registers the usb device with `UsbIpManager`.
-  // Once this is called, a proxy of actual usb device is created and
-  // only after registeration, device can be attached by the user
-  void RegisterDevice(const uint16_t port, const OpRepDevInfo& device_info);
-  // TODO(santo): Figure out when to deregister.
-  void DeregisterDevice(const uint16_t port);
-  // Disconnects with the attached usb device and is triggered by `usbip detach`
-  // command.
-  void DetachUsbDevice(IConnection* conn);
+  // Posts a task in the `UsbIpCore` task runner to handle `OP_REQ_DEVLIST`
+  // usbip message.
+  void HandleDeviceList(std::unique_ptr<IConnection> conn);
+  // Callback for `HandleDeviceList` which is triggered in `RequestThread`.
+  void OnHandleDeviceListDone(std::unique_ptr<IConnection> conn);
 
-  // Handles OP_REQ_DEVLIST command by responding with the list of exported usb
-  // devices.
-  void HandleDeviceList(IConnection* conn);
-  // Handles OP_REQ_IMPORT command by attaching a usb device for further
-  // communication. Internally, a `DeviceProxy` is used to make tcp connection
-  // to the usb device server. Any subsequent usb messages on that proxy will be
-  // forwarded to attached usb device.
-  // Returns whether usb device is successfully attached or not.
-  bool HandleAttach(IConnection* conn);
-
-  // Handles usb requests after usb device is attached.
-  // Requests could be of following type: control, bulk, ipp, raw usb data.
-  // A true return value means conn to the client should
-  // be kept open after servicing the request.
-  bool HandleUsbRequest(IConnection* conn);
-
-  // Handles following usbip OP requests.
-  // OP_REQ_BIND_CMD : custom defined for registeration.
-  // OP_REQ_DEVLIST_CMD : Lists exported device list.
-  // OP_REQ_IMPORT_CMD : Attach requested device to
-  // receive usb command directly.
-  // A true return value means connection to the client should
-  // be kept open after servicing the request.
-  bool HandleOpRequest(IConnection* conn, bool* attached);
+  // Posts a task in the `UsbIpCore` task runner to handle `OP_REQ_IMPORT` usbip
+  // message.
+  void HandleAttach(std::unique_ptr<IConnection> conn);
+  // Callback for `HandleAttach` which is triggered in `RequestThread`.
+  void OnHandleAttachDone(std::unique_ptr<IConnection> conn, bool status);
 
  private:
   // Responds with the status of OP_REQ_BIND_CMD usbip message.
   void RespondBind(IConnection* conn, bool status);
-  // Reads busid from `sockfd` and returns DeviceProxy index
-  // associated with the busid.
-  int ReadBusId(IConnection* conn);
 
-  // Handles usbip requests after the device is attached.
-  // It retrieves the usb command and forward it to the `UsbIpManager`.
-  void HandleUsbCommandSubmit(IConnection* conn,
-                              const UsbipCmdSubmit& usb_request);
+  // Reads the usbip submit command from connection and post task in `UsbIpCore`
+  // task runner to handle them. Returns false if it fails to read/parse usbip
+  // command.
+  bool HandleUsbRequest(IConnection* conn);
 
-  // Sends ackowledgement of data received by usb device.
-  void SendUsbipDataReceivedAck(IConnection* conn,
-                                const UsbipCmdSubmit& usb_request,
-                                size_t data_size);
-  //  Sends a usbip response on socket `sockfd`. The `data` are
-  //  response data with size `data_size`.
-  void SendUsbipControlResponse(IConnection* conn,
-                                const UsbipCmdSubmit& usb_request,
-                                const uint8_t* data,
-                                size_t data_size);
-  // Updates the busID, usbPath and devnum, so that for each new device it is
-  // unique.
-  void UpdateDeviceParameter(OpRepDevice* device);
+  // Posts task in the `ConnectionThread` for processing.
+  void HandleInConnectionThread(std::unique_ptr<IConnection> conn);
+
+  // Reads connection `conn`, parses usbip commands (BIND, DEVLIST, IMPORT) and
+  // then process it.
+  void HandleUsbIpRequest(std::unique_ptr<IConnection> conn);
+
+  // This runs inside `RequestThread` and posts `CloseConnection` task in
+  // `ConnectionThread` for closing the connection.
+  void DisposeConnection(std::unique_ptr<IConnection> conn);
+
+  // Closes the connection `conn` and removes  thread which was servicing this
+  // connection.
+  void CloseConnection(std::unique_ptr<IConnection> conn);
 
   std::unique_ptr<Server> server_;
 
-  // List of proxy for each registered usb device.
-  std::vector<std::unique_ptr<DeviceProxy>> proxy_list;
+  UsbIpCore core_;
 
-  size_t device_count = 0;
+  // This thread processes each usbip requests in the new thread and manages
+  // their lifetime.
+  std::unique_ptr<base::Thread> connection_thread_;
+  // Map of live connection fd and it's servicing thread.
+  // Entry is removed once connection is closed, thus stopping corresponding
+  // thread.
+  base::flat_map<int, std::unique_ptr<base::Thread>> request_threads_map_;
+  // Task runner where all function of `UsbIpCore` are run in a sequence to
+  // ensure all data access are thread safe.
+  scoped_refptr<base::SequencedTaskRunner> core_task_runner_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_MANAGER_H_

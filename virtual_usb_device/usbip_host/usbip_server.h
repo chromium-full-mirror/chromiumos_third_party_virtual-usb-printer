@@ -5,14 +5,18 @@
 #ifndef VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_SERVER_H_
 #define VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_SERVER_H_
 
+#include <memory>
+
 #include <base/memory/raw_ptr.h>
+#include <base/memory/scoped_refptr.h>
+#include <base/task/task_runner.h>
 
 #include "virtual-usb-printer/virtual_usb_device/server.h"
 
 class UsbIpManager;
 
-// Create a server which listens for USB/IP messages and forward them
-// messages UsbIpManager for further processing.
+// Creates a tcp server that listens for USB/IP messages and forwards them to
+// the `UsbIpManager` for further processing.
 // This class is owned by `UsbIpManager`.
 class UsbIpServer : public Server {
  public:
