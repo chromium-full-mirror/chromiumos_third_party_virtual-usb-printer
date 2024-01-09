@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "jpeg_util.h"
+#include "scan_jpeg_util.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -18,8 +18,6 @@
 
 #include <jerror.h>
 #include <jpeglib.h>
-
-#include "escl_manager.h"
 
 namespace {
 

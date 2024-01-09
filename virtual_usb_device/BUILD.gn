@@ -9,6 +9,8 @@ pkg_config("target_defaults") {
     "libbrillo",
     "libchrome",
     "libipp",
+    "libxml-2.0",
+    "libjpeg",
   ]
 }
 
@@ -53,6 +55,14 @@ executable("virtual-printer") {
   sources = [
     "usb_device/printer/printer.h",
     "usb_device/printer/printer.cc",
+    "usb_device/scanner/scanner.h",
+    "usb_device/scanner/scanner.cc",
+    "usb_device/scanner/escl_manager.h",
+    "usb_device/scanner/escl_manager.cc",
+    "usb_device/scanner/scan_xml_util.h",
+    "usb_device/scanner/scan_xml_util.cc",
+    "usb_device/scanner/scan_jpeg_util.h",
+    "usb_device/scanner/scan_jpeg_util.cc",
     "usb_device/usb_device.h",
     "usb_device/usb_device.cc",
     "usb_device/device_server.h",

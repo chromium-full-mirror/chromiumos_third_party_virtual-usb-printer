@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef JPEG_UTIL_H_
-#define JPEG_UTIL_H_
+#ifndef VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_SCAN_JPEG_UTIL_H_
+#define VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_SCAN_JPEG_UTIL_H_
 
 #include <cstdint>
 #include <optional>
@@ -30,4 +30,4 @@
 std::optional<std::vector<uint8_t>> GenerateJpegFromScanSettings(
     const ScanSettings& settings);
 
-#endif  // JPEG_UTIL_H_
+#endif  // VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_SCAN_JPEG_UTIL_H_

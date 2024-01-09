@@ -16,6 +16,8 @@
 #include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
+class Scanner;
+
 // Represents a single usb printer that can handle basic USB control, raw usb
 // data, printer-specific USB requests and also responds with the result.
 class UsbPrinter : public UsbDevice {
@@ -27,9 +29,11 @@ class UsbPrinter : public UsbDevice {
   // `document_output_path` is where a document is outputted to mimic printing.
   UsbPrinter(const std::string descriptors_path,
              const std::string ipp_attributes_path,
+             const std::string& capabilities_path,
              uint16_t port,
              uint16_t host_port,
-             const base::FilePath& document_output_path);
+             const base::FilePath& document_output_path,
+             base::FilePath log_dir);
 
   // `UsbDevice` interface implementation for usb printer.
   void HandleGetStatus(IConnection* conn,
@@ -76,9 +80,11 @@ class UsbPrinter : public UsbDevice {
 
   // Returns whether this printer supports IPP over USB or not.
   bool IsIppUsbPrinter() const;
+  bool SupportScanner() const { return true; }
 
   // This is always null for non-ipp based printer.
   std::unique_ptr<IppManager> ipp_manager_ = nullptr;
+  std::unique_ptr<Scanner> scanner_ = nullptr;
 
   base::FilePath document_output_path_;
   base::FilePath http_output_dir_;

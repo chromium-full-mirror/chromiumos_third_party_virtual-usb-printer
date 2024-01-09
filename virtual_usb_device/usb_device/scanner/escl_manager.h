@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ESCL_MANAGER_H__
-#define ESCL_MANAGER_H__
+#ifndef VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_ESCL_MANAGER_H_
+#define VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_ESCL_MANAGER_H_
 
 #include <cstdint>
 #include <optional>
@@ -15,7 +15,7 @@
 #include <base/time/time.h>
 #include <base/values.h>
 
-#include "http_util.h"
+#include "virtual-usb-printer/virtual_usb_device/http_util.h"
 
 struct SourceCapabilities {
   std::optional<int> max_width;
@@ -36,9 +36,6 @@ struct ScannerCapabilities {
   SourceCapabilities platen_capabilities;
   std::optional<SourceCapabilities> adf_capabilities;
 };
-
-std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
-    const base::Value::Dict& config);
 
 // A particular region of a document to return in a scan.
 struct ScanRegion {
@@ -154,4 +151,4 @@ class EsclManager {
   int log_counter_;
 };
 
-#endif  // ESCL_MANAGER_H__
+#endif  // VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_ESCL_MANAGER_H_

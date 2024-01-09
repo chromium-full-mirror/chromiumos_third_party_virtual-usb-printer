@@ -17,85 +17,10 @@
 #include <base/threading/platform_thread.h>
 #include <crypto/random.h>
 
-#include "jpeg_util.h"
-#include "xml_util.h"
+#include "scan_jpeg_util.h"
+#include "scan_xml_util.h"
 
 namespace {
-
-std::optional<std::vector<std::string>> ExtractStringList(
-    const base::Value::Dict& root, const std::string& config_name) {
-  const base::Value::List* value = root.FindList(config_name);
-  if (!value) {
-    LOG(ERROR) << "Config is missing " << config_name << " settings";
-    return std::nullopt;
-  }
-  std::vector<std::string> config_list;
-  for (const base::Value& v : *value) {
-    if (!v.is_string()) {
-      LOG(ERROR) << config_name << " value expected string, not " << v.type();
-      return std::nullopt;
-    }
-    config_list.push_back(v.GetString());
-  }
-  return config_list;
-}
-
-std::optional<std::vector<int>> ExtractIntList(const base::Value::Dict& root,
-                                               const std::string& config_name) {
-  const base::Value::List* value = root.FindList(config_name);
-  if (!value) {
-    LOG(ERROR) << "Config is missing " << config_name << " settings";
-    return std::nullopt;
-  }
-  std::vector<int> config_list;
-  for (const base::Value& v : *value) {
-    if (!v.is_int()) {
-      LOG(ERROR) << config_name << " value expected int, not " << v.type();
-      return std::nullopt;
-    }
-    config_list.push_back(v.GetInt());
-  }
-  return config_list;
-}
-
-std::optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
-    const base::Value::Dict& config) {
-  SourceCapabilities result;
-  result.max_width = config.FindInt("MaxWidth");
-  result.max_height = config.FindInt("MaxHeight");
-
-  std::optional<std::vector<std::string>> color_modes =
-      ExtractStringList(config, "ColorModes");
-  if (!color_modes) {
-    LOG(ERROR) << "Could not find valid ColorModes config";
-    return std::nullopt;
-  }
-  result.color_modes = color_modes.value();
-
-  std::optional<std::vector<std::string>> formats =
-      ExtractStringList(config, "DocumentFormats");
-  if (!formats) {
-    LOG(ERROR) << "Could not find valid DocumentFormats config";
-    return std::nullopt;
-  }
-  result.formats = formats.value();
-
-  std::optional<std::vector<int>> resolutions =
-      ExtractIntList(config, "Resolutions");
-  if (!resolutions) {
-    LOG(ERROR) << "Could not find valid Resolutions config";
-    return std::nullopt;
-  }
-  result.resolutions = resolutions.value();
-
-  const std::string* x_justification = config.FindString("XJustification");
-  if (!x_justification)
-    LOG(ERROR) << "Config is missing XJustification setting";
-  result.x_justification =
-      x_justification ? std::make_optional(*x_justification) : std::nullopt;
-
-  return result;
-}
 
 // Generates a hyphenated UUID v4 (random).
 // An example UUID looks like "0b2cdf31-edee-4246-a1ad-07bbe754856b"
@@ -174,51 +99,6 @@ std::optional<base::TimeDelta> GetDelayForJob(const ScanSettings& settings) {
 }
 
 }  // namespace
-
-std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
-    const base::Value::Dict& config) {
-  ScannerCapabilities result;
-  const std::string* make_and_model = config.FindString("MakeAndModel");
-  if (!make_and_model) {
-    LOG(ERROR) << "Config is missing MakeAndModel setting";
-    return std::nullopt;
-  }
-  result.make_and_model = *make_and_model;
-
-  const std::string* serial_number = config.FindString("SerialNumber");
-  if (!serial_number) {
-    LOG(ERROR) << "Config is missing SerialNumber setting";
-    return std::nullopt;
-  }
-  result.serial_number = *serial_number;
-
-  const base::Value::Dict* platen = config.FindDict("Platen");
-  if (!platen) {
-    LOG(ERROR) << "Config is missing Platen source capabilities";
-    return std::nullopt;
-  }
-
-  std::optional<SourceCapabilities> platen_capabilities =
-      CreateSourceCapabilitiesFromConfig(*platen);
-  if (!platen_capabilities) {
-    LOG(ERROR) << "Parsing Platen capabilities failed";
-    return std::nullopt;
-  }
-  result.platen_capabilities = platen_capabilities.value();
-
-  const base::Value::Dict* adf = config.FindDict("ADF");
-  if (adf) {
-    std::optional<SourceCapabilities> adf_capabilities =
-        CreateSourceCapabilitiesFromConfig(*adf);
-    if (!adf_capabilities) {
-      LOG(ERROR) << "Parsing ADF capabilities failed";
-      return std::nullopt;
-    }
-    result.adf_capabilities = adf_capabilities;
-  }
-
-  return result;
-}
 
 EsclManager::EsclManager(ScannerCapabilities scanner_capabilities,
                          const base::FilePath& output_log_dir)

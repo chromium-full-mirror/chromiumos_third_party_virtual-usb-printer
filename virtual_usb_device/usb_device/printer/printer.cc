@@ -6,12 +6,14 @@
 
 #include <vector>
 
+#include <base/files/file_util.h>
 #include <base/strings/string_util.h>
 #include <base/strings/stringprintf.h>
 #include <brillo/flag_helper.h>
 #include <brillo/syslog_logging.h>
 
 #include "virtual-usb-printer/virtual_usb_device/ipp_util.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_device/scanner/scanner.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/value_util.h"
 
@@ -21,9 +23,11 @@
 constexpr char kUsage[] =
     "virtual_usb_printer\n"
     "    --descriptors_path=<path>\n"
+    "    [--record_doc_path=<path>]\n"
+    "    [--attributes_path=<path>]\n"
+    "    [--scanner_capabilities_path=<path>]\n"
     "    --port=<unsigned int>\n"
-    "    --host_port=<unsigned int>\n"
-    "    [--record_doc_path=<path>]";
+    "    --host_port=<unsigned int>";
 
 // Appends `buf` to the file at `path`. If no file exists at `path`, it is
 // created.
@@ -44,14 +48,20 @@ void AppendToFile(base::FilePath path, SmartBuffer buf) {
 
 UsbPrinter::UsbPrinter(const std::string descriptors_path,
                        const std::string ipp_attributes_path,
+                       const std::string& capabilities_path,
                        uint16_t port,
                        uint16_t host_port,
-                       const base::FilePath& document_output_path)
+                       const base::FilePath& document_output_path,
+                       base::FilePath log_dir)
     : UsbDevice(descriptors_path, port, host_port),
       document_output_path_(document_output_path) {
   if (IsIppUsbPrinter() && !ipp_attributes_path.empty()) {
     ipp_manager_ =
         IppManager::Create(ipp_attributes_path, document_output_path_);
+  }
+  if (SupportScanner()) {
+    LOG(INFO) << "Scanning is supported";
+    scanner_ = Scanner::Create(capabilities_path, log_dir);
   }
 }
 
@@ -111,6 +121,9 @@ HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
   if (request.method == "POST" && request.uri == "/ipp/print") {
     if (ipp_manager_)
       return GenerateHttpResponseFromIppManager(body);
+  } else if (base::StartsWith(request.uri, "/eSCL",
+                              base::CompareCase::SENSITIVE)) {
+    return scanner_->HandleEsclRequest(request, *body);
   }
 
   HttpResponse response;
@@ -215,11 +228,15 @@ void UsbPrinter::HandleGetDeviceId(
 int main(int argc, char* argv[]) {
   DEFINE_string(descriptors_path, "", "Path to descriptors JSON file");
   DEFINE_string(attributes_path, "", "Path to ipp attribute JSON file");
+  DEFINE_string(scanner_capabilities_path, "",
+                "Path to eSCL ScannerCapabilities JSON file");
   DEFINE_string(record_doc_path, "", "Path to file to record document to");
   DEFINE_int32(port, DEFAULT_TCP_PRINTER_PORT,
                "Port on which this device listens to");
   DEFINE_int32(host_port, DEFAULT_TCP_HOST_PORT,
                "Usbip host port which this is binded");
+  DEFINE_string(output_log_dir, "",
+                "Path to the directory for writing out log info");
 
   brillo::FlagHelper::Init(argc, argv, "Virtual USB Printer");
 
@@ -231,7 +248,20 @@ int main(int argc, char* argv[]) {
 
   base::FilePath document_output_path(FLAGS_record_doc_path);
 
+  base::FilePath log_dir;
+  if (!FLAGS_output_log_dir.empty()) {
+    base::FilePath output_log_path(FLAGS_output_log_dir);
+    if (!base::DirectoryExists(output_log_path)) {
+      LOG(ERROR) << "Directory doesn't exist.";
+      return 1;
+    }
+    log_dir = output_log_path;
+  } else {
+    log_dir = base::FilePath();
+  }
+
   UsbPrinter usb_printer(FLAGS_descriptors_path, FLAGS_attributes_path,
-                         FLAGS_port, FLAGS_host_port, document_output_path);
+                         FLAGS_scanner_capabilities_path, FLAGS_port,
+                         FLAGS_host_port, document_output_path, log_dir);
   usb_printer.Run();
 }

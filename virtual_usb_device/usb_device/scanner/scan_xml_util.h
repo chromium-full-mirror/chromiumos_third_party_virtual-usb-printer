@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __XML_UTIL_H__
-#define __XML_UTIL_H__
+#ifndef VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_SCAN_XML_UTIL_H_
+#define VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_SCAN_XML_UTIL_H_
 
 #include <stdint.h>
 
@@ -24,4 +24,4 @@ std::vector<uint8_t> ScannerStatusAsXml(const ScannerStatus& status);
 std::optional<ScanSettings> ScanSettingsFromXml(
     const std::vector<uint8_t>& xml);
 
-#endif  // __XML_UTIL_H__
+#endif  // VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_SCAN_XML_UTIL_H_
