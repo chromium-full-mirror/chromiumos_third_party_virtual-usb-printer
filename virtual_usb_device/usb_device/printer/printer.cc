@@ -23,11 +23,11 @@
 constexpr char kUsage[] =
     "virtual_usb_printer\n"
     "    --descriptors_path=<path>\n"
-    "    [--record_doc_path=<path>]\n"
     "    [--attributes_path=<path>]\n"
     "    [--scanner_capabilities_path=<path>]\n"
-    "    --port=<unsigned int>\n"
-    "    --host_port=<unsigned int>";
+    "    [--record_doc_path=<path>]\n"
+    "    --host_port=<unsigned int>\n"
+    "    --port=<unsigned int>";
 
 // Appends `buf` to the file at `path`. If no file exists at `path`, it is
 // created.
@@ -242,7 +242,7 @@ int main(int argc, char* argv[]) {
 
   brillo::InitLog(brillo::kLogToSyslog | brillo::kLogToStderrIfTty);
 
-  if (FLAGS_descriptors_path.empty() || FLAGS_record_doc_path.empty()) {
+  if (FLAGS_descriptors_path.empty()) {
     LOG(FATAL) << kUsage;
   }
 
