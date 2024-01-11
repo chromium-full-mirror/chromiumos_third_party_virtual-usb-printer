@@ -15,6 +15,7 @@
 #include "virtual-usb-printer/virtual_usb_device/ipp_manager.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
+#include "virtual-usb-printer/mock_printer/mock_printer.h"
 
 class Scanner;
 
@@ -30,6 +31,7 @@ class UsbPrinter : public UsbDevice {
   UsbPrinter(const std::string descriptors_path,
              const std::string ipp_attributes_path,
              const std::string& capabilities_path,
+             const std::string& mock_printer_script,
              uint16_t port,
              uint16_t host_port,
              const base::FilePath& document_output_path,
@@ -42,6 +44,8 @@ class UsbPrinter : public UsbDevice {
   void HandleUsbData(IConnection* conn, const Urb& usb_request) override;
 
  private:
+  std::unique_ptr<mock_printer::MockPrinter> CreateMockPrinter(
+      base::StringPiece script_path);
   // Handles printer control specific USB requests.
   void HandleDeviceControl(IConnection* conn,
                            const Urb& usb_request,
@@ -52,7 +56,8 @@ class UsbPrinter : public UsbDevice {
                          const Urb& usb_request,
                          const UsbControlRequest& control_request) const;
 
-  // Used to send an empty response to control requests which are not supported.
+  // Used to send an empty response to control requests which are not
+  // supported.
   void HandleUnsupportedRequest(IConnection* conn,
                                 const Urb& usb_request,
                                 const UsbControlRequest& control_request) const;
@@ -68,7 +73,8 @@ class UsbPrinter : public UsbDevice {
   // Parses http header then aggregates all data chunks to the endpoint
   // interface and generates http response.
   void HandleHttpData(const Urb& usb_request, SmartBuffer* message);
-  // Generates http responses for the printing requests identified by `request`.
+  // Generates http responses for the printing requests identified by
+  // `request`.
   HttpResponse GenerateHttpResponse(const HttpRequest& request,
                                     SmartBuffer* body);
   // Uses `IppManager` to handle the printing operation and returns http
@@ -85,6 +91,8 @@ class UsbPrinter : public UsbDevice {
   // This is always null for non-ipp based printer.
   std::unique_ptr<IppManager> ipp_manager_ = nullptr;
   std::unique_ptr<Scanner> scanner_ = nullptr;
+
+  std::unique_ptr<mock_printer::MockPrinter> mock_printer_;
 
   base::FilePath document_output_path_;
   base::FilePath http_output_dir_;

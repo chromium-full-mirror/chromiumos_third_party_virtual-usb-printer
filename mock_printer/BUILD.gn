@@ -10,7 +10,7 @@ source_set("implementation") {
   sources = [ "mock_printer.cc" ]
 
   # Needed to make the `../:smart_buffer` and `../:http_util` dependencies work.
-  configs += [ "//virtual-usb-printer/virtual_usb_printer:target_defaults" ]
+  configs += [ "//virtual-usb-printer/virtual_usb_device:target_defaults" ]
 
   deps = [
     ":libipp_helper",
@@ -18,8 +18,8 @@ source_set("implementation") {
     ":proto_to_libipp",
     ":test_case_holder",
     ":wrapped_matcher",
-    "//virtual-usb-printer/virtual_usb_printer:http_util",
-    "//virtual-usb-printer/virtual_usb_printer:smart_buffer",
+    "//virtual-usb-printer/virtual_usb_device:http_util",
+    "//virtual-usb-printer/virtual_usb_device:smart_buffer",
   ]
 }
 

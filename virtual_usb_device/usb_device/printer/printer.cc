@@ -17,6 +17,9 @@
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/value_util.h"
 
+#include "virtual-usb-printer/mock_printer/mock_printer.h"
+#include "virtual-usb-printer/mock_printer/parse_textproto.h"
+
 #define DEFAULT_TCP_PRINTER_PORT 3241
 #define DEFAULT_TCP_HOST_PORT 3240
 
@@ -25,6 +28,7 @@ constexpr char kUsage[] =
     "    --descriptors_path=<path>\n"
     "    [--attributes_path=<path>]\n"
     "    [--scanner_capabilities_path=<path>]\n"
+    "    [--mock_printer_script=<path>]\n"
     "    [--record_doc_path=<path>]\n"
     "    --host_port=<unsigned int>\n"
     "    --port=<unsigned int>";
@@ -46,22 +50,53 @@ void AppendToFile(base::FilePath path, SmartBuffer buf) {
   }
 }
 
+// Creates a `MockPrinter` using the `mocking::TestCase` textproto at
+// `script_path`.
+std::unique_ptr<mock_printer::MockPrinter> UsbPrinter::CreateMockPrinter(
+    base::StringPiece script_path) {
+  CHECK(!script_path.empty()) << "BUG: expected nonempty `script_path`";
+
+  std::string textproto;
+  if (!base::ReadFileToString(base::FilePath(script_path), &textproto)) {
+    LOG(ERROR) << "Failed to read textproto " << script_path;
+    return nullptr;
+  }
+
+  std::optional<mocking::TestCase> script =
+      mock_printer::ParseTestCase(textproto);
+  if (!script.has_value()) {
+    LOG(ERROR) << "Failed to parse `mocking::TestCase` from " << script_path;
+    return nullptr;
+  }
+
+  return mock_printer::MockPrinter::Create(script.value());
+}
+
 UsbPrinter::UsbPrinter(const std::string descriptors_path,
                        const std::string ipp_attributes_path,
                        const std::string& capabilities_path,
+                       const std::string& mock_printer_script,
                        uint16_t port,
                        uint16_t host_port,
                        const base::FilePath& document_output_path,
                        base::FilePath log_dir)
     : UsbDevice(descriptors_path, port, host_port),
       document_output_path_(document_output_path) {
+  // IPP manager
   if (IsIppUsbPrinter() && !ipp_attributes_path.empty()) {
     ipp_manager_ =
         IppManager::Create(ipp_attributes_path, document_output_path_);
   }
+
+  // Escl scanner
   if (SupportScanner()) {
     LOG(INFO) << "Scanning is supported";
     scanner_ = Scanner::Create(capabilities_path, log_dir);
+  }
+
+  // Mock printing
+  if (!mock_printer_script.empty()) {
+    mock_printer_ = CreateMockPrinter(mock_printer_script);
   }
 }
 
@@ -119,8 +154,16 @@ HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
                                               SmartBuffer* body) {
   LOG(INFO) << request.request_line;
   if (request.method == "POST" && request.uri == "/ipp/print") {
+    if (mock_printer_) {
+      HttpResponse retval = mock_printer_->GenerateHttpResponse(body);
+      if (!retval.default_response) {
+        return retval;
+      }
+    }
+
     if (ipp_manager_)
       return GenerateHttpResponseFromIppManager(body);
+
   } else if (base::StartsWith(request.uri, "/eSCL",
                               base::CompareCase::SENSITIVE)) {
     return scanner_->HandleEsclRequest(request, *body);
@@ -230,6 +273,8 @@ int main(int argc, char* argv[]) {
   DEFINE_string(attributes_path, "", "Path to ipp attribute JSON file");
   DEFINE_string(scanner_capabilities_path, "",
                 "Path to eSCL ScannerCapabilities JSON file");
+  DEFINE_string(mock_printer_script, "",
+                "Path to `mocking::TestCase` textproto for mock printer");
   DEFINE_string(record_doc_path, "", "Path to file to record document to");
   DEFINE_int32(port, DEFAULT_TCP_PRINTER_PORT,
                "Port on which this device listens to");
@@ -261,7 +306,8 @@ int main(int argc, char* argv[]) {
   }
 
   UsbPrinter usb_printer(FLAGS_descriptors_path, FLAGS_attributes_path,
-                         FLAGS_scanner_capabilities_path, FLAGS_port,
-                         FLAGS_host_port, document_output_path, log_dir);
+                         FLAGS_scanner_capabilities_path,
+                         FLAGS_mock_printer_script, FLAGS_port, FLAGS_host_port,
+                         document_output_path, log_dir);
   usb_printer.Run();
 }
