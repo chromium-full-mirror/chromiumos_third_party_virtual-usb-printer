@@ -57,7 +57,7 @@ class UsbIpCore {
   // Handles usbip submit command after the device is attached.
   // It retrieves the raw usb command, forwards it to the usb device
   // and wait for result of usb operation which is responded back.
-  void HandleUsbCommandSubmit(IConnection* conn,
+  bool HandleUsbCommandSubmit(IConnection* conn,
                               const UsbipCmdSubmit& usb_request);
 
  private:

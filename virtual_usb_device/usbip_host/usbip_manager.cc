@@ -132,42 +132,39 @@ void UsbIpManager::HandleBind(std::unique_ptr<IConnection> conn) {
                      base::Unretained(this), std::move(conn), port));
 }
 
-bool UsbIpManager::HandleUsbRequest(IConnection* conn) {
-  SmartBuffer received = conn->Receive(sizeof(UsbipCmdSubmit));
-  if (received.size() == 0) {
-    // Connection is closed by usbip detach <port> command
-    core_task_runner_->PostTask(FROM_HERE,
-                                base::BindOnce(&UsbIpCore::DetachUsbDevice,
-                                               base::Unretained(&core_), conn));
-    return false;
+void UsbIpManager::HandleUsbRequest(std::unique_ptr<IConnection> conn,
+                                    bool last_status) {
+  // If last command was successful then continue with processing next command.
+  if (last_status) {
+    SmartBuffer received = conn->Receive(sizeof(UsbipCmdSubmit));
+
+    if (received.size() == sizeof(UsbipCmdSubmit)) {
+      UsbipCmdSubmit command = UnpackUsbipCmdSubmit(&received);
+      if (command.header.command == COMMAND_USBIP_CMD_SUBMIT) {
+        PrintUsbipCmdSubmit(command);
+        core_task_runner_->PostTaskAndReplyWithResult(
+            FROM_HERE,
+            base::BindOnce(&UsbIpCore::HandleUsbCommandSubmit,
+                           base::Unretained(&core_), conn.get(), command),
+            base::BindOnce(&UsbIpManager::HandleUsbRequest,
+                           base::Unretained(this), std::move(conn)));
+      } else if (command.header.command == COMMAND_USBIP_CMD_UNLINK) {
+        LOG(INFO) << "Received unlink URB...ignoring";
+      } else {
+        LOG(ERROR) << "Unknown usbip command";
+      }
+      return;
+    } else if (received.size() == 0) {
+      // Connection is closed by usbip detach <port> command
+      core_task_runner_->PostTask(
+          FROM_HERE, base::BindOnce(&UsbIpCore::DetachUsbDevice,
+                                    base::Unretained(&core_), conn.get()));
+      // We can safety disconnect here since above post call only use connection
+      // fd.
+    } else {
+      LOG(ERROR) << "Size of data doesn't match with usbip message";
+    }
   }
-
-  if (received.size() != sizeof(UsbipCmdSubmit))
-    return false;
-
-  UsbipCmdSubmit command = UnpackUsbipCmdSubmit(&received);
-  if (command.header.command == COMMAND_USBIP_CMD_SUBMIT) {
-    PrintUsbipCmdSubmit(command);
-    core_task_runner_->PostTask(
-        FROM_HERE, base::BindOnce(&UsbIpCore::HandleUsbCommandSubmit,
-                                  base::Unretained(&core_), conn, command));
-    return true;
-  }
-
-  if (command.header.command == COMMAND_USBIP_CMD_UNLINK) {
-    LOG(INFO) << "Received unlink URB...ignoring";
-    return true;
-  }
-
-  return false;
-}
-
-void UsbIpManager::OnHandleAttachDone(std::unique_ptr<IConnection> conn,
-                                      bool status) {
-  while (status) {
-    status = HandleUsbRequest(conn.get());
-  }
-
   DisposeConnection(std::move(conn));
 }
 
@@ -176,7 +173,7 @@ void UsbIpManager::HandleAttach(std::unique_ptr<IConnection> conn) {
       FROM_HERE,
       base::BindOnce(&UsbIpCore::HandleAttachInternal, base::Unretained(&core_),
                      conn.get()),
-      base::BindOnce(&UsbIpManager::OnHandleAttachDone, base::Unretained(this),
+      base::BindOnce(&UsbIpManager::HandleUsbRequest, base::Unretained(this),
                      std::move(conn)));
 }
 

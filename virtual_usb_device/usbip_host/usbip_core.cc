@@ -143,7 +143,7 @@ void UsbIpCore::HandleDeviceListInternal(IConnection* conn) {
   conn->Send(packed_devlist);
 }
 
-void UsbIpCore::HandleUsbCommandSubmit(IConnection* conn,
+bool UsbIpCore::HandleUsbCommandSubmit(IConnection* conn,
                                        const UsbipCmdSubmit& usb_request) {
   for (auto& proxy : proxy_list) {
     if (proxy->GetAttachedSocket() == conn->FD()) {
@@ -171,8 +171,10 @@ void UsbIpCore::HandleUsbCommandSubmit(IConnection* conn,
         // Acknowlewdge that usb device have received data.
         SendUsbipDataReceivedAck(conn, usb_request, response_buffer_length);
       }
+      return true;
     }
   }
+  return false;
 }
 
 void UsbIpCore::SendUsbipDataReceivedAck(IConnection* conn,

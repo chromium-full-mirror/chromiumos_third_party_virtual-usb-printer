@@ -60,17 +60,19 @@ class UsbIpManager {
   // Posts a task in the `UsbIpCore` task runner to handle `OP_REQ_IMPORT` usbip
   // message.
   void HandleAttach(std::unique_ptr<IConnection> conn);
-  // Callback for `HandleAttach` which is triggered in `RequestThread`.
-  void OnHandleAttachDone(std::unique_ptr<IConnection> conn, bool status);
 
  private:
   // Responds with the status of OP_REQ_BIND_CMD usbip message.
   void RespondBind(IConnection* conn, bool status);
 
   // Reads the usbip submit command from connection and post task in `UsbIpCore`
-  // task runner to handle them. Returns false if it fails to read/parse usbip
-  // command.
-  bool HandleUsbRequest(IConnection* conn);
+  // task runner for handling.
+  // This function is also used as a callback for task posted on `UsbIpCore`
+  // thread and on the callback next usbip command is processed. This ensures
+  // that all the commands on a specific connection are handled in the
+  // serialized manner, even if multiple threads are involved. `last_status`
+  // tells whether previous call to this function was success or not.
+  void HandleUsbRequest(std::unique_ptr<IConnection> conn, bool last_status);
 
   // Posts task in the `ConnectionThread` for processing.
   void HandleInConnectionThread(std::unique_ptr<IConnection> conn);
