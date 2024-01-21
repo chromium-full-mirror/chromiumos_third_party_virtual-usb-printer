@@ -35,6 +35,7 @@ class UsbPrinter : public UsbDevice {
              uint16_t port,
              uint16_t host_port,
              const base::FilePath& document_output_path,
+             const base::FilePath& http_output_dir,
              base::FilePath log_dir);
 
   // `UsbDevice` interface implementation for usb printer.
@@ -83,6 +84,10 @@ class UsbPrinter : public UsbDevice {
   // Queues http responses to the endpoint interface.
   // Responses are sent back to the user when requested via bulk request.
   void QueueHttpResponse(const Urb& usb_request, const HttpResponse& response);
+
+  // If desired (by a non-empty http_output_dir_), this will create a file and
+  // log the HTTP info to this file.
+  void LogHttpHeaders(const HttpRequest& request);
 
   // Returns whether this printer supports IPP over USB or not.
   bool IsIppUsbPrinter() const;

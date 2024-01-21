@@ -30,6 +30,7 @@ constexpr char kUsage[] =
     "    [--scanner_capabilities_path=<path>]\n"
     "    [--mock_printer_script=<path>]\n"
     "    [--record_doc_path=<path>]\n"
+    "    [--http_header_output_dir=<path>]\n"
     "    --host_port=<unsigned int>\n"
     "    --port=<unsigned int>";
 
@@ -79,9 +80,11 @@ UsbPrinter::UsbPrinter(const std::string descriptors_path,
                        uint16_t port,
                        uint16_t host_port,
                        const base::FilePath& document_output_path,
+                       const base::FilePath& http_output_dir,
                        base::FilePath log_dir)
     : UsbDevice(descriptors_path, port, host_port),
-      document_output_path_(document_output_path) {
+      document_output_path_(document_output_path),
+      http_output_dir_(http_output_dir) {
   // IPP manager
   if (IsIppUsbPrinter() && !ipp_attributes_path.empty()) {
     ipp_manager_ =
@@ -209,7 +212,7 @@ void UsbPrinter::HandleHttpData(const Urb& usb_request, SmartBuffer* message) {
     return;
   }
 
-  // TODO(santo): LogHttpHeaders(im->request_header());
+  LogHttpHeaders(im->request_header());
   HttpResponse response =
       GenerateHttpResponse(im->request_header(), &payload.value());
   QueueHttpResponse(usb_request, response);
@@ -268,6 +271,42 @@ void UsbPrinter::HandleGetDeviceId(
   SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
+void UsbPrinter::LogHttpHeaders(const HttpRequest& request) {
+  if (http_output_dir_.empty()) {
+    return;
+  }
+
+  static int counter = 0;
+  const std::string filename =
+      base::StringPrintf("http-header-%04d.txt", ++counter);
+  const base::FilePath filePath = http_output_dir_.Append(filename);
+  base::File file(filePath,
+                  base::File::FLAG_OPEN_ALWAYS | base::File::FLAG_WRITE);
+  if (!file.IsValid()) {
+    LOG(ERROR) << "Failed to open/create file at " << filePath;
+    return;
+  }
+
+  const std::string msg =
+      base::StringPrintf("%s\n", request.request_line.c_str());
+  const int written = file.WriteAtCurrentPos(msg.c_str(), msg.length());
+  if (written != msg.length()) {
+    PLOG(ERROR) << "Failed to write HTTP request line to file at " << filePath;
+    return;
+  }
+
+  const HttpHeaders& headers = request.headers;
+  for (auto it = headers.begin(); it != headers.end(); ++it) {
+    const std::string msg =
+        base::StringPrintf("%s: %s\n", it->first.c_str(), it->second.c_str());
+    const int written = file.WriteAtCurrentPos(msg.c_str(), msg.length());
+    if (written != msg.length()) {
+      PLOG(ERROR) << "Failed to write http headers to file at " << filePath;
+      return;
+    }
+  }
+}
+
 int main(int argc, char* argv[]) {
   DEFINE_string(descriptors_path, "", "Path to descriptors JSON file");
   DEFINE_string(attributes_path, "", "Path to ipp attribute JSON file");
@@ -276,6 +315,8 @@ int main(int argc, char* argv[]) {
   DEFINE_string(mock_printer_script, "",
                 "Path to `mocking::TestCase` textproto for mock printer");
   DEFINE_string(record_doc_path, "", "Path to file to record document to");
+  DEFINE_string(http_header_output_dir, "",
+                "Path to the directory for writing out http header info");
   DEFINE_int32(port, DEFAULT_TCP_PRINTER_PORT,
                "Port on which this device listens to");
   DEFINE_int32(host_port, DEFAULT_TCP_HOST_PORT,
@@ -289,6 +330,7 @@ int main(int argc, char* argv[]) {
 
   if (FLAGS_descriptors_path.empty()) {
     LOG(FATAL) << kUsage;
+    return 1;
   }
 
   base::FilePath document_output_path(FLAGS_record_doc_path);
@@ -297,7 +339,7 @@ int main(int argc, char* argv[]) {
   if (!FLAGS_output_log_dir.empty()) {
     base::FilePath output_log_path(FLAGS_output_log_dir);
     if (!base::DirectoryExists(output_log_path)) {
-      LOG(ERROR) << "Directory doesn't exist.";
+      LOG(FATAL) << "Directory doesn't exist.";
       return 1;
     }
     log_dir = output_log_path;
@@ -305,9 +347,19 @@ int main(int argc, char* argv[]) {
     log_dir = base::FilePath();
   }
 
+  base::FilePath http_log_dir;
+  if (!FLAGS_http_header_output_dir.empty()) {
+    base::FilePath http_output_log_path(FLAGS_http_header_output_dir);
+    if (!base::DirectoryExists(http_output_log_path)) {
+      LOG(FATAL) << "Directory doesn't exist: " << http_output_log_path;
+      return 1;
+    }
+    http_log_dir = http_output_log_path;
+  }
+
   UsbPrinter usb_printer(FLAGS_descriptors_path, FLAGS_attributes_path,
                          FLAGS_scanner_capabilities_path,
                          FLAGS_mock_printer_script, FLAGS_port, FLAGS_host_port,
-                         document_output_path, log_dir);
+                         document_output_path, http_log_dir, log_dir);
   usb_printer.Run();
 }
