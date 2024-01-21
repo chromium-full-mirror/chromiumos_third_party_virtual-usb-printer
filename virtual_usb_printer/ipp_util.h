@@ -13,8 +13,8 @@
 #include <base/values.h>
 
 #include "cups_constants.h"
-#include "smart_buffer.h"
 #include "usbip_constants.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // The JSON keys we expect to see in an IPP attribute object.
 constexpr char kTypeKey[] = "type";

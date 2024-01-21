@@ -15,7 +15,7 @@
 
 #include "device_descriptors.h"
 #include "usbip_constants.h"
-#include "value_util.h"
+#include "virtual_usb_printer/common/value_util.h"
 
 namespace {
 

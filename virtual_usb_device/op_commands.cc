@@ -10,7 +10,7 @@
 
 #include <base/logging.h>
 
-#include "smart_buffer.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "usbip_constants.h"
 
 // These are constants used to describe the exported device. They are used to

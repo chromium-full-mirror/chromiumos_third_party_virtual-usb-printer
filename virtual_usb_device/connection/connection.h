@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef VIRTUAL_USB_DEVICE_CONNECTION_H_
-#define VIRTUAL_USB_DEVICE_CONNECTION_H_
+#ifndef VIRTUAL_USB_DEVICE_CONNECTION_CONNECTION_H_
+#define VIRTUAL_USB_DEVICE_CONNECTION_CONNECTION_H_
 
 #include <memory>
 #include <cstdint>
 
-#include "../smart_buffer.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // Connection interface - both server and client connections
 // implement this interface.
@@ -51,4 +51,4 @@ class IServerConnection {
   virtual std::unique_ptr<IConnection> Accept() = 0;
 };
 
-#endif  // VIRTUAL_USB_DEVICE_CONNECTION_H_
+#endif  // VIRTUAL_USB_DEVICE_CONNECTION_CONNECTION_H_

@@ -15,7 +15,7 @@
 #include "virtual-usb-printer/virtual_usb_device/usb_device/device_server.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
-#include "virtual-usb-printer/virtual_usb_device/value_util.h"
+#include "virtual-usb-printer/common/value_util.h"
 
 void InterfaceManager::QueueMessage(const SmartBuffer& message) {
   queue_.push(message);

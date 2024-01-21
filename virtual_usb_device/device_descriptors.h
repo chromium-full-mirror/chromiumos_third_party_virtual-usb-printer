@@ -8,7 +8,7 @@
 #include <cstdint>
 
 #include "usbip_constants.h"
-#include "smart_buffer.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // USB Descriptors implemented according to:
 // Universal Serial Bus Specification Revision 2.0

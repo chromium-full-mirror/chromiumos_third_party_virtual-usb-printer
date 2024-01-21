@@ -8,8 +8,8 @@
 #include <memory>
 
 #include "mock_printer/proto/control_flow.pb.h"
-#include "virtual-usb-printer/virtual_usb_device/http_util.h"
-#include "virtual-usb-printer/virtual_usb_device/smart_buffer.h"
+#include "virtual-usb-printer/common/http_util.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 namespace mock_printer {
 

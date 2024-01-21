@@ -15,7 +15,7 @@
 #include "virtual-usb-printer/virtual_usb_device/ipp_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/scanner/scanner.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
-#include "virtual-usb-printer/virtual_usb_device/value_util.h"
+#include "virtual-usb-printer/common/value_util.h"
 
 #include "virtual-usb-printer/mock_printer/mock_printer.h"
 #include "virtual-usb-printer/mock_printer/parse_textproto.h"

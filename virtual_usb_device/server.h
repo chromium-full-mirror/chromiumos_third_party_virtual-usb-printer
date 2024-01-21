@@ -8,10 +8,12 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include <memory>
+
 #include <base/files/scoped_file.h>
 
 #include "connection/connection_factory.h"
-#include "smart_buffer.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // Generic TCP/IP server.
 // TODO(santo): Move socket related code in seperate class

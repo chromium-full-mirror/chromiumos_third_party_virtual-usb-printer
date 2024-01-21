@@ -10,7 +10,7 @@
 #include <base/files/file_path.h>
 
 #include "ipp_util.h"
-#include "smart_buffer.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // This class is responsible for generating responses to IPP requests sent over
 // USB.

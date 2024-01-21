@@ -16,6 +16,7 @@ pkg_config("target_defaults") {
 
 executable("virtual-usb-printer") {
   sources = [
+    "../common/value_util.cc",
     "cups_constants.cc",
     "device_descriptors.cc",
     "escl_manager.cc",
@@ -27,31 +28,17 @@ executable("virtual-usb-printer") {
     "server.cc",
     "usb_printer.cc",
     "usbip.cc",
-    "value_util.cc",
     "virtual_usb_printer.cc",
     "xml_util.cc",
   ]
   configs += [ ":target_defaults" ]
   deps = [
-    ":http_util",
-    ":smart_buffer",
+    "//virtual-usb-printer/common:http_util",
+    "//virtual-usb-printer/common:smart_buffer",
     "//virtual-usb-printer/mock_printer:implementation",
     "//virtual-usb-printer/mock_printer:mocking_protos",
     "//virtual-usb-printer/mock_printer:parse_textproto",
   ]
-}
-
-source_set("http_util") {
-  public = [ "http_util.h" ]
-  sources = [ "http_util.cc" ]
-  configs += [ ":target_defaults" ]
-  deps = [ ":smart_buffer" ]
-}
-
-source_set("smart_buffer") {
-  public = [ "smart_buffer.h" ]
-  sources = [ "smart_buffer.cc" ]
-  configs += [ ":target_defaults" ]
 }
 
 if (use.test) {
@@ -73,26 +60,7 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
-      ":smart_buffer",
-      "//common-mk/testrunner",
-    ]
-  }
-
-  executable("http-util-testrunner") {
-    sources = [
-      "http_util_test.cc",
-      "value_util.cc",
-    ]
-
-    # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
-    deps = [
-      ":http_util",
-      ":smart_buffer",
+      "//virtual-usb-printer/common:smart_buffer",
       "//common-mk/testrunner",
     ]
   }
@@ -109,7 +77,7 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
-      ":smart_buffer",
+      "//virtual-usb-printer/common:smart_buffer",
       "//common-mk/testrunner",
     ]
   }
@@ -119,7 +87,7 @@ if (use.test) {
       "cups_constants.cc",
       "ipp_util.cc",
       "ipp_util_test.cc",
-      "value_util.cc",
+      "../common/value_util.cc",
     ]
 
     # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
@@ -129,8 +97,8 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
-      ":http_util",
-      ":smart_buffer",
+      "//virtual-usb-printer/common:http_util",
+      "//virtual-usb-printer/common:smart_buffer",
       "//common-mk/testrunner",
     ]
   }
@@ -148,28 +116,12 @@ if (use.test) {
     deps = [ "//common-mk/testrunner" ]
   }
 
-  executable("smart-buffer-testrunner") {
-    sources = [
-      "smart_buffer_test.cc",
-      "value_util.cc",
-    ]
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
-    deps = [
-      ":smart_buffer",
-      "//common-mk/testrunner",
-    ]
-  }
-
   executable("load-config-testrunner") {
     sources = [
       "device_descriptors.cc",
       "load_config.cc",
       "load_config_test.cc",
-      "value_util.cc",
+      "../common/value_util.cc",
     ]
     configs += [
       "//common-mk:test",
@@ -191,7 +143,7 @@ if (use.test) {
       "usb_printer.cc",
       "usb_printer_test.cc",
       "usbip.cc",
-      "value_util.cc",
+      "../common/value_util.cc",
       "xml_util.cc",
     ]
     configs += [
@@ -200,8 +152,8 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
-      ":http_util",
-      ":smart_buffer",
+      "//virtual-usb-printer/common:http_util",
+      "//virtual-usb-printer/common:smart_buffer",
       "//common-mk/testrunner",
       "//virtual-usb-printer/mock_printer:implementation",
       "//virtual-usb-printer/mock_printer:mocking_protos",

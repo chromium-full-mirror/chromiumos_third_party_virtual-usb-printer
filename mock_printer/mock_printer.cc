@@ -22,8 +22,8 @@
 #include "proto_to_http.h"
 #include "proto_to_libipp.h"
 #include "test_case_holder.h"
-#include "virtual-usb-printer/virtual_usb_device/smart_buffer.h"
 #include "wrapped_matcher.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 namespace mock_printer {
 

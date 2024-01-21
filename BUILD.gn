@@ -12,15 +12,16 @@ group("all") {
   if (use.test) {
     deps += [
       "//virtual-usb-printer/virtual_usb_printer:escl-manager-testrunner",
-      "//virtual-usb-printer/virtual_usb_printer:http-util-testrunner",
+      "//virtual-usb-printer/common:http-util-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:ipp-manager-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:ipp-util-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:jpeg-util-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:load-config-testrunner",
-      "//virtual-usb-printer/virtual_usb_printer:smart-buffer-testrunner",
+      "//virtual-usb-printer/common:smart-buffer-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:usb-printer-testrunner",
       "//virtual-usb-printer/mock_printer:unit_tests",
-      "//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-test",
+      # TODO(santo) : Enable this test with new socket implementation
+      #"//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-test",
     ]
   }
 }

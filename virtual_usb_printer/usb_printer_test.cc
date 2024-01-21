@@ -3,9 +3,9 @@
 // found in the LICENSE file.
 
 #include "usb_printer.h"
-#include "http_util.h"
-#include "value_util.h"
+#include "virtual-usb-printer/common/value_util.h"
 #include "../mock_printer/parse_textproto.h"
+#include "virtual-usb-printer/common/http_util.h"
 
 #include <optional>
 #include <string>

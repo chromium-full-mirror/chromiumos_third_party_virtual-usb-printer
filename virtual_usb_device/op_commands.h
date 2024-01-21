@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "device_descriptors.h"
-#include "smart_buffer.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "usbip_constants.h"
 
 constexpr uint16_t kUsbipVersion = 0x0111;  // usbip version in BCD.

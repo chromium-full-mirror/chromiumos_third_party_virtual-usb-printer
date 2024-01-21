@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef VIRTUAL_USB_DEVICE_HTTP_UTIL_H_
-#define VIRTUAL_USB_DEVICE_HTTP_UTIL_H_
+#ifndef COMMON_HTTP_UTIL_H_
+#define COMMON_HTTP_UTIL_H_
 
 #include <optional>
 #include <string>
@@ -71,4 +71,4 @@ SmartBuffer ExtractIppMessage(SmartBuffer* message);
 // document file.
 SmartBuffer MergeDocument(SmartBuffer* message);
 
-#endif  // VIRTUAL_USB_DEVICE_HTTP_UTIL_H_
+#endif  // COMMON_HTTP_UTIL_H_

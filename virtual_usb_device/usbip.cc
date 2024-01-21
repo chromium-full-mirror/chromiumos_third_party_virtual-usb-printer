@@ -7,15 +7,15 @@
 #include <cinttypes>
 #include <arpa/inet.h>
 
-#include "device_descriptors.h"
-#include "server.h"
-#include "smart_buffer.h"
-#include "usbip_constants.h"
-#include "usb_util.h"
-
 #include <base/check.h>
 #include <base/logging.h>
 #include <base/strings/stringprintf.h>
+
+#include "device_descriptors.h"
+#include "server.h"
+#include "usbip_constants.h"
+#include "usb_util.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply) {
   SmartBuffer serialized;

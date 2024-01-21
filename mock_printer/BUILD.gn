@@ -18,8 +18,8 @@ source_set("implementation") {
     ":proto_to_libipp",
     ":test_case_holder",
     ":wrapped_matcher",
-    "//virtual-usb-printer/virtual_usb_device:http_util",
-    "//virtual-usb-printer/virtual_usb_device:smart_buffer",
+    "//virtual-usb-printer/common:http_util",
+    "//virtual-usb-printer/common:smart_buffer",
   ]
 }
 

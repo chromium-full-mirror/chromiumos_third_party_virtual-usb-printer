@@ -26,7 +26,7 @@
 #include "ipp_util.h"
 #include "server.h"
 #include "usbip_constants.h"
-#include "value_util.h"
+#include "virtual-usb-printer/common/value_util.h"
 #include "load_config.h"
 
 namespace {

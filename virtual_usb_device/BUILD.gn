@@ -39,15 +39,15 @@ executable("virtual-usbip-host") {
     "usb_util.cc",
     "load_config.h",
     "load_config.cc",
-    "value_util.h",
-    "value_util.h",
+    "../common/value_util.h",
+    "../common/value_util.cc",
     "device_descriptors.h",
     "device_descriptors.cc",
   ]
   configs += [ ":target_defaults"]
   deps = [
-    ":http_util",
-    ":smart_buffer",
+    "//virtual-usb-printer/common:http_util",
+    "//virtual-usb-printer/common:smart_buffer",
   ]
 }
 
@@ -77,8 +77,8 @@ executable("virtual-printer") {
     "connection/socket_connection.cc",
     "connection/connection_factory.h",
     "connection/connection_factory.cc",
-    "value_util.h",
-    "value_util.cc",
+    "../common/value_util.h",
+    "../common/value_util.cc",
     "load_config.h",
     "load_config.cc",
     "device_descriptors.h",
@@ -94,25 +94,12 @@ executable("virtual-printer") {
   ]
   configs += [ ":target_defaults"]
   deps = [
-    ":http_util",
-    ":smart_buffer",
+    "//virtual-usb-printer/common:http_util",
+    "//virtual-usb-printer/common:smart_buffer",
     "//virtual-usb-printer/mock_printer:implementation",
     "//virtual-usb-printer/mock_printer:mocking_protos",
     "//virtual-usb-printer/mock_printer:parse_textproto",
   ]
-}
-
-source_set("http_util") {
-  public = [ "http_util.h" ]
-  sources = [ "http_util.cc" ]
-  configs += [ ":target_defaults" ]
-  deps = [ ":smart_buffer" ]
-}
-
-source_set("smart_buffer") {
-  public = [ "smart_buffer.h" ]
-  sources = [ "smart_buffer.cc" ]
-  configs += [ ":target_defaults" ]
 }
 
 if (use.test) {
@@ -142,7 +129,7 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
-      ":smart_buffer",
+      "//virtual-usb-printer//common:smart_buffer",
       "//common-mk/testrunner",
     ]
   }

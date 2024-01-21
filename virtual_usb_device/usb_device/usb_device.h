@@ -16,9 +16,9 @@
 #include <base/containers/flat_map.h>
 
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
-#include "virtual-usb-printer/virtual_usb_device/http_util.h"
+#include "virtual-usb-printer/common/http_util.h"
 #include "virtual-usb-printer/virtual_usb_device/server.h"
-#include "virtual-usb-printer/virtual_usb_device/smart_buffer.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
 // This class is responsible for managing an ippusb interface of a printer. It

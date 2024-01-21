@@ -10,7 +10,7 @@
 #include <base/logging.h>
 #include <base/strings/stringprintf.h>
 #include <chromeos/libipp/ipp_enums.h>
-#include "virtual-usb-printer/virtual_usb_device/value_util.h"
+#include "virtual-usb-printer/common/value_util.h"
 
 const uint16_t IppManager::kSuccessStatus = 0;
 

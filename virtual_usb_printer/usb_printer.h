@@ -17,11 +17,11 @@
 
 #include "device_descriptors.h"
 #include "escl_manager.h"
-#include "http_util.h"
 #include "ipp_manager.h"
 #include "../mock_printer/mock_printer.h"
-#include "smart_buffer.h"
 #include "usbip.h"
+#include "virtual-usb-printer/common/http_util.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // This class is responsible for managing an ippusb interface of a printer. It
 // keeps track of whether or not the interface is currently in the process of

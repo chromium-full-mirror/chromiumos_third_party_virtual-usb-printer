@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef VIRTUAL_USB_DEVICE_SMART_BUFFER_H_
-#define VIRTUAL_USB_DEVICE_SMART_BUFFER_H_
+#ifndef COMMON_SMART_BUFFER_H_
+#define COMMON_SMART_BUFFER_H_
 
 #include <memory>
 #include <string>
@@ -97,4 +97,4 @@ void SmartBuffer::Add(const std::vector<T>& v) {
   Add(v.data(), byte_size);
 }
 
-#endif  // VIRTUAL_USB_DEVICE_SMART_BUFFER_H_
+#endif  // COMMON_SMART_BUFFER_H_

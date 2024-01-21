@@ -15,7 +15,7 @@
 #include <base/time/time.h>
 #include <base/values.h>
 
-#include "http_util.h"
+#include "virtual-usb-printer/common/http_util.h"
 
 struct SourceCapabilities {
   std::optional<int> max_width;

@@ -14,7 +14,7 @@
 #include <base/check_op.h>
 
 #include "usbip_constants.h"
-#include "smart_buffer.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // Bitmask constants used for extracting individual values out of
 // UsbControlRequest which is packed inside of a uint64_t.

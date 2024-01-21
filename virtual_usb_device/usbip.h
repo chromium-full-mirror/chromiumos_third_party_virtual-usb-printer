@@ -23,8 +23,8 @@
 #include <vector>
 
 #include "device_descriptors.h"
-#include "smart_buffer.h"
 #include "usbip_constants.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // Common USBIP header used in both requests and responses.
 struct UsbipHeaderBasic {

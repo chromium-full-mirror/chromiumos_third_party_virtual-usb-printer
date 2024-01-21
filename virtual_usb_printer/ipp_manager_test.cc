@@ -12,8 +12,8 @@
 #include <gtest/gtest.h>
 
 #include "ipp_util.h"
-#include "smart_buffer.h"
 #include "usbip_constants.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 class IppManagerTest : public testing::Test {
  protected:

@@ -10,7 +10,7 @@
 #include <base/files/scoped_file.h>
 
 #include "usb_printer.h"
-#include "smart_buffer.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 void SendBuffer(int sockfd, const SmartBuffer& smart_buffer);
 SmartBuffer ReceiveBuffer(int sockfd, size_t size);

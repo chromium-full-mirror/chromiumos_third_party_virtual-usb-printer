@@ -15,9 +15,9 @@
 #include <base/check_op.h>
 #include <base/values.h>
 
-#include "http_util.h"
-#include "smart_buffer.h"
 #include "usbip_constants.h"
+#include "virtual-usb-printer/common/http_util.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 namespace {
 
