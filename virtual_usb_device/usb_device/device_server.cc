@@ -27,6 +27,10 @@ void DeviceServer::OnServerStarted() {
   if (!RegisterToHost()) {
     LOG(ERROR) << "Failed to register with UsbIpHost";
     exit(1);
+  } else {
+    // This log is used by external enitity to know that usb device is ready to
+    // process command. Currently used by `virtual-usb-printer.sh`
+    printf("USBDevice::READY\n");
   }
 }
 

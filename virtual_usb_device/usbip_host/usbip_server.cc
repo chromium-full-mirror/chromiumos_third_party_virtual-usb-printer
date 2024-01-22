@@ -19,3 +19,7 @@ UsbIpServer::UsbIpServer(UsbIpManager* manager, int port)
 void UsbIpServer::HandleConnection(std::unique_ptr<IConnection> conn) {
   manager_->HandleConnection(std::move(conn));
 }
+
+void UsbIpServer::OnServerStarted() {
+  printf("USBIPHost::READY\n");
+}

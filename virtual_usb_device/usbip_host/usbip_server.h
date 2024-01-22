@@ -25,6 +25,10 @@ class UsbIpServer : public Server {
   // Process each incoming usbip message on a new thread.
   void HandleConnection(std::unique_ptr<IConnection> conn) final;
 
+  // Emits message "USBIPHost:READY", so that external entity could know usbip
+  // host is ready to process usbip messages.
+  void OnServerStarted() final;
+
  private:
   raw_ptr<UsbIpManager> manager_;
 };
