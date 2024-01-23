@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef VALUE_UTIL_H__
-#define VALUE_UTIL_H__
+#ifndef VIRTUAL_USB_PRINTER_VALUE_UTIL_H_
+#define VIRTUAL_USB_PRINTER_VALUE_UTIL_H_
 
 #include <memory>
 #include <optional>
@@ -20,4 +20,4 @@ std::optional<std::string> GetJSONContents(const std::string& file_path);
 // underlying Value object.
 std::optional<base::Value> GetJSONValue(const std::string& json_contents);
 
-#endif  // VALUE_UTIL_H__
+#endif  // VIRTUAL_USB_PRINTER_VALUE_UTIL_H_

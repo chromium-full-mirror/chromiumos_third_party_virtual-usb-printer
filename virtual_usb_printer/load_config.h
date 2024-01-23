@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LOAD_CONFIG_H__
-#define LOAD_CONFIG_H__
+#ifndef VIRTUAL_USB_PRINTER_LOAD_CONFIG_H_
+#define VIRTUAL_USB_PRINTER_LOAD_CONFIG_H_
 
 #include <map>
 #include <vector>
@@ -66,4 +66,4 @@ std::vector<std::vector<char>> GetStringDescriptors(
 // Extracts the IEEE Device ID from the given |printer| config JSON.
 std::vector<char> GetIEEEDeviceId(const base::Value::Dict& printer);
 
-#endif  // LOAD_CONFIG_H__
+#endif  // VIRTUAL_USB_PRINTER_LOAD_CONFIG_H_

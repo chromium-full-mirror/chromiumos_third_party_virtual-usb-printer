@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef OP_COMMANDS_H__
-#define OP_COMMANDS_H__
+#ifndef VIRTUAL_USB_PRINTER_OP_COMMANDS_H_
+#define VIRTUAL_USB_PRINTER_OP_COMMANDS_H_
 
 /*
  * This file defines the supported OP command messages from the usbip userspace
@@ -140,4 +140,4 @@ SmartBuffer PackOpRepImport(OpRepImport import);
 // Convert |header| into host uint8_t order.
 void UnpackOpHeader(OpHeader* header);
 
-#endif  // OP_COMMANDS_H__
+#endif  // VIRTUAL_USB_PRINTER_OP_COMMANDS_H_

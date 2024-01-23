@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef IPP_MANAGER_H__
-#define IPP_MANAGER_H__
+#ifndef VIRTUAL_USB_PRINTER_IPP_MANAGER_H_
+#define VIRTUAL_USB_PRINTER_IPP_MANAGER_H_
 
 #include <vector>
 
@@ -53,4 +53,4 @@ class IppManager {
   base::FilePath document_output_path_;
 };
 
-#endif  // IPP_MANAGER_H__
+#endif  // VIRTUAL_USB_PRINTER_IPP_MANAGER_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef USB_PRINTER_H__
-#define USB_PRINTER_H__
+#ifndef VIRTUAL_USB_PRINTER_USB_PRINTER_H_
+#define VIRTUAL_USB_PRINTER_USB_PRINTER_H_
 
 #include <map>
 #include <memory>
@@ -283,4 +283,4 @@ class UsbPrinter {
   std::vector<InterfaceManager> interface_managers_;
 };
 
-#endif  // USB_PRINTER_H__
+#endif  // VIRTUAL_USB_PRINTER_USB_PRINTER_H_

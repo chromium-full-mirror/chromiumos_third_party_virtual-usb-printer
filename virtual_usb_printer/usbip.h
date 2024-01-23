@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef USBIP_H__
-#define USBIP_H__
+#ifndef VIRTUAL_USB_PRINTER_USBIP_H_
+#define VIRTUAL_USB_PRINTER_USBIP_H_
 
 /*
  * This file defines the supported messages from the usbip-core protocol,
@@ -104,4 +104,4 @@ void SendUsbControlResponse(int sockfd,
                             const uint8_t* data,
                             size_t size);
 
-#endif  // USBIP_H__
+#endif  // VIRTUAL_USB_PRINTER_USBIP_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ESCL_MANAGER_H__
-#define ESCL_MANAGER_H__
+#ifndef VIRTUAL_USB_PRINTER_ESCL_MANAGER_H_
+#define VIRTUAL_USB_PRINTER_ESCL_MANAGER_H_
 
 #include <cstdint>
 #include <optional>
@@ -154,4 +154,4 @@ class EsclManager {
   int log_counter_;
 };
 
-#endif  // ESCL_MANAGER_H__
+#endif  // VIRTUAL_USB_PRINTER_ESCL_MANAGER_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef DEVICE_DESCRIPTORS_H__
-#define DEVICE_DESCRIPTORS_H__
+#ifndef VIRTUAL_USB_PRINTER_DEVICE_DESCRIPTORS_H_
+#define VIRTUAL_USB_PRINTER_DEVICE_DESCRIPTORS_H_
 
 #include <cstdint>
 
@@ -194,4 +194,4 @@ bool operator==(const UsbEndpointDescriptor& lhs,
 bool operator==(const UsbDeviceQualifierDescriptor& lhs,
                 const UsbDeviceQualifierDescriptor& rhs);
 
-#endif  // DEVICE_DESCRIPTORS_H__
+#endif  // VIRTUAL_USB_PRINTER_DEVICE_DESCRIPTORS_H_
