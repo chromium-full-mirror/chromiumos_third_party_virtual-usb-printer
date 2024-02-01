@@ -6,15 +6,27 @@
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
+
+#include <algorithm>
 #include <vector>
 
 #include "virtual-usb-printer/virtual_usb_device/server.h"
 #include "virtual-usb-printer/virtual_usb_device/device_request.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 
-DeviceProxy::DeviceProxy(const uint16_t port, const OpRepDevInfo& info)
-    : connection_(ConnectionFactory::instance().MakeClientConnection(port)) {
-  device_info_ = info;
+DeviceProxy::DeviceProxy(const uint16_t port,
+                         const ::BusId& id,
+                         const size_t devnum)
+    : connection_(ConnectionFactory::instance().MakeClientConnection(port)),
+      busid_(id),
+      devnum_(devnum) {
+  Connect();
+}
+
+DeviceProxy::~DeviceProxy() {
+  if (is_connected_)
+    Disconnect();
+  attached_socket_ = -1;
 }
 
 bool DeviceProxy::Connect() {
@@ -31,39 +43,91 @@ void DeviceProxy::Disconnect() {
   LOG(INFO) << "Disconnected with usb device on port: " << GetPort();
 }
 
-bool DeviceProxy::Attach(const IConnection* conn) {
-  bool status = Connect();
+void DeviceProxy::Attach(const IConnection* conn) {
   attached_socket_ = conn->FD();
   LOG(INFO) << "UsbDevice with port:" << GetPort() << " Attached";
-
-  return status;
 }
 
 void DeviceProxy::Detach() {
-  Disconnect();
   attached_socket_ = -1;
   LOG(INFO) << "UsbDevice with port:" << GetPort() << " Detached";
 }
 
-size_t DeviceProxy::HandleUsbDeviceRequest(const Urb& urb_request,
-                                           const SmartBuffer& data) {
+bool DeviceProxy::GetOpRepDevInfo(OpRepDevInfo* info) {
+  Urb request;
+  size_t size;
+
+  request.direction = 0;
+  request.ep = 0;
+  request.setup =
+      0x8006000100001200;  // setup request to get config descriptors
+  if (!HandleUsbDeviceRequest(request, {}, &size))
+    return false;
+
+  SmartBuffer descriptors_data;
+  if (!ReadUsbResponseData(size, &descriptors_data))
+    return false;
+  UsbDeviceDescriptor usb_descriptors = UnpackUsbDescriptor(descriptors_data);
+
+  request.setup =
+      0x8006000200000A00;  // setup request to get config descriptors
+  if (!HandleUsbDeviceRequest(request, {}, &size))
+    return false;
+
+  SmartBuffer configs_data;
+  if (!ReadUsbResponseData(size, &configs_data))
+    return false;
+  UsbConfigurationDescriptor usb_configs = UnpackConfigDescriptor(configs_data);
+
+  std::vector<UsbInterfaceDescriptor> usb_interfaces;
+  while (configs_data.size() > sizeof(UsbInterfaceDescriptor)) {
+    usb_interfaces.push_back(UnpackInterfaceDescriptors(configs_data));
+  }
+
+  CreateOpRepDevInfo(usb_descriptors, usb_configs, usb_interfaces, info);
+
+  // Update busid and usbpath in OpRepDevice
+  std::copy(busid_.begin(), busid_.end(), info->device.busID);
+
+  snprintf(info->device.usbPath, sizeof(info->device.usbPath),
+           "/sys/devices/pci0000:00/0000:00:01.2/usb1/%d", GetPort());
+
+  info->device.devnum = devnum_;
+
+  return true;
+}
+
+bool DeviceProxy::HandleUsbDeviceRequest(const Urb& urb_request,
+                                         const SmartBuffer& data,
+                                         size_t* response_data_size) {
   // Send URB to device
   SmartBuffer buf = PackUrb(urb_request);
   buf.Add(data);
-  connection_->Send(buf);
+  if (!connection_->Send(buf)) {
+    is_connected_ = false;
+    return is_connected_;
+  }
 
   // Process response of URB
-  UrbReply result;
-  SmartBuffer reply_buf = connection_->Receive(sizeof(result));
-  result = UnpackUrbReply(&reply_buf);
+  SmartBuffer reply_buf = connection_->Receive(sizeof(UrbReply));
+  if (reply_buf.size() == 0) {
+    is_connected_ = false;
+    return is_connected_;
+  }
 
-  LOG(INFO) << "Data Rcv size from usb device: " << result.actual_size;
+  UrbReply result = UnpackUrbReply(&reply_buf);
+  *response_data_size = result.actual_size;
 
-  return result.actual_size;
+  return true;
 }
 
-SmartBuffer DeviceProxy::ReceiveResponseBuffer(size_t size) {
-  LOG(INFO) << "Data reading from usb device: " << size;
+bool DeviceProxy::ReadUsbResponseData(size_t size, SmartBuffer* response_data) {
+  SmartBuffer buffer = connection_->Receive(size);
+  if (size > 0 && buffer.size() == 0) {
+    is_connected_ = false;
+    return is_connected_;
+  }
+  response_data->Add(buffer);
 
-  return connection_->Receive(size);
+  return true;
 }

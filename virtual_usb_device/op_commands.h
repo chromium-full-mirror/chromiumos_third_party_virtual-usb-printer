@@ -20,6 +20,7 @@
  */
 
 #include <cstdlib>
+#include <array>
 #include <vector>
 
 #include "device_descriptors.h"
@@ -27,6 +28,8 @@
 #include "usbip_constants.h"
 
 constexpr uint16_t kUsbipVersion = 0x0111;  // usbip version in BCD.
+
+using BusId = std::array<char, 32>;
 
 // Contains the header values that are contained within all of the "OP" messages
 // used by usbip.

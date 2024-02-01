@@ -55,9 +55,6 @@ bool DeviceServer::RegisterToHost() {
   request.header.version = kUsbipVersion;
   request.header.command = OP_REQ_BIND_CMD;
   request.port = GetListenPort();
-  CreateOpRepDevInfo(device_->device_descriptor(),
-                     device_->configuration_descriptor(),
-                     device_->interface_descriptors(), &request.device_desc);
 
   SmartBuffer buf = PackBindRequest(request);
   host_connection_->Send(buf);

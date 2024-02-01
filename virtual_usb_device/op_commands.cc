@@ -262,6 +262,5 @@ SmartBuffer PackBindRequest(BindRequest& request) {
   SmartBuffer buf;
   buf.Add(PackOpHeader(request.header));
   buf.Add(htons(request.port));
-  buf.Add(PackOpRepDevInfo(request.device_desc));
   return buf;
 }

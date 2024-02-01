@@ -7,8 +7,9 @@
 
 #include <memory>
 #include <vector>
+#include <string>
 
-#include <base/memory/scoped_refptr.h>
+#include <base/containers/flat_map.h>
 
 #include "device_proxy.h"
 
@@ -30,18 +31,13 @@ class UsbIpCore {
   // Registers the usb device with `UsbIpCore`.
   // Once this is called, a proxy of actual usb device is created and only after
   // registeration, device can be listed or attached by the user.
-  bool RegisterDevice(const uint16_t port, const OpRepDevInfo& device_info);
-  // Deregisters the usb device from `UsbIpCore`.
-  void DeregisterDevice(const uint16_t port);
+  // Device is deregistered whenever device process is inaccessible during
+  // operations.
+  bool RegisterDevice(const uint16_t port);
 
   // Disconnects with the attached usb device and is triggered by `usbip detach`
   // command.
   void DetachUsbDevice(IConnection* conn);
-
-  // Handle OP_REQ_BIND_CMD usbip command by registering the usb device with
-  // `UsbIpCore`.
-  // Note: OP_REQ_BIND_CMD is custom defined usbip message.
-  bool HandleBindInternal(IConnection* conn, uint16_t port);
 
   // Handles OP_REQ_DEVLIST command by responding with the list of exported usb
   // devices.
@@ -61,16 +57,17 @@ class UsbIpCore {
                               const UsbipCmdSubmit& usb_request);
 
  private:
-  // Reads busid from `sockfd` and returns DeviceProxy index
-  // associated with the busid.
-  int ReadBusId(IConnection* conn);
+  // Reads busid from connection and returns it.
+  BusId ReadBusId(IConnection* conn);
 
-  // Updates the busID, usbPath and devnum, so that for each new device it is
-  // unique.
-  void UpdateDeviceParameter(OpRepDevice* device);
+  // Handles usb request with given `DeviceProxy`. Returns `false` on error
+  // or `true` on success
+  bool HandleUsbCommandSubmitWithProxy(IConnection* conn,
+                                       const UsbipCmdSubmit& usb_request,
+                                       std::unique_ptr<DeviceProxy>& proxy);
 
-  // Sends usbip response with acknowledgement of `received` amount of data
-  // received by usb device.
+  // Sends usbip response having ack of `received` amount of data received
+  // by usb device.
   void SendUsbipDataReceivedAck(IConnection* conn,
                                 const UsbipCmdSubmit& usb_request,
                                 size_t received);
@@ -82,11 +79,10 @@ class UsbIpCore {
                                 const uint8_t* data,
                                 size_t data_size);
 
-  // List of proxy for each registered usb device.
-  std::vector<std::unique_ptr<DeviceProxy>> proxy_list;
+  // map of busid<--> device proxy
+  base::flat_map<BusId, std::unique_ptr<DeviceProxy>> proxy_map_;
 
-  // Number of usb devices registered with `UsbIpCore`
-  size_t device_count = 0;
+  size_t device_count_ = 0;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_CORE_H_

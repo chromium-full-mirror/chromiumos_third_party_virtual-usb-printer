@@ -91,24 +91,12 @@ void UsbIpManager::RespondBind(IConnection* conn, bool status) {
   conn->Send(res);
 }
 
-void UsbIpManager::OnHandleBindInternalDone(std::unique_ptr<IConnection> conn,
-                                            uint16_t port,
-                                            bool status) {
+void UsbIpManager::OnRegisterationDone(std::unique_ptr<IConnection> conn,
+                                       uint16_t port,
+                                       bool status) {
   LOG(INFO) << "USB Device (port:" << port << ")"
             << " registration : " << (status ? "Success" : "Failed");
   RespondBind(conn.get(), status);
-  if (status) {
-    // We need to track when device process is dead, so we call `conn->Receive`.
-    // This call will block since there is no data to receive but returns when
-    // device process is dead.
-    SmartBuffer status_buffer = conn->Receive(sizeof(uint16_t));
-    if (status_buffer.size() == 0) {
-      core_task_runner_->PostTask(
-          FROM_HERE, base::BindOnce(&UsbIpCore::DeregisterDevice,
-                                    base::Unretained(&core_), port));
-    }
-  }
-
   DisposeConnection(std::move(conn));
 }
 
@@ -126,10 +114,10 @@ void UsbIpManager::HandleBind(std::unique_ptr<IConnection> conn) {
 
   core_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE,
-      base::BindOnce(&UsbIpCore::HandleBindInternal, base::Unretained(&core_),
-                     conn.get(), port),
-      base::BindOnce(&UsbIpManager::OnHandleBindInternalDone,
-                     base::Unretained(this), std::move(conn), port));
+      base::BindOnce(&UsbIpCore::RegisterDevice, base::Unretained(&core_),
+                     port),
+      base::BindOnce(&UsbIpManager::OnRegisterationDone, base::Unretained(this),
+                     std::move(conn), port));
 }
 
 void UsbIpManager::HandleUsbRequest(std::unique_ptr<IConnection> conn,

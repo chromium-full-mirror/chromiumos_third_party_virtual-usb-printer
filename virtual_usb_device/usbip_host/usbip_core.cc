@@ -4,8 +4,9 @@
 
 #include "usbip_core.h"
 
-#include <string>
+#include <algorithm>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include <base/strings/stringprintf.h>
@@ -15,73 +16,33 @@
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
 
-bool UsbIpCore::HandleBindInternal(IConnection* conn, uint16_t port) {
-  OpRepDevInfo device_info;
-  SmartBuffer device_buffer = conn->Receive(sizeof(OpRepDevice));
-  if (device_buffer.size() != sizeof(device_info.device)) {
-    LOG(ERROR) << "Failed reading devinfo value";
-    return false;
-  }
-  device_info.device = UnpackOpRepDevice(&device_buffer);
+namespace {
 
-  const size_t interface_size =
-      sizeof(OpRepDeviceInterface) * device_info.device.bNumInterfaces;
-  SmartBuffer interface_buffer = conn->Receive(interface_size);
-  if (interface_buffer.size() != interface_size) {
-    LOG(ERROR) << "Failed reading devinfo value";
-    return false;
-  }
-  device_info.interfaces =
-      reinterpret_cast<OpRepDeviceInterface*>(malloc(interface_size));
-  for (size_t i = 0; i < device_info.device.bNumInterfaces; ++i) {
-    memcpy(device_info.interfaces + i, interface_buffer.data(),
-           sizeof(OpRepDeviceInterface));
-    interface_buffer.Erase(0, sizeof(OpRepDeviceInterface));
-  }
+std::string BusIdAsString(const BusId& busid) {
+  return std::string(busid.begin(), busid.end());
+}
 
-  UpdateDeviceParameter(&device_info.device);
-  RegisterDevice(port, device_info);
+}  // namespace
+
+bool UsbIpCore::RegisterDevice(const uint16_t port) {
+  const size_t devnum = device_count_ + 1;
+  BusId id = {'\0'};
+  snprintf(id.data(), id.size(), "1-%zu", devnum);
+
+  auto client = std::make_unique<DeviceProxy>(port, id, devnum);
+  proxy_map_[id] = std::move(client);
+
+  device_count_++;
+
+  LOG(INFO) << "Device registered: BusId " << BusIdAsString(id)
+            << ", Device port: " << port << ", device count: " << (devnum);
   return true;
-}
-
-void UsbIpCore::UpdateDeviceParameter(OpRepDevice* device) {
-  snprintf(device->busID, sizeof(device->busID), "1-%zu", (device_count + 1));
-
-  snprintf(device->usbPath, sizeof(device->usbPath),
-           "/sys/devices/pci0000:00/0000:00:01.2/usb1/%s", device->busID);
-
-  device->devnum = device_count + 1;
-}
-
-bool UsbIpCore::RegisterDevice(const uint16_t port,
-                               const OpRepDevInfo& device_info) {
-  auto client = std::make_unique<DeviceProxy>(port, device_info);
-  proxy_list.push_back(std::move(client));
-  device_count++;
-  LOG(INFO) << "Device port: " << port << " device count: " << device_count;
-  return true;
-}
-
-void UsbIpCore::DeregisterDevice(const uint16_t port) {
-  for (auto it = proxy_list.begin(); it != proxy_list.end();) {
-    if ((*it)->GetPort() == port) {
-      if ((*it)->GetAttachedSocket() != -1) {
-        // FIXME(santo) : One request thread will leak if not cleaned here.
-        LOG(ERROR) << "Detaching of usb device not done";
-      }
-      it = proxy_list.erase(it);
-      device_count--;
-      LOG(INFO) << "usb device with port:" << port << " Deregistered";
-    } else {
-      ++it;
-    }
-  }
 }
 
 void UsbIpCore::DetachUsbDevice(IConnection* conn) {
-  for (auto it = proxy_list.begin(); it != proxy_list.end(); ++it) {
-    if ((*it)->GetAttachedSocket() == conn->FD()) {
-      (*it)->Detach();
+  for (auto& [busid, proxy] : proxy_map_) {
+    if (proxy->GetAttachedSocket() == conn->FD()) {
+      proxy->Detach();
       return;
     }
   }
@@ -90,40 +51,43 @@ void UsbIpCore::DetachUsbDevice(IConnection* conn) {
 // We use port number instead of busid for usbip attach command.
 // Thus 32 bytes contains port number as char string, which is conveted
 // to port number as integer.
-int UsbIpCore::ReadBusId(IConnection* conn) {
+BusId UsbIpCore::ReadBusId(IConnection* conn) {
+  BusId id = {'\0'};
   // 32 byte are sent by usbip command for busid information.
   SmartBuffer buf = conn->Receive(32);  // busid array size is 32 byte.
-  if (buf.size() != 32) {
+  if (buf.size() == 32) {
+    const auto& data = buf.contents();
+    std::copy(data.begin(), data.end(), id.begin());
+  } else {
     printf("Receive error :%s\n", strerror(errno));
-    return -1;
   }
 
-  std::string busid(reinterpret_cast<const char*>(buf.data()));
-
-  LOG(INFO) << "BusID : " << busid;
-
-  for (size_t i = 0; i < proxy_list.size(); ++i) {
-    if (busid.compare(proxy_list[i]->BusId()) == 0) {
-      return i;
-    }
-  }
-  return -1;
+  return id;
 }
 
 bool UsbIpCore::HandleAttachInternal(IConnection* conn) {
-  OpRepImport rep;
   int status = -1;
+  OpRepImport rep;
 
-  size_t proxy_index = ReadBusId(conn);
-  LOG(INFO) << "Device proxy index: " << proxy_index;
+  const auto& busid = ReadBusId(conn);
+  LOG(INFO) << "Attaching device with busid: " << BusIdAsString(busid);
 
-  if (proxy_index != -1) {
-    auto& device = proxy_list[proxy_index];
-    if (!device->IsConnected() && device->Attach(conn)) {
-      CreateOpRepImport(device->GetOpRepDevInfo(), &rep);
-      LOG(INFO) << "USB device on port: " << device->GetPort() << " attached";
-      status = 0;  // success
+  auto it = proxy_map_.find(busid);
+  if (it != proxy_map_.end()) {
+    auto& proxy = it->second;
+    if (!proxy->IsAttached()) {
+      OpRepDevInfo info;
+      if (proxy->GetOpRepDevInfo(&info)) {
+        proxy->Attach(conn);
+        CreateOpRepImport(info, &rep);
+        status = 0;  // success
+        LOG(INFO) << "USB device on port: " << proxy->GetPort() << " attached";
+      } else {
+        proxy_map_.erase(it);  // DeviceProxy is invalid, so remove it
+      }
     }
+  } else {
+    LOG(WARNING) << "No device registered with busid: " << BusIdAsString(busid);
   }
 
   SetOpHeader(OP_REP_IMPORT_CMD, status, &rep.header);
@@ -133,49 +97,84 @@ bool UsbIpCore::HandleAttachInternal(IConnection* conn) {
 }
 
 void UsbIpCore::HandleDeviceListInternal(IConnection* conn) {
-  LOG(INFO) << "Listing devices..." << proxy_list.size();
+  LOG(INFO) << "Listing devices(Active or Inactive)..." << proxy_map_.size();
 
   OpRepDevlist list{};
-  CreateOpRepDevlistHeader(proxy_list.size(), &list);
-  for (size_t i = 0; i < proxy_list.size(); i++) {
-    list.devices.push_back(proxy_list[i]->GetOpRepDevInfo());
+  for (auto it = proxy_map_.begin(); it != proxy_map_.end();) {
+    auto& proxy = it->second;
+    OpRepDevInfo info;
+    if (proxy->GetOpRepDevInfo(&info)) {
+      list.devices.push_back(info);
+      ++it;
+    } else {  // DeviceProxy is invalid, so remove it
+      it = proxy_map_.erase(it);
+    }
   }
+
+  CreateOpRepDevlistHeader(proxy_map_.size(), &list);
+
   SmartBuffer packed_devlist = PackOpRepDevlist(list);
   conn->Send(packed_devlist);
 }
 
 bool UsbIpCore::HandleUsbCommandSubmit(IConnection* conn,
                                        const UsbipCmdSubmit& usb_request) {
-  for (auto& proxy : proxy_list) {
-    if (proxy->GetAttachedSocket() == conn->FD()) {
-      Urb urb_request;
-      usbip_to_urb(&usb_request, &urb_request);
-      LOG(INFO) << "Receive transfer buffer of size: "
-                << usb_request.transfer_buffer_length;
-      SmartBuffer data;
-      // If data transfer is from the host to device.
-      if (usb_request.header.direction == 0 /* host to device */ &&
-          usb_request.transfer_buffer_length != 0)
-        data = conn->Receive(usb_request.transfer_buffer_length);
+  size_t fd = conn->FD();
+  // Get DeviceProxy for the device attached so far.
+  auto it = std::find_if(proxy_map_.begin(), proxy_map_.end(),
+                         [fd](const auto& e) -> bool {
+                           return e.second->GetAttachedSocket() == fd;
+                         });
 
-      size_t response_buffer_length =
-          proxy->HandleUsbDeviceRequest(urb_request, data);
-
-      SmartBuffer buf;
-      // If data transfer is from the device to host or there are control
-      // requests.
-      if ((usb_request.header.direction == 1 /* device to host */) ||
-          (usb_request.header.ep == 0 /* control requests */)) {
-        buf = proxy->ReceiveResponseBuffer(response_buffer_length);
-        SendUsbipControlResponse(conn, usb_request, buf.data(), buf.size());
-      } else {
-        // Acknowledge that usb device have received data.
-        SendUsbipDataReceivedAck(conn, usb_request, response_buffer_length);
-      }
-      return true;
-    }
+  if (it == proxy_map_.end()) {
+    return false;
   }
-  return false;
+
+  bool status = HandleUsbCommandSubmitWithProxy(conn, usb_request, it->second);
+  if (!status) {  // DeviceProxy is invalid since it lost connection to device.
+    proxy_map_.erase(it);
+    return false;
+  }
+
+  return true;
+}
+
+bool UsbIpCore::HandleUsbCommandSubmitWithProxy(
+    IConnection* conn,
+    const UsbipCmdSubmit& usb_request,
+    std::unique_ptr<DeviceProxy>& proxy) {
+  Urb urb_request;
+  usbip_to_urb(&usb_request, &urb_request);
+  LOG(INFO) << "Receive transfer buffer of size: "
+            << usb_request.transfer_buffer_length;
+
+  SmartBuffer data;
+  // If data transfer is from the host to device.
+  if (usb_request.header.direction == 0 /* host to device */ &&
+      usb_request.transfer_buffer_length != 0)
+    data = conn->Receive(usb_request.transfer_buffer_length);
+
+  size_t response_buffer_length;
+  if (!proxy->HandleUsbDeviceRequest(urb_request, data,
+                                     &response_buffer_length))
+    return false;
+
+  // If data transfer is from the device to host or there are control
+  // requests then we have data to read in response.
+  if ((usb_request.header.direction == 1 /* device to host */) ||
+      (usb_request.header.ep == 0 /* control requests */)) {
+    SmartBuffer response_data;
+    if (!proxy->ReadUsbResponseData(response_buffer_length, &response_data))
+      return false;
+
+    SendUsbipControlResponse(conn, usb_request, response_data.data(),
+                             response_data.size());
+  } else {
+    // Acknowlewdge that usb device have received BULK data.
+    SendUsbipDataReceivedAck(conn, usb_request, response_buffer_length);
+  }
+
+  return true;
 }
 
 void UsbIpCore::SendUsbipDataReceivedAck(IConnection* conn,
@@ -183,9 +182,6 @@ void UsbIpCore::SendUsbipDataReceivedAck(IConnection* conn,
                                          size_t received) {
   UsbipRetSubmit response = CreateUsbipRetSubmit(usb_request);
   response.actual_length = received;
-
-  LOG(INFO) << "client sent data size: " << usb_request.transfer_buffer_length;
-  LOG(INFO) << "device received : " << received;
 
   PrintUsbipRetSubmit(response);
 
@@ -199,9 +195,6 @@ void UsbIpCore::SendUsbipControlResponse(IConnection* conn,
                                          size_t data_size) {
   UsbipRetSubmit response = CreateUsbipRetSubmit(usb_request);
   response.actual_length = data_size;
-  LOG(INFO) << "client requested data size: "
-            << usb_request.transfer_buffer_length;
-  LOG(INFO) << "device receiving : " << data_size;
 
   PrintUsbipRetSubmit(response);
   SmartBuffer smart_buffer = PackUsbipRetSubmit(response);

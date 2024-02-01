@@ -27,8 +27,8 @@ class DeviceProxy {
  public:
   // Create a proxy object for usb device which listens on
   // `port` with usb information `info`
-  DeviceProxy(const uint16_t port, const OpRepDevInfo& info);
-  ~DeviceProxy() = default;
+  DeviceProxy(const uint16_t port, const BusId& id, const size_t devnum);
+  ~DeviceProxy();
 
   // Connect with usb devices process via socket.
   bool Connect();
@@ -37,7 +37,7 @@ class DeviceProxy {
 
   // Connects with the device server and attaches a connection to this proxy.
   // All requests received on the connection will be handled by this proxy.
-  bool Attach(const IConnection* conn);
+  void Attach(const IConnection* conn);
 
   // Disconnect with the device server and removes the attached connection.
   void Detach();
@@ -47,11 +47,12 @@ class DeviceProxy {
 
   // Sends the urb request to the usb device (which runs in different process)
   // for handling and returns the size of response.
-  size_t HandleUsbDeviceRequest(const Urb& urb_request,
-                                const SmartBuffer& data);
+  bool HandleUsbDeviceRequest(const Urb& urb_request,
+                              const SmartBuffer& data,
+                              size_t* response_data_size);
   // Receives `size` amount of response data. The size is determined by the
   // `HandleUsbDeviceRequest` call.
-  SmartBuffer ReceiveResponseBuffer(size_t size);
+  bool ReadUsbResponseData(const size_t size, SmartBuffer* response_data);
 
   // Returns port number on which usb device is listening.
   uint16_t GetPort() const { return connection_->get_port(); }
@@ -61,8 +62,8 @@ class DeviceProxy {
 
   // Returns whether this proxy is connected with actual usb device.
   bool IsConnected() const { return is_connected_; }
-
-  OpRepDevInfo GetOpRepDevInfo() { return device_info_; }
+  bool IsAttached() const { return (attached_socket_ != -1 ? true : false); }
+  bool GetOpRepDevInfo(OpRepDevInfo* info);
 
  private:
   // connection to device server
@@ -73,5 +74,8 @@ class DeviceProxy {
   OpRepDevInfo device_info_;
 
   int attached_socket_ = -1;
+
+  const ::BusId busid_;
+  const size_t devnum_;
 };
 #endif  // VIRTUAL_USB_DEVICE_USBIP_HOST_DEVICE_PROXY_H_

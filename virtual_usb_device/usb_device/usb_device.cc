@@ -329,8 +329,6 @@ void UsbDevice::HandleGetConfigurationDescriptor(
     }
   }
 
-  CHECK_EQ(control_request.wLength, response.size())
-      << "Response length does not match requested number of bytes";
   // After filling the buffer with all of the necessary descriptors we can send
   // a response.
   SendUsbResponse(conn, usb_request, response.data(), response.size());
@@ -452,7 +450,6 @@ void UsbDevice::SendUsbResponse(IConnection* conn,
   if (data && (data_size > 0)) {
     buf.Add(data, data_size);
   }
-  LOG(INFO) << __func__ << " "
-            << "data size: " << data_size;
+  LOG(INFO) << __func__ << " " << "data size: " << data_size;
   conn->Send(buf);
 }

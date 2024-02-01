@@ -47,9 +47,9 @@ class UsbIpManager {
   // Callback for `HandleBind` which is triggered in `RequestThread`.
   // `status` notfies about whether HandleBind was successful or not.
   // `port` is the port on which device is listening.
-  void OnHandleBindInternalDone(std::unique_ptr<IConnection> conn,
-                                uint16_t port,
-                                bool status);
+  void OnRegisterationDone(std::unique_ptr<IConnection> conn,
+                           uint16_t port,
+                           bool status);
 
   // Posts a task in the `UsbIpCore` task runner to handle `OP_REQ_DEVLIST`
   // usbip message.
