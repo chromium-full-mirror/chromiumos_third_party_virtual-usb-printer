@@ -8,6 +8,7 @@ group("all") {
   deps = [ "//virtual-usb-printer/virtual_usb_printer:virtual-usb-printer" ]
   deps += [ "//virtual-usb-printer/virtual_usb_device:virtual-usbip-host" ]
   deps += [ "//virtual-usb-printer/virtual_usb_device:virtual-printer" ]
+  deps += [ "//virtual-usb-printer/virtual_usb_device:virtual-rawprinter" ]
   deps += [ ":install_scripts" ]
 
   if (use.test) {

@@ -146,8 +146,8 @@ class UsbDevice {
  public:
   // Create generic usb device object which listens for usb requests on
   // `port`. It registers itself with the usbip host listening on `host_port`.
-  // Usb configuration is provided by `descriptors_path` file.
-  UsbDevice(const std::string& descriptors_path,
+  // USB descriptors are provided by `descriptors`.
+  UsbDevice(const UsbDescriptors& descriptors,
             uint16_t port,
             uint16_t host_port);
 

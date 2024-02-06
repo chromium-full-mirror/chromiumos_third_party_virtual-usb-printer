@@ -1,10 +1,9 @@
-// Copyright 2023 The ChromiumOS Authors
+// Copyright 2024 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "printer.h"
+#include "usb_printer.h"
 
-#include <string_view>
 #include <vector>
 
 #include <base/files/file_util.h>
@@ -13,13 +12,12 @@
 #include <brillo/flag_helper.h>
 #include <brillo/syslog_logging.h>
 
+#include "virtual-usb-printer/common/value_util.h"
+#include "virtual-usb-printer/mock_printer/mock_printer.h"
+#include "virtual-usb-printer/mock_printer/parse_textproto.h"
 #include "virtual-usb-printer/virtual_usb_device/ipp_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/scanner/scanner.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
-#include "virtual-usb-printer/common/value_util.h"
-
-#include "virtual-usb-printer/mock_printer/mock_printer.h"
-#include "virtual-usb-printer/mock_printer/parse_textproto.h"
 
 #define DEFAULT_TCP_PRINTER_PORT 3241
 #define DEFAULT_TCP_HOST_PORT 3240
@@ -35,26 +33,11 @@ constexpr char kUsage[] =
     "    --host_port=<unsigned int>\n"
     "    --port=<unsigned int>";
 
-// Appends `buf` to the file at `path`. If no file exists at `path`, it is
-// created.
-void AppendToFile(base::FilePath path, SmartBuffer buf) {
-  base::File file(path, base::File::FLAG_OPEN_ALWAYS | base::File::FLAG_WRITE |
-                            base::File::FLAG_APPEND);
-  if (!file.IsValid()) {
-    LOG(ERROR) << "Failed to open/create file at " << path;
-    return;
-  }
-
-  int written = file.WriteAtCurrentPos(
-      reinterpret_cast<const char*>(buf.data()), buf.size());
-  if (written != buf.size()) {
-    PLOG(ERROR) << "Failed to write buf to file at " << path;
-  }
-}
+namespace {
 
 // Creates a `MockPrinter` using the `mocking::TestCase` textproto at
 // `script_path`.
-std::unique_ptr<mock_printer::MockPrinter> UsbPrinter::CreateMockPrinter(
+std::unique_ptr<mock_printer::MockPrinter> CreateMockPrinter(
     std::string_view script_path) {
   CHECK(!script_path.empty()) << "BUG: expected nonempty `script_path`";
 
@@ -73,116 +56,24 @@ std::unique_ptr<mock_printer::MockPrinter> UsbPrinter::CreateMockPrinter(
 
   return mock_printer::MockPrinter::Create(script.value());
 }
+}  // namespace
 
-UsbPrinter::UsbPrinter(const std::string descriptors_path,
-                       const std::string ipp_attributes_path,
-                       const std::string& capabilities_path,
-                       const std::string& mock_printer_script,
+UsbPrinter::UsbPrinter(const UsbDescriptors& usb_descriptors,
+                       std::unique_ptr<IppManager> ipp_manager,
+                       std::unique_ptr<Scanner> scanner,
+                       std::unique_ptr<mock_printer::MockPrinter> mock_printer,
                        uint16_t port,
                        uint16_t host_port,
                        const base::FilePath& document_output_path,
-                       const base::FilePath& http_output_dir,
-                       base::FilePath log_dir)
-    : UsbDevice(descriptors_path, port, host_port),
+                       const base::FilePath& http_output_dir)
+    : UsbDevice(usb_descriptors, port, host_port),
+      ipp_manager_(std::move(ipp_manager)),
+      scanner_(std::move(scanner)),
+      mock_printer_(std::move(mock_printer)),
       document_output_path_(document_output_path),
-      http_output_dir_(http_output_dir) {
-  // IPP manager
-  if (IsIppUsbPrinter()) {
-    ipp_manager_ =
-        IppManager::Create(ipp_attributes_path, document_output_path_);
-  }
+      http_output_dir_(http_output_dir) {}
 
-  // Escl scanner
-  if (SupportScanner()) {
-    LOG(INFO) << "Scanning is supported";
-    scanner_ = Scanner::Create(capabilities_path, log_dir);
-  }
-
-  // Mock printing
-  if (!mock_printer_script.empty()) {
-    mock_printer_ = CreateMockPrinter(mock_printer_script);
-  }
-}
-
-void UsbPrinter::HandleRawUsbData(IConnection* conn,
-                                  const Urb& usb_request) const {
-  SmartBuffer data = conn->Receive(usb_request.transfer_buffer_length);
-  size_t received = data.size();
-  LOG(INFO) << "Received " << received << " bytes";
-  // Acknowledge receipt of BULK transfer.
-  SendUsbResponse(conn, usb_request, nullptr, received);
-  if (!document_output_path_.empty()) {
-    LOG(INFO) << "Recording document...";
-    AppendToFile(document_output_path_, data);
-  }
-}
-
-bool UsbPrinter::IsIppUsbPrinter() const {
-  int count = 0;
-  const std::vector<UsbInterfaceDescriptor> interfaces =
-      interface_descriptors();
-  for (const auto& interface : interfaces) {
-    // For printer devices bInterfaceClass code is 7, iInterfaceSubClass code
-    // is 1 and for IPP based printer bInterfaceProtocol code is 4, as defined
-    // by usb device class definition for printing devices
-    // (https://www.usb.org/sites/default/files/usbprint11a021811.pdf).
-    if (interface.bInterfaceClass == 7 && interface.bInterfaceSubClass == 1 &&
-        interface.bInterfaceProtocol == 4) {
-      ++count;
-    }
-  }
-  // An ipp-over-usb printer must have at least 2 ipp-over-usb interfaces.
-  return count >= 2;
-}
-
-HttpResponse UsbPrinter::GenerateHttpResponseFromIppManager(SmartBuffer* body) {
-  HttpResponse response;
-  std::optional<IppHeader> ipp_header = IppHeader::Deserialize(body);
-  if (!ipp_header) {
-    LOG(ERROR) << "Request does not contain a valid IPP header.";
-    response.status = "415 Unsupported Media Type";
-    return response;
-  }
-  if (!RemoveIppAttributes(body)) {
-    LOG(ERROR) << "IPP request has malformed attributes section.";
-    response.status = "415 Unsupported Media Type";
-    return response;
-  }
-  response.status = "200 OK";
-  response.headers["Content-Type"] = "application/ipp";
-  response.body = ipp_manager_->HandleIppRequest(ipp_header.value(), *body);
-  return response;
-}
-
-HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
-                                              SmartBuffer* body) {
-  LOG(INFO) << request.request_line;
-  if (request.method == "POST" && request.uri == "/ipp/print") {
-    if (!mock_printer_) {
-      return GenerateHttpResponseFromIppManager(body);
-    }
-
-    HttpResponse retval = mock_printer_->GenerateHttpResponse(body);
-
-    if (retval.default_response) {
-      return GenerateHttpResponseFromIppManager(body);
-    }
-
-    return retval;
-
-  } else if (base::StartsWith(request.uri, "/eSCL",
-                              base::CompareCase::SENSITIVE)) {
-    return scanner_->HandleEsclRequest(request, *body);
-  }
-
-  HttpResponse response;
-  LOG(ERROR) << "Invalid method '" << request.method << "' and/or endpoint '"
-             << request.uri << "'";
-  response.status = "404 Not Found";
-  return response;
-}
-
-void UsbPrinter::HandleIppUsbData(IConnection* conn, const Urb& usb_request) {
+void UsbPrinter::HandleUsbData(IConnection* conn, const Urb& usb_request) {
   SmartBuffer message = conn->Receive(usb_request.transfer_buffer_length);
   size_t received = message.size();
   LOG(INFO) << "Received " << received << " bytes";
@@ -196,7 +87,7 @@ void UsbPrinter::HandleHttpData(const Urb& usb_request, SmartBuffer* message) {
   InterfaceManager* im = GetInterfaceManager(usb_request.ep);
 
   if (!im->receiving_message()) {
-    // If we're not currently receiving, |message| must be the start of a new
+    // If we're not currently receiving, `message` must be the start of a new
     // HTTP message. Parse the header and setup some fields to track state.
     std::optional<HttpRequest> opt_request = HttpRequest::Deserialize(message);
     if (!opt_request.has_value()) {
@@ -221,6 +112,60 @@ void UsbPrinter::HandleHttpData(const Urb& usb_request, SmartBuffer* message) {
   QueueHttpResponse(usb_request, response);
 }
 
+HttpResponse UsbPrinter::GenerateHttpResponseFromIppManager(SmartBuffer* body) {
+  HttpResponse response;
+  std::optional<IppHeader> ipp_header = IppHeader::Deserialize(body);
+  if (!ipp_header) {
+    LOG(ERROR) << "Request does not contain a valid IPP header.";
+    response.status = "415 Unsupported Media Type";
+    return response;
+  }
+  if (!RemoveIppAttributes(body)) {
+    LOG(ERROR) << "IPP request has malformed attributes section.";
+    response.status = "415 Unsupported Media Type";
+    return response;
+  }
+  response.status = "200 OK";
+  response.headers["Content-Type"] = "application/ipp";
+  response.body = ipp_manager_->HandleIppRequest(ipp_header.value(), *body);
+  return response;
+}
+
+HttpResponse UsbPrinter::GenerateHttpResponseForRequest(
+    const HttpRequest& request, SmartBuffer* body) {
+  LOG(INFO) << request.request_line;
+  if (request.method == "POST" && request.uri == "/ipp/print") {
+    if (!mock_printer_) {
+      return GenerateHttpResponseFromIppManager(body);
+    }
+
+    HttpResponse retval = mock_printer_->GenerateHttpResponse(body);
+
+    if (retval.default_response) {
+      return GenerateHttpResponseFromIppManager(body);
+    }
+
+    return retval;
+
+  } else if (base::StartsWith(request.uri, "/eSCL",
+                              base::CompareCase::SENSITIVE)) {
+    return scanner_->HandleEsclRequest(request, *body);
+  } else {
+    LOG(WARNING) << "Method: " << request.method << " URI: " << request.uri;
+  }
+
+  HttpResponse response;
+  LOG(ERROR) << "Invalid method '" << request.method << "' and/or endpoint '"
+             << request.uri << "'";
+  response.status = "404 Not Found";
+  return response;
+}
+
+HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
+                                              SmartBuffer* body) {
+  return GenerateHttpResponseForRequest(request, body);
+}
+
 void UsbPrinter::QueueHttpResponse(const Urb& usb_request,
                                    const HttpResponse& response) {
   SmartBuffer http_message;
@@ -229,49 +174,6 @@ void UsbPrinter::QueueHttpResponse(const Urb& usb_request,
   LOG(INFO) << "Queueing HTTP response...";
   InterfaceManager* im = GetInterfaceManager(usb_request.ep);
   im->QueueMessage(http_message);
-}
-
-void UsbPrinter::HandleUsbData(IConnection* conn, const Urb& usb_request) {
-  if (IsIppUsbPrinter()) {
-    HandleIppUsbData(conn, usb_request);
-  } else {
-    HandleRawUsbData(conn, usb_request);
-  }
-}
-
-void UsbPrinter::HandleGetStatus(
-    IConnection* conn,
-    const Urb& usb_request,
-    const UsbControlRequest& control_request) const {
-  VLOG(1) << "HandleGetStatus " << unsigned{control_request.wValue1} << "["
-          << unsigned{control_request.wValue0} << "]";
-  constexpr uint16_t status = 0x1;  // Self-powered.
-  SmartBuffer response(sizeof(status));
-  response.Add(&status, sizeof(status));
-  SendUsbResponse(conn, usb_request, response.data(), response.size());
-}
-
-void UsbPrinter::HandleUnsupportedRequest(
-    IConnection* conn,
-    const Urb& usb_request,
-    const UsbControlRequest& control_request) const {
-  VLOG(1) << "HandleUnsupportedRequest "
-          << StandardDeviceRequestString(control_request.bRequest) << ": "
-          << unsigned{control_request.wValue1} << "["
-          << unsigned{control_request.wValue0} << "]";
-  SendUsbResponse(conn, usb_request, nullptr, 0);
-}
-
-void UsbPrinter::HandleGetDeviceId(
-    IConnection* conn,
-    const Urb& usb_request,
-    const UsbControlRequest& control_request) const {
-  VLOG(1) << "HandleGetDeviceId " << unsigned{control_request.wValue1} << "["
-          << unsigned{control_request.wValue0} << "]";
-
-  SmartBuffer response(ieee_device_id().size());
-  response.Add(ieee_device_id());
-  SendUsbResponse(conn, usb_request, response.data(), response.size());
 }
 
 void UsbPrinter::LogHttpHeaders(const HttpRequest& request) {
@@ -335,6 +237,14 @@ int main(int argc, char* argv[]) {
     LOG(FATAL) << kUsage;
   }
 
+  std::optional<UsbDescriptors> usb_descriptors =
+      UsbDescriptors::Create(FLAGS_descriptors_path);
+  if (!usb_descriptors.has_value()) {
+    LOG(ERROR) << "Unable to create USB descriptors from file "
+               << FLAGS_descriptors_path;
+    return 1;
+  }
+
   base::FilePath document_output_path(FLAGS_record_doc_path);
 
   base::FilePath log_dir;
@@ -357,9 +267,24 @@ int main(int argc, char* argv[]) {
     http_log_dir = http_output_log_path;
   }
 
-  UsbPrinter usb_printer(FLAGS_descriptors_path, FLAGS_attributes_path,
-                         FLAGS_scanner_capabilities_path,
-                         FLAGS_mock_printer_script, FLAGS_port, FLAGS_host_port,
-                         document_output_path, http_log_dir, log_dir);
+  std::unique_ptr<IppManager> ipp_manager =
+      IppManager::Create(FLAGS_attributes_path, document_output_path);
+
+  // Escl scanner
+  LOG(INFO) << "Scanning is supported";
+  std::unique_ptr<Scanner> scanner =
+      Scanner::Create(FLAGS_scanner_capabilities_path, log_dir);
+
+  // Mock printing
+  LOG(INFO) << "Mock Printing is supported";
+  std::unique_ptr<mock_printer::MockPrinter> mock_printer;
+  if (!FLAGS_mock_printer_script.empty()) {
+    mock_printer = CreateMockPrinter(FLAGS_mock_printer_script);
+  }
+
+  UsbPrinter usb_printer(usb_descriptors.value(), std::move(ipp_manager),
+                         std::move(scanner), std::move(mock_printer),
+                         FLAGS_port, FLAGS_host_port, document_output_path,
+                         http_log_dir);
   usb_printer.Run();
 }

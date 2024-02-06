@@ -4,7 +4,10 @@
 # found in the LICENSE file.
 
 # This script setups virtual usb printer. After setup, usb devices can be
-# listed, attached and accessed.
+# listed, attached and accessed.This script launches host and a device binary
+# where the device binary could be of multiple type e.g scanner, printer.
+# The device binary is selected based on command line args passed, which is
+# specific to the device.
 
 DEFAULT_HOST_PORT=3240
 DEFAULT_DEVICE_PORT=3241
@@ -12,55 +15,40 @@ DEFAULT_DEVICE_PORT=3241
 # Starts usbip host process with given port number as argument and wait
 # until the host process is ready to process usbip messages.
 function start_host() {
-  HOST_PORT=${1##*=}
-  if [ ! "${HOST_PORT}" -ge 0 ]; then
-    echo "start_host: Missing valid port."
-    exit 1;
-  fi
-
-  while IFS= read -r line;
+  while IFS= read -r line
   do
+    echo "${line}"
     if [[ "${line}" = "USBIPHost::READY" ]];
-    then break;
+      then return 0;
     else
       sleep 1
     fi
-  done < <(stdbuf -oL /usr/local/bin/virtual-usbip-host --port="${HOST_PORT}")
+  done < <(stdbuf -oL /usr/local/bin/virtual-usbip-host "$@")
+  return 1;
 }
 
 # Starts printer device process with given port number on which device listens
 # and also usbip host port number to which this devices registers to.
-function start_printer() {
-  HOST_PORT=${1##*=}; shift
-  DEVICE_PORT=${1##*=}; shift
-  DESCRIPTORS_PATH=${1##*=}; shift
-
-  echo "host port: ${HOST_PORT}"
-  echo "device port: ${DEVICE_PORT}"
-  echo "descriptors_path: ${DESCRIPTORS_PATH}"
-
-  if [ ! "${HOST_PORT}" -ge 0 ] || [ ! "${DEVICE_PORT}" -ge 0 ]; then
-    echo "start_printer: Missing valid port or host port."
-    exit 1;
-  fi
-
-  if [ -z "${DESCRIPTORS_PATH}" ]; then
-    echo "start_printer: Missing --descriptors_path."
-    exit 1;
-  fi
-
+function setup_device() {
+  cmd=$1; shift
   while IFS= read -r line;
   do
+    echo "${line}"
     if [[ "${line}" = "USBDevice::READY" ]];
-    then break;
+    then return 0;
     else
+      echo "${line}"
       sleep 1
     fi
-  done < <(stdbuf -oL /usr/local/bin/virtual-printer \
-    --descriptors_path="${DESCRIPTORS_PATH}" "$@" \
-    --host_port="${HOST_PORT}" \
-    --port="${DEVICE_PORT}")
+  done < <(stdbuf -oL "${cmd}" "$@")
+  return 1;
 }
+
+descriptors_path=""
+is_ipp_printer=""
+host_port=${DEFAULT_HOST_PORT}
+device_port=${DEFAULT_DEVICE_PORT}
+
 
 usage() {
   printf "Usage: \n"
@@ -79,13 +67,80 @@ function main() {
     usage
   fi
 
-  echo "Starting Host....."
-  start_host --port="${DEFAULT_HOST_PORT}"
+  commonargs=()
 
-  echo "Starting printer....."
-  start_printer --host_port="${DEFAULT_HOST_PORT}" \
-    --port="${DEFAULT_DEVICE_PORT}" \
-    "$@"
+  while [ "$1" != "" ]; do
+    key=${1%=*}
+    value=${1#*=}
+    case ${key} in
+        --descriptors_path )
+            descriptors_path=${value}
+        ;;
+        --attributes_path )
+            ipp_attributes_path=${value}
+            is_ipp_printer=true
+        ;;
+        --port )
+            device_port=${value}
+        ;;
+        --host_port )
+            host_port=${value}
+        ;;
+        -h | --help )    usage
+        ;;
+        * )
+          commonargs+=("$1")
+        ;;
+    esac
+    shift
+  done
+
+  if [ ! "${host_port}" -ge 0 ]; then
+    host_port=${DEFAULT_HOST_PORT}
+  fi
+
+  if [ ! "${device_port}" -ge 0 ]; then
+    device_port=${DEFAULT_DEVICE_PORT}
+  fi
+
+  if [ -z "${descriptors_path}" ]; then
+    echo "start_printer: Missing --descriptors_path."
+    exit 1;
+  fi
+
+  echo "Starting virtual usbip host....."
+  if ! start_host --port="${host_port}";then
+    echo "Host launch failed"
+    exit 1
+  fi
+
+  echo "${descriptors_path}"
+  echo "${ipp_attributes_path}"
+  echo "${host_port}"
+  echo "${device_port}"
+  echo "${commonargs[@]}"
+  #Starting virtual usb device as per command line args
+  device_bin=
+  if [[ -n ${is_ipp_printer} ]]; then
+    # launch multi functionality usb printer
+    echo "Starting virtual-printer..."
+    device_bin=/usr/local/bin/virtual-printer
+    setup_device "${device_bin}" \
+        --descriptors_path="${descriptors_path}" \
+        --attributes_path="${ipp_attributes_path}" \
+        --host_port="${host_port}" \
+        --port="${device_port}" \
+        "${commonargs[@]}"
+  else
+    # launch raw usb printer
+    echo "Starting virtual-rawpriner..."
+    device_bin=/usr/local/bin/virtual-rawprinter
+    setup_device "${device_bin}" \
+        --descriptors_path="${descriptors_path}" \
+        --host_port="${host_port}" \
+        --port="${device_port}" \
+        "${commonargs[@]}"
+  fi
 
   # This message tells external entity(e.g tast tests) that virtual-usb-printer
   # setup is complete and ready to process any usbip messages.

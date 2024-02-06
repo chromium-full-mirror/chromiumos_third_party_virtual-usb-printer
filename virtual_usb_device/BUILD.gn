@@ -9,8 +9,6 @@ pkg_config("target_defaults") {
     "libbrillo",
     "libchrome",
     "libipp",
-    "libjpeg",
-    "libxml-2.0",
   ]
 }
 
@@ -52,7 +50,13 @@ executable("virtual-usbip-host") {
   install_path = "/usr/local/bin"
 }
 
-executable("virtual-printer") {
+source_set("ipp-manager") {
+  public = [ "ipp_manager.h" ]
+  sources = [ "ipp_manager.cc" ]
+  configs += [ ":target_defaults" ]
+}
+
+static_library("virtual-device") {
   sources = [
     "../common/value_util.cc",
     "../common/value_util.h",
@@ -64,8 +68,6 @@ executable("virtual-printer") {
     "cups_constants.h",
     "device_descriptors.cc",
     "device_descriptors.h",
-    "ipp_manager.cc",
-    "ipp_manager.h",
     "ipp_util.cc",
     "ipp_util.h",
     "load_config.cc",
@@ -76,16 +78,6 @@ executable("virtual-printer") {
     "server.h",
     "usb_device/device_server.cc",
     "usb_device/device_server.h",
-    "usb_device/printer/printer.cc",
-    "usb_device/printer/printer.h",
-    "usb_device/scanner/escl_manager.cc",
-    "usb_device/scanner/escl_manager.h",
-    "usb_device/scanner/scan_jpeg_util.cc",
-    "usb_device/scanner/scan_jpeg_util.h",
-    "usb_device/scanner/scan_xml_util.cc",
-    "usb_device/scanner/scan_xml_util.h",
-    "usb_device/scanner/scanner.cc",
-    "usb_device/scanner/scanner.h",
     "usb_device/usb_device.cc",
     "usb_device/usb_device.h",
     "usb_util.cc",
@@ -101,6 +93,29 @@ executable("virtual-printer") {
     "//virtual-usb-printer/mock_printer:mocking_protos",
     "//virtual-usb-printer/mock_printer:parse_textproto",
   ]
+}
+
+executable("virtual-printer") {
+  sources = [
+    "usb_device/printer/usb_printer.cc",
+    "usb_device/printer/usb_printer.h",
+  ]
+  configs += [ ":target_defaults" ]
+  deps = [
+    ":ipp-manager",
+    ":virtual-device",
+    "//virtual-usb-printer/virtual_usb_device/usb_device/scanner:escl-scanner",
+  ]
+  install_path = "/usr/local/bin"
+}
+
+executable("virtual-rawprinter") {
+  sources = [
+    "usb_device/printer/raw_printer.cc",
+    "usb_device/printer/raw_printer.h",
+  ]
+  configs += [ ":target_defaults" ]
+  deps = [ ":virtual-device" ]
   install_path = "/usr/local/bin"
 }
 

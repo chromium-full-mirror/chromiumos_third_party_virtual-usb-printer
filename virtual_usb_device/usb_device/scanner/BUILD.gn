@@ -1,0 +1,32 @@
+# Copyright 2024 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//common-mk/pkg_config.gni")
+
+pkg_config("target_defaults") {
+  pkg_deps = [
+    "libchrome",
+    "libjpeg",
+    "libxml-2.0",
+  ]
+}
+
+source_set("escl-scanner") {
+  public = [ "scanner.h" ]
+  sources = [
+    "escl_manager.cc",
+    "escl_manager.h",
+    "scan_jpeg_util.cc",
+    "scan_jpeg_util.h",
+    "scan_xml_util.cc",
+    "scan_xml_util.h",
+    "scanner.cc",
+  ]
+
+  configs += [ ":target_defaults" ]
+  deps = [
+    #"//common-mk/testrunner",
+    "//virtual-usb-printer//common:smart_buffer",
+  ]
+}

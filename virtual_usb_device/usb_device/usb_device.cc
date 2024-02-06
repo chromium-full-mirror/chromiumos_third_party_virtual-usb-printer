@@ -4,6 +4,8 @@
 
 #include "usb_device.h"
 
+#include <utility>
+
 #include <base/check.h>
 #include <base/check_op.h>
 #include <base/logging.h>
@@ -123,15 +125,10 @@ InterfaceManager* UsbDevice::GetInterfaceManager(int endpoint) {
   return &interface_managers_[index];
 }
 
-UsbDevice::UsbDevice(const std::string& descriptors_path,
+UsbDevice::UsbDevice(const UsbDescriptors& descriptors,
                      uint16_t port,
                      uint16_t host_port) {
-  auto descriptors = UsbDescriptors::Create(descriptors_path);
-  if (!descriptors.has_value()) {
-    LOG(FATAL) << "Unable to create USB descriptors from file "
-               << descriptors_path;
-  }
-  usb_descriptors_ = descriptors.value();
+  usb_descriptors_ = std::move(descriptors);
   interface_managers_.resize(usb_descriptors_.interface_descriptors().size());
   server_.reset(new DeviceServer(this, port, host_port));
 }
