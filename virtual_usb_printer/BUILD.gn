@@ -60,9 +60,10 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
-      "//virtual-usb-printer/common:smart_buffer",
       "//common-mk/testrunner",
+      "//virtual-usb-printer/common:smart_buffer",
     ]
+    run_test = true
   }
 
   executable("ipp-manager-testrunner") {
@@ -77,17 +78,18 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
-      "//virtual-usb-printer/common:smart_buffer",
       "//common-mk/testrunner",
+      "//virtual-usb-printer/common:smart_buffer",
     ]
+    run_test = true
   }
 
   executable("ipp-util-testrunner") {
     sources = [
+      "../common/value_util.cc",
       "cups_constants.cc",
       "ipp_util.cc",
       "ipp_util_test.cc",
-      "../common/value_util.cc",
     ]
 
     # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
@@ -97,10 +99,11 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
+      "//common-mk/testrunner",
       "//virtual-usb-printer/common:http_util",
       "//virtual-usb-printer/common:smart_buffer",
-      "//common-mk/testrunner",
     ]
+    run_test = true
   }
 
   executable("jpeg-util-testrunner") {
@@ -114,14 +117,15 @@ if (use.test) {
       ":test_config",
     ]
     deps = [ "//common-mk/testrunner" ]
+    run_test = true
   }
 
   executable("load-config-testrunner") {
     sources = [
+      "../common/value_util.cc",
       "device_descriptors.cc",
       "load_config.cc",
       "load_config_test.cc",
-      "../common/value_util.cc",
     ]
     configs += [
       "//common-mk:test",
@@ -129,10 +133,12 @@ if (use.test) {
       ":test_config",
     ]
     deps = [ "//common-mk/testrunner" ]
+    run_test = true
   }
 
   executable("usb-printer-testrunner") {
     sources = [
+      "../common/value_util.cc",
       "escl_manager.cc",
       "ipp_manager.cc",
       "ipp_util.cc",
@@ -143,7 +149,6 @@ if (use.test) {
       "usb_printer.cc",
       "usb_printer_test.cc",
       "usbip.cc",
-      "../common/value_util.cc",
       "xml_util.cc",
     ]
     configs += [
@@ -152,12 +157,13 @@ if (use.test) {
       ":test_config",
     ]
     deps = [
+      "//common-mk/testrunner",
       "//virtual-usb-printer/common:http_util",
       "//virtual-usb-printer/common:smart_buffer",
-      "//common-mk/testrunner",
       "//virtual-usb-printer/mock_printer:implementation",
       "//virtual-usb-printer/mock_printer:mocking_protos",
       "//virtual-usb-printer/mock_printer:parse_textproto",
     ]
+    run_test = true
   }
 }

@@ -5,9 +5,7 @@
 import("//common-mk/pkg_config.gni")
 
 pkg_config("target_defaults") {
-  pkg_deps = [
-    "libchrome",
-  ]
+  pkg_deps = [ "libchrome" ]
 }
 
 source_set("http_util") {
@@ -42,6 +40,7 @@ if (use.test) {
       ":smart_buffer",
       "//common-mk/testrunner",
     ]
+    run_test = true
   }
 
   executable("http-util-testrunner") {
@@ -61,5 +60,6 @@ if (use.test) {
       ":smart_buffer",
       "//common-mk/testrunner",
     ]
+    run_test = true
   }
 }
