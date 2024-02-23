@@ -331,7 +331,6 @@ int main(int argc, char* argv[]) {
 
   if (FLAGS_descriptors_path.empty()) {
     LOG(FATAL) << kUsage;
-    return 1;
   }
 
   base::FilePath document_output_path(FLAGS_record_doc_path);
@@ -341,7 +340,6 @@ int main(int argc, char* argv[]) {
     base::FilePath output_log_path(FLAGS_output_log_dir);
     if (!base::DirectoryExists(output_log_path)) {
       LOG(FATAL) << "Directory doesn't exist.";
-      return 1;
     }
     log_dir = output_log_path;
   } else {
@@ -353,7 +351,6 @@ int main(int argc, char* argv[]) {
     base::FilePath http_output_log_path(FLAGS_http_header_output_dir);
     if (!base::DirectoryExists(http_output_log_path)) {
       LOG(FATAL) << "Directory doesn't exist: " << http_output_log_path;
-      return 1;
     }
     http_log_dir = http_output_log_path;
   }
