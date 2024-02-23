@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -85,7 +86,7 @@ std::optional<EsclManager> InitializeEsclManager(
 // Creates a `MockPrinter` using the `mocking::TestCase` textproto at
 // `script_path`.
 std::unique_ptr<mock_printer::MockPrinter> InitializeMockPrinter(
-    base::StringPiece script_path) {
+    std::string_view script_path) {
   CHECK(!script_path.empty()) << "BUG: expected nonempty `script_path`";
 
   std::string textproto;

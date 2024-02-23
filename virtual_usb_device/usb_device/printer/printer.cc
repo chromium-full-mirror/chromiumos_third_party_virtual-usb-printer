@@ -4,6 +4,7 @@
 
 #include "printer.h"
 
+#include <string_view>
 #include <vector>
 
 #include <base/files/file_util.h>
@@ -54,7 +55,7 @@ void AppendToFile(base::FilePath path, SmartBuffer buf) {
 // Creates a `MockPrinter` using the `mocking::TestCase` textproto at
 // `script_path`.
 std::unique_ptr<mock_printer::MockPrinter> UsbPrinter::CreateMockPrinter(
-    base::StringPiece script_path) {
+    std::string_view script_path) {
   CHECK(!script_path.empty()) << "BUG: expected nonempty `script_path`";
 
   std::string textproto;

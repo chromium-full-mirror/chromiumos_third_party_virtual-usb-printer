@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <base/files/file.h>
 #include <base/files/file_path.h>
@@ -46,7 +47,7 @@ class UsbPrinter : public UsbDevice {
 
  private:
   std::unique_ptr<mock_printer::MockPrinter> CreateMockPrinter(
-      base::StringPiece script_path);
+      std::string_view script_path);
   // Handles printer control specific USB requests.
   void HandleDeviceControl(IConnection* conn,
                            const Urb& usb_request,
