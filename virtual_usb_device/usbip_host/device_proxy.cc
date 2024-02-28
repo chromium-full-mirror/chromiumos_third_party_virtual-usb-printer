@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "virtual-usb-printer/virtual_usb_device/server.h"
-#include "virtual-usb-printer/virtual_usb_device/device_request.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 
 DeviceProxy::DeviceProxy(const uint16_t port,
