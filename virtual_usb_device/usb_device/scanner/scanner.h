@@ -33,6 +33,9 @@ class Scanner {
   // or request method), the response will be an error response.
   HttpResponse HandleEsclRequest(const HttpRequest& request,
                                  const SmartBuffer& request_body);
+  // Create ScannerCapabilities from the config dictionary.
+  static std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
+      const base::Value::Dict& config);
 
  private:
   // Attempts to initialize an ScannerCapabilities.

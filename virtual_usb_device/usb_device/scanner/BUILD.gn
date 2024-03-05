@@ -30,3 +30,46 @@ source_set("escl-scanner") {
     "//virtual-usb-printer//common:smart_buffer",
   ]
 }
+
+if (use.test) {
+  pkg_config("test_config") {
+    pkg_deps = [ "libchrome-test" ]
+  }
+
+  executable("escl-manager-testrunner") {
+    sources = [
+      "../../ipp_util.cc",
+      "escl_manager.cc",
+      "escl_manager_test.cc",
+      "scan_jpeg_util.cc",
+      "scan_xml_util.cc",
+      "scanner.cc",
+    ]
+    output_dir = "$root_out_dir/virtual-usb-device"
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      "//common-mk/testrunner",
+      "//virtual-usb-printer/common:smart_buffer",
+    ]
+    run_test = true
+  }
+
+  executable("jpeg-util-testrunner") {
+    sources = [
+      "scan_jpeg_util.cc",
+      "scan_jpeg_util_test.cc",
+    ]
+    output_dir = "$root_out_dir/virtual-usb-device"
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [ "//common-mk/testrunner" ]
+    run_test = true
+  }
+}

@@ -18,8 +18,8 @@
 #include <base/values.h>
 
 #include "cups_constants.h"
-#include "smart_buffer.h"
-#include "value_util.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/common/value_util.h"
 
 namespace {
 

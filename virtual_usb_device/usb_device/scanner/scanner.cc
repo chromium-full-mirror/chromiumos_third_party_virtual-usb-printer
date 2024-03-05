@@ -90,7 +90,10 @@ std::optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
   return result;
 }
 
-std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
+}  // namespace
+
+// static
+std::optional<ScannerCapabilities> Scanner::CreateScannerCapabilitiesFromConfig(
     const base::Value::Dict& config) {
   ScannerCapabilities result;
   const std::string* make_and_model = config.FindString("MakeAndModel");
@@ -134,8 +137,6 @@ std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
 
   return result;
 }
-
-}  // namespace
 
 // static
 std::unique_ptr<Scanner> Scanner::Create(const std::string& capabilities_path,

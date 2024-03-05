@@ -12,8 +12,8 @@
 #include <gtest/gtest.h>
 
 #include "ipp_util.h"
-#include "smart_buffer.h"
 #include "usbip_constants.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 class IppManagerTest : public testing::Test {
  protected:
@@ -31,6 +31,7 @@ class IppManagerTest : public testing::Test {
                      printer_attributes_,
                      job_attributes_,
                      unsupported_attributes_,
+                     /*attribute_data=*/std::nullopt,
                      base::FilePath()) {
     AddPrinterAttributes(operation_attributes_, kOperationAttributes,
                          &serialized_operation_);

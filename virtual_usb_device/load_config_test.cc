@@ -4,18 +4,18 @@
 
 #include "load_config.h"
 
-#include <map>
 #include <memory>
 #include <optional>
 #include <vector>
 
+#include <base/containers/flat_map.h>
 #include <base/values.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "device_descriptors.h"
 #include "usbip_constants.h"
-#include "virtual_usb_printer/common/value_util.h"
+#include "virtual-usb-printer/common/value_util.h"
 
 namespace {
 
@@ -369,7 +369,7 @@ TEST(GetEndpointDescriptorMap, ValidDescriptor) {
   std::optional<base::Value> value = GetJSONValue(json_contents);
   ASSERT_TRUE(value->is_dict()) << "Failed to extract value of type "
                                 << value->type() << " as dictionary";
-  std::map<uint8_t, std::vector<UsbEndpointDescriptor>> expected = {
+  base::flat_map<uint8_t, std::vector<UsbEndpointDescriptor>> expected = {
       {0,
        {UsbEndpointDescriptor(7, 5, 1, 2, 512, 0),
         UsbEndpointDescriptor(7, 5, 129, 2, 512, 0)}}};

@@ -21,16 +21,19 @@ source_set("smart_buffer") {
   configs += [ ":target_defaults" ]
 }
 
+source_set("value_util") {
+  public = [ "value_util.h" ]
+  sources = [ "value_util.cc" ]
+  configs += [ ":target_defaults" ]
+}
+
 if (use.test) {
   pkg_config("test_config") {
     pkg_deps = [ "libchrome-test" ]
   }
 
   executable("smart-buffer-testrunner") {
-    sources = [
-      "smart_buffer_test.cc",
-      "value_util.cc",
-    ]
+    sources = [ "smart_buffer_test.cc" ]
     configs += [
       "//common-mk:test",
       ":target_defaults",
@@ -38,16 +41,14 @@ if (use.test) {
     ]
     deps = [
       ":smart_buffer",
+      ":value_util",
       "//common-mk/testrunner",
     ]
     run_test = true
   }
 
   executable("http-util-testrunner") {
-    sources = [
-      "http_util_test.cc",
-      "value_util.cc",
-    ]
+    sources = [ "http_util_test.cc" ]
 
     # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
     configs += [
@@ -58,6 +59,7 @@ if (use.test) {
     deps = [
       ":http_util",
       ":smart_buffer",
+      ":value_util",
       "//common-mk/testrunner",
     ]
     run_test = true

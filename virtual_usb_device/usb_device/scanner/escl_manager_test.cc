@@ -17,7 +17,8 @@
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 
-#include "xml_util.h"
+#include "scan_xml_util.h"
+#include "scanner.h"
 
 using base::Value;
 using ::testing::ElementsAre;
@@ -224,7 +225,7 @@ std::string GetCapLogStr() {
 
 TEST(ScannerCapabilities, Initialize) {
   std::optional<ScannerCapabilities> opt_caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(opt_caps);
 
   ScannerCapabilities caps = opt_caps.value();
@@ -250,75 +251,75 @@ TEST(ScannerCapabilities, Initialize) {
 TEST(ScannerCapabilities, InitializeFailColorModeHasInteger) {
   Value::Dict json = CreateCapabilitiesJson();
   json.FindListByDottedPath("Platen.ColorModes")->Append(Value(9));
-  EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailDocumentFormatsHasDouble) {
   Value::Dict json = CreateCapabilitiesJson();
   json.FindListByDottedPath("Platen.DocumentFormats")->Append(Value(2.7));
-  EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailResolutionsHasString) {
   Value::Dict json = CreateCapabilitiesJson();
   json.FindListByDottedPath("Platen.Resolutions")->Append(Value("600"));
-  EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingMakeAndModel) {
   Value::Dict json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.Remove("MakeAndModel"));
-  EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingSerialNumber) {
   Value::Dict json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.Remove("SerialNumber"));
-  EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingColorModes) {
   Value::Dict json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.ColorModes"));
-  EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingDocumentFormats) {
   Value::Dict json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.DocumentFormats"));
-  EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingResolutions) {
   Value::Dict json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.Resolutions"));
-  EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingPlatenSection) {
   Value::Dict json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.Remove("Platen"));
-  EXPECT_FALSE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializePassMissingMaxWidth) {
   Value::Dict json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.MaxWidth"));
   EXPECT_TRUE(json.RemoveByDottedPath("ADF.MaxWidth"));
-  EXPECT_TRUE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_TRUE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializePassMissingMaxHeight) {
   Value::Dict json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.MaxHeight"));
   EXPECT_TRUE(json.RemoveByDottedPath("ADF.MaxHeight"));
-  EXPECT_TRUE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_TRUE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializePassMissingJustification) {
   Value::Dict json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("ADF.XJustification"));
-  EXPECT_TRUE(CreateScannerCapabilitiesFromConfig(std::move(json)));
+  EXPECT_TRUE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 // Despite taking a mutable pointer to |doc|, this does not modify |doc|.
@@ -350,7 +351,7 @@ void HasPathWithContents(xmlDoc* doc,
 
 TEST(ScannerCapabilities, AsXml) {
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   std::vector<uint8_t> xml = ScannerCapabilitiesAsXml(caps.value());
   xmlDoc* doc = xmlReadMemory(reinterpret_cast<const char*>(xml.data()),
@@ -496,7 +497,7 @@ TEST(HandleEsclRequest, ScannerCapabilities) {
   request.uri = "/eSCL/ScannerCapabilities";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   HttpResponse response = manager.HandleEsclRequest(request, SmartBuffer());
@@ -563,7 +564,7 @@ TEST(HandleEsclRequest, ScanJobs) {
   request.uri = "/eSCL/ScanJobs";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
@@ -579,7 +580,7 @@ TEST(HandleEsclRequest, ScanJobsInvalidXmlRequest) {
   request.uri = "/eSCL/ScanJobs";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   char invalidRequestXml[] = "Invalid XML";
@@ -597,7 +598,7 @@ TEST(HandleEsclRequest, ScanInvalidResolution) {
   request.uri = "/eSCL/ScanJobs";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(
@@ -615,7 +616,7 @@ TEST(HandleEsclRequest, ScanUnsupportedResolution) {
   request.uri = "/eSCL/ScanJobs";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kScanUnsupportedInvalidResolution,
@@ -633,7 +634,7 @@ TEST(HandleEsclRequest, ScanFeeder) {
   request.uri = "/eSCL/ScanJobs";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kScanFeeder, kScanFeeder + strlen(kScanFeeder));
@@ -649,7 +650,8 @@ TEST(HandleEsclRequest, ScanNoFeederCapabilities) {
   request.uri = "/eSCL/ScanJobs";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson(false));
+      Scanner::CreateScannerCapabilitiesFromConfig(
+          CreateCapabilitiesJson(false));
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kScanFeeder, kScanFeeder + strlen(kScanFeeder));
@@ -665,7 +667,7 @@ TEST(HandleEsclRequest, ScanUnknownSource) {
   request.uri = "/eSCL/ScanJobs";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kScanInvalidSource,
@@ -688,7 +690,7 @@ TEST(HandleEsclRequest, InvalidScanJobs) {
     value->erase(value->end() - 1);
   }
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(std::move(json));
+      Scanner::CreateScannerCapabilitiesFromConfig(std::move(json));
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
@@ -704,7 +706,7 @@ TEST(HandleEsclRequest, DeleteExistingScanJob) {
   request.uri = "/eSCL/ScanJobs";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   EsclManager manager(caps.value(), base::FilePath());
   std::vector<uint8_t> xml(kNewScan, kNewScan + strlen(kNewScan));
@@ -742,7 +744,7 @@ TEST(HandleEsclRequest, ScanJobsLogFileProvided) {
   request.uri = "/eSCL/ScanJobs";
 
   std::optional<ScannerCapabilities> caps =
-      CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
+      Scanner::CreateScannerCapabilitiesFromConfig(CreateCapabilitiesJson());
   ASSERT_TRUE(caps);
   base::ScopedTempDir temp_dir;
   ASSERT_TRUE(temp_dir.CreateUniqueTempDir());

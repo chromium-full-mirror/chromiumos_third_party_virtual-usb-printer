@@ -4,6 +4,36 @@
 
 import("//common-mk/pkg_config.gni")
 
+group("virtual-usb-device-all") {
+  deps = [ ":virtual-usbip-host" ]
+  deps += [ ":virtual-printer" ]
+  deps += [ ":virtual-rawprinter" ]
+  deps += [ ":install_scripts" ]
+
+  if (use.test) {
+    deps += [
+      "//virtual-usb-printer/common:http-util-testrunner",
+      "//virtual-usb-printer/common:smart-buffer-testrunner",
+      "//virtual-usb-printer/mock_printer:unit_tests",
+      "//virtual-usb-printer/virtual_usb_device:install_scripts",
+      "//virtual-usb-printer/virtual_usb_device:ipp-manager-testrunner",
+      "//virtual-usb-printer/virtual_usb_device:ipp-util-testrunner",
+      "//virtual-usb-printer/virtual_usb_device:load-config-testrunner",
+      "//virtual-usb-printer/virtual_usb_device/usb_device/scanner:escl-manager-testrunner",
+      "//virtual-usb-printer/virtual_usb_device/usb_device/scanner:jpeg-util-testrunner",
+
+      # TODO(santo) : Enable this test with new socket implementation
+      #"//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-test",
+    ]
+  }
+}
+
+install_config("install_scripts") {
+  sources = [ "../scripts/virtual-usb-printer.sh" ]
+  install_path = "/usr/local/bin"
+  options = "-m0755"
+}
+
 pkg_config("target_defaults") {
   pkg_deps = [
     "libbrillo",
@@ -14,8 +44,6 @@ pkg_config("target_defaults") {
 
 executable("virtual-usbip-host") {
   sources = [
-    "../common/value_util.cc",
-    "../common/value_util.h",
     "connection/connection_factory.cc",
     "connection/connection_factory.h",
     "connection/socket_connection.cc",
@@ -42,10 +70,12 @@ executable("virtual-usbip-host") {
     "usbip_host/usbip_server.cc",
     "usbip_host/usbip_server.h",
   ]
+  output_dir = "$root_out_dir/virtual-usb-device"
   configs += [ ":target_defaults" ]
   deps = [
     "//virtual-usb-printer/common:http_util",
     "//virtual-usb-printer/common:smart_buffer",
+    "//virtual-usb-printer/common:value_util",
   ]
   install_path = "/usr/local/bin"
 }
@@ -58,8 +88,6 @@ source_set("ipp-manager") {
 
 static_library("virtual-device") {
   sources = [
-    "../common/value_util.cc",
-    "../common/value_util.h",
     "connection/connection_factory.cc",
     "connection/connection_factory.h",
     "connection/socket_connection.cc",
@@ -85,10 +113,12 @@ static_library("virtual-device") {
     "usbip.cc",
     "usbip.h",
   ]
+  output_dir = "$root_out_dir/virtual-usb-device"
   configs += [ ":target_defaults" ]
   deps = [
     "//virtual-usb-printer/common:http_util",
     "//virtual-usb-printer/common:smart_buffer",
+    "//virtual-usb-printer/common:value_util",
     "//virtual-usb-printer/mock_printer:implementation",
     "//virtual-usb-printer/mock_printer:mocking_protos",
     "//virtual-usb-printer/mock_printer:parse_textproto",
@@ -100,6 +130,7 @@ executable("virtual-printer") {
     "usb_device/printer/usb_printer.cc",
     "usb_device/printer/usb_printer.h",
   ]
+  output_dir = "$root_out_dir/virtual-usb-device"
   configs += [ ":target_defaults" ]
   deps = [
     ":ipp-manager",
@@ -114,6 +145,7 @@ executable("virtual-rawprinter") {
     "usb_device/printer/raw_printer.cc",
     "usb_device/printer/raw_printer.h",
   ]
+  output_dir = "$root_out_dir/virtual-usb-device"
   configs += [ ":target_defaults" ]
   deps = [ ":virtual-device" ]
   install_path = "/usr/local/bin"
@@ -140,6 +172,7 @@ if (use.test) {
       "usbip_host/usbip_manager.h",
       "usbip_host/usbip_manager_test.cc",
     ]
+    output_dir = "$root_out_dir/virtual-usb-device"
     configs += [
       "//common-mk:test",
       ":target_defaults",
@@ -149,5 +182,66 @@ if (use.test) {
       "//common-mk/testrunner",
       "//virtual-usb-printer//common:smart_buffer",
     ]
+  }
+
+  executable("ipp-manager-testrunner") {
+    sources = [
+      "ipp_manager.cc",
+      "ipp_manager_test.cc",
+      "ipp_util.cc",
+    ]
+    output_dir = "$root_out_dir/virtual-usb-device"
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      "//common-mk/testrunner",
+      "//virtual-usb-printer/common:smart_buffer",
+    ]
+    run_test = true
+  }
+
+  executable("ipp-util-testrunner") {
+    sources = [
+      "cups_constants.cc",
+      "ipp_util.cc",
+      "ipp_util_test.cc",
+    ]
+    output_dir = "$root_out_dir/virtual-usb-device"
+
+    # TODO(oka); Remove //common-mk:test by making testrunner to public_config //common-mk:test
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      "//common-mk/testrunner",
+      "//virtual-usb-printer/common:http_util",
+      "//virtual-usb-printer/common:smart_buffer",
+      "//virtual-usb-printer/common:value_util",
+    ]
+    run_test = true
+  }
+
+  executable("load-config-testrunner") {
+    sources = [
+      "device_descriptors.cc",
+      "load_config.cc",
+      "load_config_test.cc",
+    ]
+    output_dir = "$root_out_dir/virtual-usb-device"
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      "//common-mk/testrunner",
+      "//virtual-usb-printer/common:value_util",
+    ]
+    run_test = true
   }
 }

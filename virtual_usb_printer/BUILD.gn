@@ -4,6 +4,21 @@
 
 import("//common-mk/pkg_config.gni")
 
+group("virtual-usb-printer-all") {
+  deps = [ ":virtual-usb-printer" ]
+  if (use.test) {
+    deps += [
+      "//virtual-usb-printer/mock_printer:unit_tests",
+      "//virtual-usb-printer/virtual_usb_printer:escl-manager-testrunner",
+      "//virtual-usb-printer/virtual_usb_printer:ipp-manager-testrunner",
+      "//virtual-usb-printer/virtual_usb_printer:ipp-util-testrunner",
+      "//virtual-usb-printer/virtual_usb_printer:jpeg-util-testrunner",
+      "//virtual-usb-printer/virtual_usb_printer:load-config-testrunner",
+      "//virtual-usb-printer/virtual_usb_printer:usb-printer-testrunner",
+    ]
+  }
+}
+
 pkg_config("target_defaults") {
   pkg_deps = [
     "libbrillo",

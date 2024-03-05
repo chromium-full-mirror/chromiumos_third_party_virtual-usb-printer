@@ -28,7 +28,7 @@ class IppManager {
              std::vector<IppAttribute>& printer_attributes,
              std::vector<IppAttribute>& job_attributes,
              std::vector<IppAttribute>& unsupported_attributes,
-             std::optional<base::Value> attributes_data_,
+             std::optional<base::Value> attributes_data,
              const base::FilePath& document_output_path);
 
   // Returns a standard response based on the operation specified in
