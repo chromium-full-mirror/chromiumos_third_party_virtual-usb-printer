@@ -8,20 +8,28 @@ group("all") {
   deps = [ "//virtual-usb-printer/virtual_usb_printer:virtual-usb-printer" ]
   deps += [ "//virtual-usb-printer/virtual_usb_device:virtual-usbip-host" ]
   deps += [ "//virtual-usb-printer/virtual_usb_device:virtual-printer" ]
+  deps += [ ":install_scripts" ]
 
   if (use.test) {
     deps += [
-      "//virtual-usb-printer/virtual_usb_printer:escl-manager-testrunner",
       "//virtual-usb-printer/common:http-util-testrunner",
+      "//virtual-usb-printer/common:smart-buffer-testrunner",
+      "//virtual-usb-printer/mock_printer:unit_tests",
+      "//virtual-usb-printer/virtual_usb_printer:escl-manager-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:ipp-manager-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:ipp-util-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:jpeg-util-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:load-config-testrunner",
-      "//virtual-usb-printer/common:smart-buffer-testrunner",
       "//virtual-usb-printer/virtual_usb_printer:usb-printer-testrunner",
-      "//virtual-usb-printer/mock_printer:unit_tests",
+
       # TODO(santo) : Enable this test with new socket implementation
       #"//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-test",
     ]
   }
+}
+
+install_config("install_scripts") {
+  sources = [ "scripts/virtual-usb-printer.sh" ]
+  install_path = "/usr/local/bin"
+  options = "-m0755"
 }

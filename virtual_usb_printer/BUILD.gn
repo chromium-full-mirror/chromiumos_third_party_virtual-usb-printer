@@ -39,6 +39,7 @@ executable("virtual-usb-printer") {
     "//virtual-usb-printer/mock_printer:mocking_protos",
     "//virtual-usb-printer/mock_printer:parse_textproto",
   ]
+  install_path = "/usr/local/bin"
 }
 
 if (use.test) {
