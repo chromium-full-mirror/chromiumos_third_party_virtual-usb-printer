@@ -170,7 +170,8 @@ HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
 
   } else if (base::StartsWith(request.uri, "/eSCL",
                               base::CompareCase::SENSITIVE)) {
-    return scanner_->HandleEsclRequest(request, *body);
+    if (scanner_)
+      return scanner_->HandleEsclRequest(request, *body);
   }
 
   HttpResponse response;

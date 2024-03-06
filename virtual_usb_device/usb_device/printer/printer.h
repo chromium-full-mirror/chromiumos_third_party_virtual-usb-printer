@@ -95,8 +95,8 @@ class UsbPrinter : public UsbDevice {
   bool SupportScanner() const { return true; }
 
   // This is always null for non-ipp based printer.
-  std::unique_ptr<IppManager> ipp_manager_ = nullptr;
-  std::unique_ptr<Scanner> scanner_ = nullptr;
+  std::unique_ptr<IppManager> ipp_manager_;
+  std::unique_ptr<Scanner> scanner_;
 
   std::unique_ptr<mock_printer::MockPrinter> mock_printer_;
 
