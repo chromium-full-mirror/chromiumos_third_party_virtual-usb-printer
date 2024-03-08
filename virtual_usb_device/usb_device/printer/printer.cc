@@ -87,7 +87,7 @@ UsbPrinter::UsbPrinter(const std::string descriptors_path,
       document_output_path_(document_output_path),
       http_output_dir_(http_output_dir) {
   // IPP manager
-  if (IsIppUsbPrinter() && !ipp_attributes_path.empty()) {
+  if (IsIppUsbPrinter()) {
     ipp_manager_ =
         IppManager::Create(ipp_attributes_path, document_output_path_);
   }
@@ -158,20 +158,21 @@ HttpResponse UsbPrinter::GenerateHttpResponse(const HttpRequest& request,
                                               SmartBuffer* body) {
   LOG(INFO) << request.request_line;
   if (request.method == "POST" && request.uri == "/ipp/print") {
-    if (mock_printer_) {
-      HttpResponse retval = mock_printer_->GenerateHttpResponse(body);
-      if (!retval.default_response) {
-        return retval;
-      }
+    if (!mock_printer_) {
+      return GenerateHttpResponseFromIppManager(body);
     }
 
-    if (ipp_manager_)
+    HttpResponse retval = mock_printer_->GenerateHttpResponse(body);
+
+    if (retval.default_response) {
       return GenerateHttpResponseFromIppManager(body);
+    }
+
+    return retval;
 
   } else if (base::StartsWith(request.uri, "/eSCL",
                               base::CompareCase::SENSITIVE)) {
-    if (scanner_)
-      return scanner_->HandleEsclRequest(request, *body);
+    return scanner_->HandleEsclRequest(request, *body);
   }
 
   HttpResponse response;

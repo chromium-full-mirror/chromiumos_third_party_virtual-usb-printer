@@ -22,6 +22,8 @@ class Scanner {
   // operation.
   static std::unique_ptr<Scanner> Create(const std::string& capabilities_path,
                                          const base::FilePath log_dir);
+  // Create scanner with no caps which results in having default EsclManager.
+  Scanner();
   // Create Scanner object from escl capabilities and logging directory.
   Scanner(const ScannerCapabilities caps, const base::FilePath& logdir);
   ~Scanner() = default;

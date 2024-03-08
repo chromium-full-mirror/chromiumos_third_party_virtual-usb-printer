@@ -17,6 +17,9 @@ const uint16_t IppManager::kSuccessStatus = 0;
 std::unique_ptr<IppManager> IppManager::Create(
     const std::string& ipp_attributes_path,
     const base::FilePath& document_output_path) {
+  if (ipp_attributes_path.empty())
+    return std::make_unique<IppManager>();
+
   std::optional<std::string> attributes_contents =
       GetJSONContents(ipp_attributes_path);
   if (!attributes_contents.has_value()) {

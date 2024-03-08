@@ -140,6 +140,9 @@ std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
 // static
 std::unique_ptr<Scanner> Scanner::Create(const std::string& capabilities_path,
                                          const base::FilePath log_dir) {
+  if (capabilities_path.empty()) {
+    return std::make_unique<Scanner>();
+  }
   std::optional<ScannerCapabilities> scanner_caps =
       InitializeEsclCaps(capabilities_path);
   if (!scanner_caps.has_value()) {
@@ -183,6 +186,8 @@ std::optional<ScannerCapabilities> Scanner::InitializeEsclCaps(
 
   return capabilities;
 }
+
+Scanner::Scanner() : escl_manager_(new EsclManager()) {}
 
 Scanner::Scanner(const ScannerCapabilities caps, const base::FilePath& logdir) {
   escl_manager_.reset(new EsclManager(caps, logdir));
