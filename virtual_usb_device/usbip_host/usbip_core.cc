@@ -19,8 +19,20 @@
 
 namespace {
 
-std::string BusIdAsString(const BusId& busid) {
+std::string BusIdToString(const BusId& busid) {
   return std::string(busid.begin(), busid.end());
+}
+
+BusId StringToBusId(const std::string& busid) {
+  BusId id;
+  size_t len = busid.length();
+  if (len > id.size())
+    LOG(WARNING) << "busid(string) size is larger than expected BusId size";
+  size_t to_copy = std::min<size_t>(len, id.size());
+
+  std::fill(id.begin(), id.end(), '\0');
+  std::copy(busid.begin(), busid.begin() + to_copy, id.begin());
+  return id;
 }
 
 }  // namespace
@@ -40,9 +52,16 @@ bool UsbIpCore::RegisterDevice(const uint16_t port) {
 
   device_count_++;
 
-  LOG(INFO) << "Device registered: BusId " << BusIdAsString(id)
+  LOG(INFO) << "Device registered: BusId " << BusIdToString(id)
             << ", Device port: " << port << ", device count: " << (devnum);
   return true;
+}
+
+bool UsbIpCore::DeregisterDevice(const uint16_t& port) {
+  const auto it = std::remove_if(
+      proxy_map_.begin(), proxy_map_.end(),
+      [port](const auto& value) { return (value.second->GetPort() == port); });
+  return (it != proxy_map_.end());
 }
 
 void UsbIpCore::DetachUsbDevice(IConnection* conn) {
@@ -76,7 +95,7 @@ bool UsbIpCore::HandleAttachInternal(IConnection* conn) {
   OpRepImport rep;
 
   const auto& busid = ReadBusId(conn);
-  LOG(INFO) << "Attaching device with busid: " << BusIdAsString(busid);
+  LOG(INFO) << "Attaching device with busid: " << BusIdToString(busid);
 
   auto it = proxy_map_.find(busid);
   if (it != proxy_map_.end()) {
@@ -93,7 +112,7 @@ bool UsbIpCore::HandleAttachInternal(IConnection* conn) {
       }
     }
   } else {
-    LOG(WARNING) << "No device registered with busid: " << BusIdAsString(busid);
+    LOG(WARNING) << "No device registered with busid: " << BusIdToString(busid);
   }
 
   SetOpHeader(OP_REP_IMPORT_CMD, status, &rep.header);
@@ -183,6 +202,15 @@ bool UsbIpCore::HandleUsbCommandSubmitWithProxy(
   }
 
   return true;
+}
+
+bool UsbIpCore::IsAttached(const std::string& busId) {
+  BusId id = StringToBusId(busId);
+  bool is_attached = false;
+  if (proxy_map_.find(id) != proxy_map_.end()) {
+    is_attached = proxy_map_[id]->IsAttached();
+  }
+  return is_attached;
 }
 
 void UsbIpCore::SendUsbipDataReceivedAck(IConnection* conn,

@@ -23,27 +23,29 @@ std::unique_ptr<DeviceProxy> DeviceProxy::Create(const uint16_t port,
 DeviceProxy::DeviceProxy(const uint16_t port,
                          const ::BusId& id,
                          const size_t devnum)
-    : connection_(ConnectionFactory::instance().MakeClientConnection(port)),
-      busid_(id),
-      devnum_(devnum) {
-  Connect();
+    : device_port_(port), busid_(id), devnum_(devnum) {
+  ConnectDevice();
 }
 
 DeviceProxy::~DeviceProxy() {
   if (is_connected_)
-    Disconnect();
+    DisconnectDevice();
   attached_socket_ = -1;
 }
 
-bool DeviceProxy::Connect() {
-  is_connected_ = connection_->Start();
+bool DeviceProxy::ConnectDevice() {
+  connection_ = std::make_unique<ClientSocketConnection>(device_port_);
+  bool is_connected_ = connection_->Start();
   if (is_connected_)
     LOG(INFO) << "Connected with usb device on port: " << GetPort();
-
+  else
+    LOG(ERROR) << "Failed to connect with usb device on port: " << GetPort();
   return is_connected_;
 }
 
-void DeviceProxy::Disconnect() {
+void DeviceProxy::DisconnectDevice() {
+  if (!connection_)
+    return;
   connection_->Stop();
   is_connected_ = false;
   LOG(INFO) << "Disconnected with usb device on port: " << GetPort();

@@ -14,10 +14,14 @@
 #include <memory>
 
 #include <base/check_op.h>
+#include <base/functional/bind.h>
+#include <base/functional/callback.h>
+#include <base/functional/callback_helpers.h>
 #include <base/logging.h>
 
-Server::Server(uint16_t port)
-    : connection_(ConnectionFactory::instance().MakeServerConnection(port)) {}
+#include "virtual-usb-printer/virtual_usb_device/connection/socket_connection.h"
+
+Server::Server(uint16_t port) : connection_(new ServerSocketConnection(port)) {}
 
 void Server::Stop() {
   connection_->Stop();
@@ -26,6 +30,8 @@ void Server::Stop() {
 void Server::HandleLoop() {
   while (true) {
     auto conn = connection_->Accept();
+    if (!conn)
+      return;
     LOG(INFO) << "Connection accepted";
     HandleConnection(std::move(conn));
   }
@@ -43,40 +49,4 @@ bool Server::Start() {
   OnServerStarted();
   HandleLoop();
   return true;
-}
-
-void SendBuffer(int sockfd, const SmartBuffer& smart_buffer) {
-  size_t remaining = smart_buffer.size();
-  size_t total = 0;
-  while (remaining > 0) {
-    size_t to_send = std::min<size_t>(remaining, 512UL);
-    ssize_t sent =
-        send(sockfd, smart_buffer.data() + total, to_send, MSG_NOSIGNAL);
-    CHECK_GE(sent, 0) << "Failed to write data to socket";
-    CHECK_GE(remaining, sent) << "Sent more data than expected";
-    size_t sent_unsigned = static_cast<size_t>(sent);
-    total += sent_unsigned;
-    remaining -= sent_unsigned;
-  }
-}
-
-SmartBuffer ReceiveBuffer(int sockfd, size_t size) {
-  SmartBuffer smart_buffer(size);
-  auto buf = std::make_unique<uint8_t[]>(size);
-  size_t remaining = size;
-  size_t total = 0;
-  while (total < size) {
-    size_t to_receive = std::min<size_t>(remaining, 512UL);
-    ssize_t received = recv(sockfd, buf.get() + total, to_receive, 0);
-    if (received == 0 && size != 0) {
-      LOG(INFO) << "Client has closed connection";
-      return smart_buffer;
-    }
-    CHECK_GE(remaining, received) << "Received more data than expected";
-    size_t received_unsigned = static_cast<size_t>(received);
-    total += received_unsigned;
-    remaining -= received_unsigned;
-  }
-  smart_buffer.Add(buf.get(), size);
-  return smart_buffer;
 }

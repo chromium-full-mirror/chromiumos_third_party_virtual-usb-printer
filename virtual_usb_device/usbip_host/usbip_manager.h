@@ -13,8 +13,8 @@
 #include <base/threading/thread.h>
 #include <base/task/sequenced_task_runner.h>
 
-#include "virtual-usb-printer/virtual_usb_device/server.h"
 #include "usbip_core.h"
+#include "virtual-usb-printer/virtual_usb_device/server.h"
 
 // This class manages usbip connections and requests recevied from the user.
 // Each usbip requests is processed in the new `RequestThread`, which is created

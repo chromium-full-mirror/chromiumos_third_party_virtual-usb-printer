@@ -14,13 +14,12 @@
 #include <base/logging.h>
 
 #include "usb_device.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/socket_connection.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
 DeviceServer::DeviceServer(uint16_t port, uint16_t host_port)
-    : Server(port),
-      host_connection_(
-          ConnectionFactory::instance().MakeClientConnection(host_port)) {}
+    : Server(port), host_connection_(new ClientSocketConnection(host_port)) {}
 
 void DeviceServer::OnServerStarted() {
   if (!RegisterToHost()) {

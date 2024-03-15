@@ -14,7 +14,7 @@
 #include <base/notreached.h>
 #include <base/functional/callback.h>
 
-#include "virtual-usb-printer/virtual_usb_device/connection/connection_factory.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/socket_connection.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
@@ -33,15 +33,20 @@ class DeviceProxy {
   static std::unique_ptr<DeviceProxy> Create(const uint16_t port,
                                              const BusId& id,
                                              const size_t devnum);
+  // Create a proxy object for usb device which listens on
+  // `port` with usb information `info`.
+  DeviceProxy(const uint16_t port, const ::BusId& id, const size_t devnum);
   virtual ~DeviceProxy();
 
   // Connect with usb devices process via socket.
-  bool Connect();
+  // Return true on successful connection, otherwise returns false.
+  virtual bool ConnectDevice();
   // Close socket connection to usb devices.
-  void Disconnect();
+  virtual void DisconnectDevice();
 
-  // Connects with the device server and attaches a connection to this proxy.
-  // All requests received on the connection will be handled by this proxy.
+  // Connects with the device server and attaches a connection `conn` to this
+  // proxy. All requests received on the `conn` will be handled by this
+  // proxy.
   void Attach(const IConnection* conn);
 
   // Disconnect with the device server and removes the attached connection.
@@ -62,12 +67,12 @@ class DeviceProxy {
   // if `response_data` is non-empty then `stalled` must be `false`.
   // All of above cases denotes success and thus returns `true`. `false`
   // is returned when connection to the device process fails.
-  bool HandleUsbDeviceRequest(const Urb& urb_request,
-                              const SmartBuffer& data,
-                              SmartBuffer* response_data,
-                              bool* stalled);
-  // Returns port number on which usb device is listening.
-  uint16_t GetPort() const { return connection_->get_port(); }
+  virtual bool HandleUsbDeviceRequest(const Urb& urb_request,
+                                      const SmartBuffer& data,
+                                      SmartBuffer* response_data,
+                                      bool* stalled);
+  // Returns port number to which this device proxy is connected to.
+  uint16_t GetPort() const { return device_port_; }
 
   // Returns bus id of device.
   std::string BusId() const { return std::string(device_info_.device.busID); }
@@ -75,16 +80,16 @@ class DeviceProxy {
   // Returns whether this proxy is connected with actual usb device.
   bool IsConnected() const { return is_connected_; }
   bool IsAttached() const { return (attached_socket_ != -1 ? true : false); }
+  // Sends usb requests to the usb device to fetch device descriptors, based on
+  // which `OpRepDevInfo` structure is prepared.
+  // Returns false, if there are any error in sending the usb requests.
   bool GetOpRepDevInfo(OpRepDevInfo* info);
 
  private:
-  // FIXME(santo:) Remove this function.
   // Receives `size` amount of response data. The size is determined by the
   // `HandleUsbDeviceRequest` call.
+  // Returns false if there are any communication error with device.
   bool ReadUsbResponseData(const size_t size, SmartBuffer* response_data);
-  // Create a proxy object for usb device which listens on
-  // `port` with usb information `info`
-  DeviceProxy(const uint16_t port, const ::BusId& id, const size_t devnum);
 
   // connection to device server
   std::unique_ptr<IConnection> connection_;
@@ -95,6 +100,7 @@ class DeviceProxy {
 
   int attached_socket_ = -1;
 
+  const uint16_t device_port_;
   const ::BusId busid_;
   const size_t devnum_;
 };

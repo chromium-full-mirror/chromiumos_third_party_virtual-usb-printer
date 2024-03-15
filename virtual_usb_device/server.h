@@ -12,7 +12,7 @@
 
 #include <base/files/scoped_file.h>
 
-#include "connection/connection_factory.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
 #include "virtual-usb-printer/common/smart_buffer.h"
 
 class ConnectionHandler {
@@ -24,8 +24,6 @@ class ConnectionHandler {
 };
 
 // Generic TCP/IP server.
-// TODO(santo): Move socket related code in seperate class
-// so that it this class could be mocked on unit tests.
 class Server {
  public:
   // Creates a TCP server instance which will listen on specified
@@ -50,7 +48,7 @@ class Server {
   void HandleConnection(std::unique_ptr<IConnection> conn);
 
   // Returns the port number on which this server is listening.
-  uint16_t GetListenPort() const { return connection_->get_port(); }
+  uint16_t GetListenPort() const { return connection_->GetPort(); }
 
   void SetConnectionHandler(ConnectionHandler* handler) {
     connection_handler_ = handler;

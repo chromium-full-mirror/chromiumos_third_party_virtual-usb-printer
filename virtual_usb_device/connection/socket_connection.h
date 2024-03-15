@@ -2,24 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef VIRTUAL_USB_DEVICE_SOCKET_CONNECTION_H_
-#define VIRTUAL_USB_DEVICE_SOCKET_CONNECTION_H_
+#ifndef VIRTUAL_USB_DEVICE_CONNECTION_SOCKET_CONNECTION_H_
+#define VIRTUAL_USB_DEVICE_CONNECTION_SOCKET_CONNECTION_H_
 
 #include <memory>
-#include <cstdint>
 
 #include "connection.h"
 
+// IP socket client implementation of `IConnection`
 class ClientSocketConnection : public IConnection {
  public:
-  ClientSocketConnection(uint16_t port);
-  ClientSocketConnection(int fd);
+  explicit ClientSocketConnection(uint16_t port);
+  explicit ClientSocketConnection(int fd);
+  ~ClientSocketConnection() override;
 
   bool Start() override;
   void Stop() override;
 
   int FD() const override;
-  uint16_t get_port() const override;
+  uint16_t GetPort() const override;
 
   bool Send(const SmartBuffer& smart_buffer) const override;
   SmartBuffer Receive(size_t size) const override;
@@ -27,18 +28,19 @@ class ClientSocketConnection : public IConnection {
  private:
   // Listen port of server this client will connect to.
   uint16_t port_;
-  // Socket file descriptor.
   int fd_;
 };
 
+// IP socket server implementation of `IConnection`
 class ServerSocketConnection : public IServerConnection {
  public:
-  ServerSocketConnection(uint16_t port);
+  explicit ServerSocketConnection(uint16_t port);
+  ~ServerSocketConnection();
 
   bool Start() override;
   void Stop() override;
 
-  uint16_t get_port() const override;
+  uint16_t GetPort() const override;
 
   std::unique_ptr<IConnection> Accept() override;
 
@@ -49,4 +51,4 @@ class ServerSocketConnection : public IServerConnection {
   int fd_;
 };
 
-#endif
+#endif  // VIRTUAL_USB_DEVICE_CONNECTION_SOCKET_CONNECTION_H_

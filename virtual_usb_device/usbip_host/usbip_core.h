@@ -37,6 +37,7 @@ class UsbIpCore {
   // Device is deregistered whenever device process is inaccessible during
   // operations.
   bool RegisterDevice(const uint16_t port);
+  bool DeregisterDevice(const uint16_t& port);
 
   // Disconnects with the attached usb device and is triggered by `usbip detach`
   // command.
