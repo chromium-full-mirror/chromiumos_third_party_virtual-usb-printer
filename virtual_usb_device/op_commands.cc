@@ -123,38 +123,11 @@ SmartBuffer PackOpRepDevlistHeader(OpRepDevlistHeader devlist_header) {
   return packed_header;
 }
 
-void UnpackOpRepDeviceInterface(OpRepDeviceInterface* interface) {
-  interface->bInterfaceClass = ntohs(interface->bInterfaceClass);
-  interface->bInterfaceSubClass = ntohs(interface->bInterfaceSubClass);
-  interface->bInterfaceProtocol = ntohs(interface->bInterfaceProtocol);
-  interface->padding = ntohs(interface->padding);
-}
-
-OpRepDeviceInterface UnpackOpRepDeviceInterface(SmartBuffer* buf) {
-  OpRepDeviceInterface interface;
-  CHECK(buf->size() >= sizeof(OpRepDeviceInterface));
-  memcpy(&interface, buf->data(), sizeof(interface));
-  buf->Erase(0, sizeof(interface));
-
-  UnpackOpRepDeviceInterface(&interface);
-  return interface;
-}
-
-SmartBuffer PackOpRepDeviceInterface(OpRepDeviceInterface interface) {
-  SmartBuffer packed_buf;
-  interface.bInterfaceClass = htons(interface.bInterfaceClass);
-  interface.bInterfaceSubClass = htons(interface.bInterfaceSubClass);
-  interface.bInterfaceProtocol = htons(interface.bInterfaceProtocol);
-  interface.padding = ntohs(interface.padding);
-  packed_buf.Add(interface);
-  return packed_buf;
-}
-
 SmartBuffer PackOpRepDevInfo(OpRepDevInfo& info) {
   SmartBuffer packed_info = PackOpRepDevice(info.device);
   const size_t num = info.device.bNumInterfaces;
   for (size_t i = 0; i < num; ++i) {
-    packed_info.Add(PackOpRepDeviceInterface(info.interfaces[i]));
+    packed_info.Add(info.interfaces[i]);
   }
 
   return packed_info;
@@ -173,20 +146,8 @@ OpRepDevInfo UnpackOpRepDevInfo(SmartBuffer* buf) {
   devinfo.interfaces =
       reinterpret_cast<OpRepDeviceInterface*>(malloc(interface_size));
   memcpy(devinfo.interfaces, buf->data(), interface_size);
-  const size_t num = devinfo.device.bNumInterfaces;
-  for (size_t i = 0; i < num; ++i) {
-    UnpackOpRepDeviceInterface(devinfo.interfaces + i);
-  }
   buf->Erase(0, interface_size);
   return devinfo;
-}
-
-void UnpackOpRepDevInfo(OpRepDevInfo* device_info) {
-  UnpackOpRepDevice(&device_info->device);
-  const size_t num = device_info->device.bNumInterfaces;
-  for (size_t i = 0; i < num; ++i) {
-    UnpackOpRepDeviceInterface(&device_info->interfaces[i]);
-  }
 }
 
 SmartBuffer PackOpRepDevlist(OpRepDevlist list) {
@@ -216,11 +177,14 @@ OpRepDevlistHeader UnpackOpRepDevlistHeader(SmartBuffer* buf) {
 OpRepDevlist UnpackOpRepDevlist(SmartBuffer* buf) {
   OpRepDevlist list;
   CHECK(buf->size() >= sizeof(list));
-  memcpy(&list, buf->data(), sizeof(list));
-  buf->Erase(0, sizeof(list));
+  memcpy(&list, buf->data(), sizeof(OpRepDevlistHeader));
+  buf->Erase(0, sizeof(OpRepDevlistHeader));
   UnpackOpRepDevlistHeader(&list.header);
+
+  CHECK(buf->size() >= list.header.numExportedDevices * sizeof(OpRepDevice));
+  list.devices.resize(list.header.numExportedDevices);
   for (int i = 0; i < list.header.numExportedDevices; ++i) {
-    UnpackOpRepDevInfo(&list.devices[i]);
+    list.devices[i] = UnpackOpRepDevInfo(buf);
   }
   return list;
 }
@@ -231,6 +195,16 @@ SmartBuffer PackOpRepImport(OpRepImport import) {
   SmartBuffer packed_import(sizeof(import));
   packed_import.Add(packed_header);
   packed_import.Add(packed_device);
+  return packed_import;
+}
+
+SmartBuffer PackOpReqImport(OpReqImport import) {
+  SmartBuffer packed_header = PackOpHeader(import.header);
+  SmartBuffer packed_busID(sizeof(import.busID));
+  packed_busID.Add(import.busID, sizeof(import.busID));
+  SmartBuffer packed_import(sizeof(import));
+  packed_import.Add(packed_header);
+  packed_import.Add(packed_busID);
   return packed_import;
 }
 
@@ -248,6 +222,16 @@ OpHeader UnpackOpHeader(SmartBuffer* buf) {
   result.version = ntohs(result.version);
   result.command = ntohs(result.command);
   result.status = ntohl(result.status);
+  return result;
+}
+
+OpRepImport UnpackOpRepImport(SmartBuffer* buf) {
+  OpRepImport result;
+  CHECK(buf->size() >= sizeof(result));
+  result.header = UnpackOpHeader(buf);
+  memcpy(&result.device, buf->data() + sizeof(result.header),
+         sizeof(result.device));
+  UnpackOpRepDevice(&result.device);
   return result;
 }
 

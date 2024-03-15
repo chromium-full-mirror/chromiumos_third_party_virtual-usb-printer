@@ -34,8 +34,9 @@ bool UsbIpCore::HandleBindInternal(IConnection* conn, uint16_t port) {
   device_info.interfaces =
       reinterpret_cast<OpRepDeviceInterface*>(malloc(interface_size));
   for (size_t i = 0; i < device_info.device.bNumInterfaces; ++i) {
-    *(device_info.interfaces + i) =
-        UnpackOpRepDeviceInterface(&interface_buffer);
+    memcpy(device_info.interfaces + i, interface_buffer.data(),
+           sizeof(OpRepDeviceInterface));
+    interface_buffer.Erase(0, sizeof(OpRepDeviceInterface));
   }
 
   UpdateDeviceParameter(&device_info.device);

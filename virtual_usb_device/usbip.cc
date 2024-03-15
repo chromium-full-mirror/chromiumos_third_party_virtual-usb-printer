@@ -17,6 +17,30 @@
 #include "usb_util.h"
 #include "virtual-usb-printer/common/smart_buffer.h"
 
+UsbipRetSubmit UnpackUsbipRetSubmit(SmartBuffer* buf) {
+  UsbipRetSubmit result;
+  LOG(INFO) << "buf->size() " << buf->size();
+  LOG(INFO) << "sizeof UsbipRetSubmit " << sizeof(result);
+  CHECK(buf->size() >= sizeof(result));
+  memcpy(&result, buf->data(), sizeof(result));
+  buf->Erase(0, sizeof(result));
+
+  result.header.command = ntohl(result.header.command);
+  result.header.seqnum = ntohl(result.header.seqnum);
+  result.header.devid = ntohl(result.header.devid);
+  result.header.direction = ntohl(result.header.direction);
+  result.header.ep = ntohl(result.header.ep);
+
+  result.status = ntohl(result.status);
+  result.actual_length = ntohl(result.actual_length);
+  result.start_frame = ntohl(result.start_frame);
+  result.number_of_packets = ntohl(result.number_of_packets);
+  result.error_count = ntohl(result.error_count);
+  result.setup = be64toh(result.setup);
+
+  return result;
+}
+
 SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply) {
   SmartBuffer serialized;
   serialized.Add(htonl(reply.header.command));
@@ -31,6 +55,24 @@ SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply) {
   serialized.Add(htonl(reply.number_of_packets));
   serialized.Add(htonl(reply.error_count));
   serialized.Add(htobe64(reply.setup));
+
+  return serialized;
+}
+
+SmartBuffer PackUsbipCmdSubmit(const UsbipCmdSubmit& cmd) {
+  SmartBuffer serialized(sizeof(cmd));
+  serialized.Add(htonl(cmd.header.command));
+  serialized.Add(htonl(cmd.header.seqnum));
+  serialized.Add(htonl(cmd.header.devid));
+  serialized.Add(htonl(cmd.header.direction));
+  serialized.Add(htonl(cmd.header.ep));
+
+  serialized.Add(htonl(cmd.transfer_flags));
+  serialized.Add(htonl(cmd.transfer_buffer_length));
+  serialized.Add(htonl(cmd.start_frame));
+  serialized.Add(htonl(cmd.number_of_packets));
+  serialized.Add(htonl(cmd.interval));
+  serialized.Add(htobe64(cmd.setup));
 
   return serialized;
 }

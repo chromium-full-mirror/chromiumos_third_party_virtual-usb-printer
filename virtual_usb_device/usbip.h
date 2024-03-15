@@ -74,6 +74,16 @@ UsbipRetSubmit CreateUsbipRetSubmit(const UsbipCmdSubmit& usb_request);
 // order.
 SmartBuffer PackUsbipRetSubmit(const UsbipRetSubmit& reply);
 
+// Reads a UsbipRetSubmit struct from `buf` and converts the contents of the
+// message into host byte order.
+//
+// Erases the deserialized bytes from `buf`.
+UsbipRetSubmit UnpackUsbipRetSubmit(SmartBuffer* buf);
+
+// Serializes `cmd` into a buffer and converts the contents to network byte
+// order.
+SmartBuffer PackUsbipCmdSubmit(const UsbipCmdSubmit& cmd);
+
 // Reads a UsbipCmdSubmit struct from `buf` and converts the contents of the
 // message into host byte order.
 //

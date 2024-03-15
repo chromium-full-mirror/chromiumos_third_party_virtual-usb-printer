@@ -154,17 +154,17 @@ SmartBuffer PackOpRepDevice(OpRepDevice device);
 SmartBuffer PackOpRepDevlistHeader(OpRepDevlistHeader devlist_header);
 SmartBuffer PackOpRepDevlist(OpRepDevlist devlist);
 SmartBuffer PackOpRepImport(OpRepImport message);
+SmartBuffer PackOpReqImport(OpReqImport import);
 SmartBuffer PackOpRepDevInfo(OpRepDevInfo& info);
 SmartBuffer PackBindRequest(BindRequest& request);
 
 OpHeader UnpackOpHeader(SmartBuffer* buf);
 void UnpackOpHeader(OpHeader* header);
 OpHeader UnpackOpHeader(SmartBuffer* buf);
-void UnpackOpRepDevInfo(OpRepDevInfo* device_info);
 
-OpRepDeviceInterface UnpackOpRepDeviceInterface(SmartBuffer* buf);
 void UnpackOpRepDevice(OpRepDevice* device);
 OpRepDevice UnpackOpRepDevice(SmartBuffer* buf);
+OpRepImport UnpackOpRepImport(SmartBuffer* buf);
 void UnpackOpRepDevlistHeader(OpRepDevlistHeader* header);
 OpRepDevlist UnpackOpRepDevlist(SmartBuffer* buf);
 OpRepDevlistHeader UnpackOpRepDevlistHeader(SmartBuffer* buf);
