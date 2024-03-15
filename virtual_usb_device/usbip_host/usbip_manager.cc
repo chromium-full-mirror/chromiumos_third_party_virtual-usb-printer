@@ -95,7 +95,7 @@ void UsbIpManager::OnHandleBindInternalDone(std::unique_ptr<IConnection> conn,
                                             uint16_t port,
                                             bool status) {
   LOG(INFO) << "USB Device (port:" << port << ")"
-            << "registeration : " << (status ? "Success" : "Failed");
+            << " registration : " << (status ? "Success" : "Failed");
   RespondBind(conn.get(), status);
   if (status) {
     // We need to track when device process is dead, so we call `conn->Receive`.

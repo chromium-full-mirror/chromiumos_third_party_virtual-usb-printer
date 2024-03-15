@@ -168,7 +168,7 @@ bool UsbIpCore::HandleUsbCommandSubmit(IConnection* conn,
         buf = proxy->ReceiveResponseBuffer(response_buffer_length);
         SendUsbipControlResponse(conn, usb_request, buf.data(), buf.size());
       } else {
-        // Acknowlewdge that usb device have received data.
+        // Acknowledge that usb device have received data.
         SendUsbipDataReceivedAck(conn, usb_request, response_buffer_length);
       }
       return true;

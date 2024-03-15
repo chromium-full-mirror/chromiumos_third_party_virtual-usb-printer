@@ -50,7 +50,7 @@ struct Urb {
 } __attribute__((packed));
 
 struct UrbReply {
-  uint32_t devid;        // Specifies a remote USB devie uniquely.
+  uint32_t devid;        // Specifies a remote USB device uniquely.
   uint32_t direction;    // Direction of the transfer (0 Out, 1 In).
   uint32_t ep;           // USB endpoint number
   uint32_t actual_size;  // actual size of replied data.
