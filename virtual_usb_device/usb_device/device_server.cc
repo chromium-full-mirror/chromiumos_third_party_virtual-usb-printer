@@ -43,7 +43,13 @@ void DeviceServer::HandleConnection(std::unique_ptr<IConnection> conn) {
     }
 
     Urb request = UnpackUrb(&received);
-    device_->HandleUsbRequest(conn.get(), request);
+    SmartBuffer data;
+    // Data request.
+    if (request.ep != 0 && request.direction == 0) {
+      data = conn->Receive(request.transfer_buffer_length);
+    }
+    SmartBuffer response = device_->HandleUsbRequest(request, data);
+    SendUsbResponse(conn.get(), request, response.data(), response.size());
   }
 }
 
@@ -73,4 +79,20 @@ bool DeviceServer::RegisterToHost() {
   }
 
   return true;
+}
+
+void DeviceServer::SendUsbResponse(IConnection* conn,
+                                   const Urb& usb_request,
+                                   const uint8_t* data,
+                                   size_t data_size) const {
+  UrbReply reply;
+  reply.devid = usb_request.devid;
+  reply.direction = usb_request.direction;
+  reply.ep = usb_request.ep;
+  reply.actual_size = data_size;
+  SmartBuffer buf = PackUrbReply(reply);
+  if (data && (data_size > 0)) {
+    buf.Add(data, data_size);
+  }
+  conn->Send(buf);
 }

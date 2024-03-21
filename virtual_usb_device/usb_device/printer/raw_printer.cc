@@ -49,16 +49,18 @@ RawUsbPrinter::RawUsbPrinter(const UsbDescriptors& descriptors,
     : UsbDevice(descriptors, port, host_port),
       document_output_path_(document_output_path) {}
 
-void RawUsbPrinter::HandleUsbData(IConnection* conn, const Urb& usb_request) {
-  SmartBuffer data = conn->Receive(usb_request.transfer_buffer_length);
+SmartBuffer RawUsbPrinter::HandleUsbData(const Urb& usb_request,
+                                         const SmartBuffer& data) {
+  SmartBuffer response;
   size_t received = data.size();
   LOG(INFO) << "Received " << received << " bytes";
   // Acknowledge receipt of BULK transfer.
-  SendUsbResponse(conn, usb_request, nullptr, received);
+  response.Add(received);
   if (!document_output_path_.empty()) {
     LOG(INFO) << "Recording document...";
     AppendToFile(document_output_path_, data);
   }
+  return response;
 }
 
 int main(int argc, char* argv[]) {

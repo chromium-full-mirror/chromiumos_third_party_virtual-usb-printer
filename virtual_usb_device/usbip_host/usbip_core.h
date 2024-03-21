@@ -56,6 +56,8 @@ class UsbIpCore {
   bool HandleUsbCommandSubmit(IConnection* conn,
                               const UsbipCmdSubmit& usb_request);
 
+  bool IsAttached(const std::string& busId);
+
  private:
   // Reads busid from connection and returns it.
   BusId ReadBusId(IConnection* conn);

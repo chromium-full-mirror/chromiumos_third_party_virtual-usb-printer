@@ -29,7 +29,8 @@ bool UsbIpCore::RegisterDevice(const uint16_t port) {
   BusId id = {'\0'};
   snprintf(id.data(), id.size(), "1-%zu", devnum);
 
-  auto client = std::make_unique<DeviceProxy>(port, id, devnum);
+  std::unique_ptr<DeviceProxy> client;
+  client = std::make_unique<DeviceProxy>(port, id, devnum);
   proxy_map_[id] = std::move(client);
 
   device_count_++;
@@ -154,24 +155,21 @@ bool UsbIpCore::HandleUsbCommandSubmitWithProxy(
       usb_request.transfer_buffer_length != 0)
     data = conn->Receive(usb_request.transfer_buffer_length);
 
-  size_t response_buffer_length;
-  if (!proxy->HandleUsbDeviceRequest(urb_request, data,
-                                     &response_buffer_length))
+  SmartBuffer response_data;
+  if (!proxy->HandleUsbDeviceRequest(urb_request, data, &response_data))
     return false;
 
   // If data transfer is from the device to host or there are control
   // requests then we have data to read in response.
   if ((usb_request.header.direction == 1 /* device to host */) ||
       (usb_request.header.ep == 0 /* control requests */)) {
-    SmartBuffer response_data;
-    if (!proxy->ReadUsbResponseData(response_buffer_length, &response_data))
-      return false;
-
     SendUsbipControlResponse(conn, usb_request, response_data.data(),
                              response_data.size());
   } else {
     // Acknowlewdge that usb device have received BULK data.
-    SendUsbipDataReceivedAck(conn, usb_request, response_buffer_length);
+    size_t size = *(response_data.data());
+    memcpy(&size, response_data.data(), response_data.size());
+    SendUsbipDataReceivedAck(conn, usb_request, size);
   }
 
   return true;

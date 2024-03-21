@@ -18,6 +18,7 @@
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 
 // This class act as a proxy for actual usb device similar to
 // dbus proxy classes. It communicates with actual usb device via socket and
@@ -49,11 +50,7 @@ class DeviceProxy {
   // for handling and returns the size of response.
   bool HandleUsbDeviceRequest(const Urb& urb_request,
                               const SmartBuffer& data,
-                              size_t* response_data_size);
-  // Receives `size` amount of response data. The size is determined by the
-  // `HandleUsbDeviceRequest` call.
-  bool ReadUsbResponseData(const size_t size, SmartBuffer* response_data);
-
+                              SmartBuffer* response_data);
   // Returns port number on which usb device is listening.
   uint16_t GetPort() const { return connection_->get_port(); }
 
@@ -66,6 +63,11 @@ class DeviceProxy {
   bool GetOpRepDevInfo(OpRepDevInfo* info);
 
  private:
+  // FIXME(santo:) Remove this function.
+  // Receives `size` amount of response data. The size is determined by the
+  // `HandleUsbDeviceRequest` call.
+  bool ReadUsbResponseData(const size_t size, SmartBuffer* response_data);
+
   // connection to device server
   std::unique_ptr<IConnection> connection_;
 

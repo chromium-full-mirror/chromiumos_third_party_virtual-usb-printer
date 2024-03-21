@@ -73,14 +73,16 @@ UsbPrinter::UsbPrinter(const UsbDescriptors& usb_descriptors,
       document_output_path_(document_output_path),
       http_output_dir_(http_output_dir) {}
 
-void UsbPrinter::HandleUsbData(IConnection* conn, const Urb& usb_request) {
-  SmartBuffer message = conn->Receive(usb_request.transfer_buffer_length);
-  size_t received = message.size();
+SmartBuffer UsbPrinter::HandleUsbData(const Urb& usb_request,
+                                      const SmartBuffer& data) {
+  size_t received = data.size();
   LOG(INFO) << "Received " << received << " bytes";
   // Acknowledge receipt of BULK transfer.
-  SendUsbResponse(conn, usb_request, nullptr, received);
-
-  HandleHttpData(usb_request, &message);
+  SmartBuffer response;
+  response.Add(received);
+  SmartBuffer data_buffer = data;
+  HandleHttpData(usb_request, &data_buffer);
+  return response;
 }
 
 void UsbPrinter::HandleHttpData(const Urb& usb_request, SmartBuffer* message) {

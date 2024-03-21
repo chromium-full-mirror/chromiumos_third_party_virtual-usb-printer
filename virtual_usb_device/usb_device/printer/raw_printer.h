@@ -32,8 +32,9 @@ class RawUsbPrinter : public UsbDevice {
   // Handles usb request by receiving usb data and writing it to file at
   // location `document_output_path_`. This operation is assumed as document
   // printing.
-  // It also sends ackowledgement response for amount of data received.
-  void HandleUsbData(IConnection* conn, const Urb& usb_request) override;
+  // It also returns the `SmartBuffer` having the size of received data.
+  SmartBuffer HandleUsbData(const Urb& usb_request,
+                            const SmartBuffer& data) override;
 
  private:
   base::FilePath document_output_path_;

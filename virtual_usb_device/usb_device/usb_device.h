@@ -150,6 +150,7 @@ class UsbDevice {
   UsbDevice(const UsbDescriptors& descriptors,
             uint16_t port,
             uint16_t host_port);
+  virtual ~UsbDevice() = default;
 
   // Starts the tcp server and listen for usb commands.
   void Run();
@@ -183,85 +184,59 @@ class UsbDevice {
 
   // Determines whether `usb_request` is either a control or data request and
   // defers to the corresponding function.
-  void HandleUsbRequest(IConnection* conn, const Urb& usb_request);
-
-  // Responds to the USB data request `usb_request` message that uses `received`
-  // to indicate how many uint8_t's were successfully received.
-  void SendUsbDataResponse(IConnection* conn,
-                           const Urb& usb_request,
-                           size_t received) const;
-
-  // Sends `UrbReply` message to the socket described by `connection`.
-  // `usb_request` is used to create the `UrbReply` header and `data`
-  // contains the actual URB response data.
-  void SendUsbResponse(IConnection* conn,
-                       const Urb& usb_request,
-                       const uint8_t* data,
-                       size_t size) const;
+  SmartBuffer HandleUsbRequest(const Urb& usb_request, const SmartBuffer& data);
 
  private:
   // Determines whether `usb_request` is either a standard or class-specific
   // control request and defers to the corresponding function.
-  void HandleUsbControl(IConnection* conn, const Urb& usb_request) const;
+  SmartBuffer HandleUsbControl(const Urb& usb_request) const;
 
   // Handles raw or ipp usb data received by usb device.
-  virtual void HandleUsbData(IConnection* conn, const Urb& usb_request);
+  virtual SmartBuffer HandleUsbData(const Urb& usb_request,
+                                    const SmartBuffer& data) {
+    return {};
+  }
 
   // Handles usb requests of type=STANDARD_TYPE.
-  void HandleStandardControl(IConnection* conn,
-                             const Urb& usb_request,
-                             const UsbControlRequest& control_request) const;
+  SmartBuffer HandleStandardControl(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
 
   // Standard control request handlers for GET_STATUS, GET_DESCRIPTOR,
   // GET_CONFIGURATION requests.
-  virtual void HandleGetStatus(IConnection* conn,
-                               const Urb& usb_request,
-                               const UsbControlRequest& control_request) const;
-  void HandleGetDescriptor(IConnection* conn,
-                           const Urb& usb_request,
-                           const UsbControlRequest& control_request) const;
-  void HandleGetConfiguration(IConnection* conn,
-                              const Urb& usb_request,
-                              const UsbControlRequest& control_request) const;
+  virtual SmartBuffer HandleGetStatus(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
+  SmartBuffer HandleGetDescriptor(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
+  SmartBuffer HandleGetConfiguration(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
 
   // Below functions respond with the descriptors of usb device.
   // The descriptors category are: device descriptors, configuration
   // descriptors, string descriptors, device qualifier descriptors.
-  void HandleGetDeviceDescriptor(
-      IConnection* conn,
-      const Urb& usb_request,
-      const UsbControlRequest& control_request) const;
-  void HandleGetConfigurationDescriptor(
-      IConnection* conn,
-      const Urb& usb_request,
-      const UsbControlRequest& control_request) const;
-  void HandleGetDeviceQualifierDescriptor(
-      IConnection* conn,
-      const Urb& usb_request,
-      const UsbControlRequest& control_request) const;
-  void HandleGetStringDescriptor(
-      IConnection* conn,
-      const Urb& usb_request,
-      const UsbControlRequest& control_request) const;
+  SmartBuffer HandleGetDeviceDescriptor(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
+  SmartBuffer HandleGetConfigurationDescriptor(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
+  SmartBuffer HandleGetDeviceQualifierDescriptor(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
+  SmartBuffer HandleGetStringDescriptor(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
 
   // Handles device control specific USB requests.
-  void HandleDeviceControl(IConnection* conn,
-                           const Urb& usb_request,
-                           const UsbControlRequest& control_request) const;
+  SmartBuffer HandleDeviceControl(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
 
   // Responds with the ieee device id of usb device.
-  void HandleGetDeviceId(IConnection* conn,
-                         const Urb& usb_request,
-                         const UsbControlRequest& control_request) const;
+  SmartBuffer HandleGetDeviceId(const Urb& usb_request,
+                                const UsbControlRequest& control_request) const;
 
   // Used to send an empty response to control requests which are not supported.
-  void HandleUnsupportedRequest(IConnection* conn,
-                                const Urb& usb_request,
-                                const UsbControlRequest& control_request) const;
+  SmartBuffer HandleUnsupportedRequest(
+      const Urb& usb_request, const UsbControlRequest& control_request) const;
 
   // Responds to a BULK_IN request by replying with the message at the front of
   // `message_queue_`.
-  void HandleBulkInRequest(IConnection* conn, const Urb& usb_request);
+  SmartBuffer HandleBulkInRequest(const Urb& usb_request);
 
   UsbDescriptors usb_descriptors_;
   base::FilePath document_output_path_;

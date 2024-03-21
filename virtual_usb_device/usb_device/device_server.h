@@ -13,6 +13,7 @@
 #include "virtual-usb-printer/virtual_usb_device/server.h"
 
 class UsbDevice;
+struct Urb;
 
 // Creates server which listens on socket for any raw usb command. All the usb
 // command are forwarded to `UsbDevice`. Once created, this class also register
@@ -29,6 +30,14 @@ class DeviceServer : public Server {
   // Connects with the usbip host. Returns socket descriptor on the
   // success or -1 upon failure.
   int ConnectToHost();
+
+  // Sends `UrbReply` message to the socket described by `connection`.
+  // `usb_request` is used to create the `UrbReply` header and `data`
+  // contains the actual URB response data.
+  void SendUsbResponse(IConnection* conn,
+                       const Urb& usb_request,
+                       const uint8_t* data,
+                       size_t size) const;
 
   // Registers usb device with the usbip host. Once registered, usb device is
   // assumed to be exported and can be attached by the `usbip attach` command.

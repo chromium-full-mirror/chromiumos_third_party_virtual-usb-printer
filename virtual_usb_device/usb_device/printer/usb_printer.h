@@ -43,10 +43,10 @@ class UsbPrinter : public UsbDevice {
              const base::FilePath& document_output_path,
              const base::FilePath& http_output_dir);
 
-  // Handles usb request by receving usb data which is http data for ipp device
-  // and processing those http requests.
-  // It also sends ackowledgement response for amount of data received.
-  void HandleUsbData(IConnection* conn, const Urb& usb_request) override;
+  // Handles usb request by receving usb data, processing them and returns
+  // result.
+  SmartBuffer HandleUsbData(const Urb& usb_request,
+                            const SmartBuffer& data) override;
 
  private:
   // Below functions are used for IPP requests.
