@@ -23,23 +23,20 @@ class Scanner;
 
 // Represents a generic usb device that supports IPP over USB. It could extract
 // the IPP message sent over USB and take actions. Any specific device can
-// override this class to provide specific implementation.
+// override this class to provide device specific implementation.
 class UsbPrinter : public UsbDevice {
  public:
   // Creates a USB printer object where `usb_descriptors` provides usb
-  // descriptors, `ipp_manager` handles the ipp requests,`scanner` provides the
+  // descriptors, `ipp_manager` handles the ipp requests, `scanner` provides the
   // scanner implemenation and `mock_printer` provides mock printer
   // implementation.
-  // This device registers itself with the usbip host on `host_port` and listens
-  // for the usb request on `port`. `document_output_path` is where a document
-  // is outputted to mimic printing and `http_output_dir` tells about directory
-  // where http frame logging is done.
+  // `document_output_path` is where a document is outputted to mimic printing
+  // and `http_output_dir` tells about directory where http frame logging is
+  // done.
   UsbPrinter(const UsbDescriptors& usb_descriptors,
              std::unique_ptr<IppManager> ipp_manager,
              std::unique_ptr<Scanner> scanner,
              std::unique_ptr<mock_printer::MockPrinter> mock_printer,
-             uint16_t port,
-             uint16_t host_port,
              const base::FilePath& document_output_path,
              const base::FilePath& http_output_dir);
 

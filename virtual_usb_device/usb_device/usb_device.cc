@@ -125,16 +125,38 @@ InterfaceManager* UsbDevice::GetInterfaceManager(int endpoint) {
   return &interface_managers_[index];
 }
 
-UsbDevice::UsbDevice(const UsbDescriptors& descriptors,
-                     uint16_t port,
-                     uint16_t host_port) {
+UsbDevice::UsbDevice(const UsbDescriptors& descriptors) {
   usb_descriptors_ = std::move(descriptors);
   interface_managers_.resize(usb_descriptors_.interface_descriptors().size());
-  server_.reset(new DeviceServer(this, port, host_port));
 }
 
-void UsbDevice::Run() {
-  server_->Start();
+void UsbDevice::Run(const uint16_t port, const uint16_t host_port) {
+  device_server_.reset(new DeviceServer(port, host_port));
+  device_server_->SetConnectionHandler(this);
+
+  device_server_->Start();
+}
+
+void UsbDevice::HandleConnection(std::unique_ptr<IConnection> conn) {
+  while (true) {
+    SmartBuffer received = conn->Receive(sizeof(Urb));
+    if (received.size() == 0 /* connection closed */)
+      return;
+
+    if (received.size() != sizeof(Urb)) {
+      LOG(WARNING) << "Received unknown size data - ignoring it";
+      continue;
+    }
+
+    Urb request = UnpackUrb(&received);
+    SmartBuffer data;
+    // Data request.
+    if (request.ep != 0 && request.direction == 0) {
+      data = conn->Receive(request.transfer_buffer_length);
+    }
+    SmartBuffer response = HandleUsbRequest(request, data);
+    SendUsbResponse(conn.get(), request, response.data(), response.size());
+  }
 }
 
 SmartBuffer UsbDevice::HandleUsbRequest(const Urb& usb_request,
@@ -385,4 +407,21 @@ SmartBuffer UsbDevice::HandleBulkInRequest(const Urb& usb_request) {
   SmartBuffer response_buffer;
   response_buffer.Add(http_message);
   return response_buffer;
+}
+
+void UsbDevice::SendUsbResponse(IConnection* conn,
+                                const Urb& usb_request,
+                                const uint8_t* data,
+                                size_t data_size) const {
+  UrbReply reply;
+  reply.devid = usb_request.devid;
+  reply.direction = usb_request.direction;
+  reply.ep = usb_request.ep;
+  reply.actual_size = data_size;
+  SmartBuffer buf = PackUrbReply(reply);
+  if (data && (data_size > 0)) {
+    buf.Add(data, data_size);
+  }
+  LOG(INFO) << __func__ << " " << "data size: " << data_size;
+  conn->Send(buf);
 }

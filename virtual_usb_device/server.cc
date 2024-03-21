@@ -31,6 +31,11 @@ void Server::HandleLoop() {
   }
 }
 
+void Server::HandleConnection(std::unique_ptr<IConnection> conn) {
+  if (connection_handler_)
+    connection_handler_->HandleConnection(std::move(conn));
+}
+
 bool Server::Start() {
   if (!connection_->Start())
     return false;

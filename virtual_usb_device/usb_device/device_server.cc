@@ -17,9 +17,8 @@
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
-DeviceServer::DeviceServer(UsbDevice* device, uint16_t port, uint16_t host_port)
+DeviceServer::DeviceServer(uint16_t port, uint16_t host_port)
     : Server(port),
-      device_(device),
       host_connection_(
           ConnectionFactory::instance().MakeClientConnection(host_port)) {}
 
@@ -31,25 +30,6 @@ void DeviceServer::OnServerStarted() {
     // This log is used by external enitity to know that usb device is ready to
     // process command. Currently used by `virtual-usb-printer.sh`
     printf("USBDevice::READY\n");
-  }
-}
-
-void DeviceServer::HandleConnection(std::unique_ptr<IConnection> conn) {
-  while (true) {
-    SmartBuffer received = conn->Receive(sizeof(Urb));
-    if (received.size() != sizeof(Urb)) {
-      LOG(INFO) << "Received unknown size data - ignoring it";
-      return;
-    }
-
-    Urb request = UnpackUrb(&received);
-    SmartBuffer data;
-    // Data request.
-    if (request.ep != 0 && request.direction == 0) {
-      data = conn->Receive(request.transfer_buffer_length);
-    }
-    SmartBuffer response = device_->HandleUsbRequest(request, data);
-    SendUsbResponse(conn.get(), request, response.data(), response.size());
   }
 }
 

@@ -31,6 +31,6 @@ int main(int argc, char* argv[]) {
   base::ThreadPoolInstance::InitParams init_params(max_num_foreground_threads);
   base::ThreadPoolInstance::Get()->Start(init_params);
 
-  UsbIpManager manager(FLAGS_port);
-  manager.Run();
+  UsbIpManager manager;
+  manager.Run(FLAGS_port);
 }

@@ -5,9 +5,11 @@
 #ifndef VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_CORE_H_
 #define VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_CORE_H_
 
+#include <cstdint>
+
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <base/containers/flat_map.h>
 

@@ -20,17 +20,11 @@ class UsbIpManager;
 // This class is owned by `UsbIpManager`.
 class UsbIpServer : public Server {
  public:
-  UsbIpServer(UsbIpManager* manager, int port);
-
-  // Process each incoming usbip message on a new thread.
-  void HandleConnection(std::unique_ptr<IConnection> conn) final;
+  explicit UsbIpServer(int port);
 
   // Emits message "USBIPHost:READY", so that external entity could know usbip
   // host is ready to process usbip messages.
   void OnServerStarted() final;
-
- private:
-  raw_ptr<UsbIpManager> manager_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_SERVER_H_

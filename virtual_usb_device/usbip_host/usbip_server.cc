@@ -13,12 +13,7 @@
 
 #include "usbip_manager.h"
 
-UsbIpServer::UsbIpServer(UsbIpManager* manager, int port)
-    : Server(port), manager_(manager) {}
-
-void UsbIpServer::HandleConnection(std::unique_ptr<IConnection> conn) {
-  manager_->HandleConnection(std::move(conn));
-}
+UsbIpServer::UsbIpServer(int port) : Server(port) {}
 
 void UsbIpServer::OnServerStarted() {
   printf("USBIPHost::READY\n");

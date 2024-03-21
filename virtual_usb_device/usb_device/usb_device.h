@@ -142,18 +142,16 @@ class UsbDescriptors {
 // and device-specific USB requests.
 // Each usb device registers itself with the usbip host, listens for the usb
 // commands on fixed port, and responds back result to the usbip host.
-class UsbDevice {
+class UsbDevice : public ConnectionHandler {
  public:
   // Create generic usb device object which listens for usb requests on
-  // `port`. It registers itself with the usbip host listening on `host_port`.
-  // USB descriptors are provided by `descriptors`.
-  UsbDevice(const UsbDescriptors& descriptors,
-            uint16_t port,
-            uint16_t host_port);
+  // `port`. The usb descriptors for the device are provided by `descriptors`.
+  explicit UsbDevice(const UsbDescriptors& descriptors);
   virtual ~UsbDevice() = default;
 
-  // Starts the tcp server and listen for usb commands.
-  void Run();
+  // Starts the tcp server on `port` and listen for usb commands.
+  // It also registers this device with the usbip host running on `host_port`.
+  void Run(const uint16_t port, const uint16_t host_port);
 
   // Returns different usb descriptors.
   const UsbDeviceDescriptor& device_descriptor() const {
@@ -181,6 +179,8 @@ class UsbDevice {
 
   // Returns `InterfaceManager` for specified endpoint.
   InterfaceManager* GetInterfaceManager(int endpoint);
+
+  void HandleConnection(std::unique_ptr<IConnection> conn) override;
 
   // Determines whether `usb_request` is either a control or data request and
   // defers to the corresponding function.
@@ -238,12 +238,18 @@ class UsbDevice {
   // `message_queue_`.
   SmartBuffer HandleBulkInRequest(const Urb& usb_request);
 
+  void SendUsbResponse(IConnection* conn,
+                       const Urb& usb_request,
+                       const uint8_t* data,
+                       size_t data_size) const;
+
   UsbDescriptors usb_descriptors_;
   base::FilePath document_output_path_;
   base::FilePath http_output_dir_;
 
   std::vector<InterfaceManager> interface_managers_;
-  std::unique_ptr<Server> server_;
+
+  std::unique_ptr<Server> device_server_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USB_DEVICE_USB_DEVICE_H_

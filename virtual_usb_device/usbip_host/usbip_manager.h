@@ -22,10 +22,11 @@
 // requests are serviced. The usbip command are finally handled in `UsbIpCore`
 // class.
 // This class also owns any connection created by usbip client.
-class UsbIpManager {
+class UsbIpManager : public ConnectionHandler {
  public:
+  static std::unique_ptr<UsbIpManager> CreateHost(const uint16_t port);
   // Creates object which listens on `port` for usbip messages.
-  explicit UsbIpManager(uint16_t port);
+  UsbIpManager();
   ~UsbIpManager();
 
   UsbIpManager(const UsbIpManager&) = delete;
@@ -33,12 +34,13 @@ class UsbIpManager {
 
   // Starts the server which listens on usbip port and also launch
   // ConnectionThread for handling socket connections.
-  void Run();
+  void Run(const uint16_t port);
   // Stops the server and ConnectionThread.
   void Stop();
 
+  // override from ConnectionHandler
   // Loops and process usbip message received on connection.
-  void HandleConnection(std::unique_ptr<IConnection> conn);
+  void HandleConnection(std::unique_ptr<IConnection> conn) override;
 
   // Posts the task in `UsbIpCore` task runner to handle `OP_REQ_BIND_CMD` usbip
   // message.
@@ -89,9 +91,9 @@ class UsbIpManager {
   // connection.
   void CloseConnection(std::unique_ptr<IConnection> conn);
 
-  std::unique_ptr<Server> server_;
-
   UsbIpCore core_;
+
+  std::unique_ptr<Server> server_;
 
   // This thread processes each usbip requests in the new thread and manages
   // their lifetime.

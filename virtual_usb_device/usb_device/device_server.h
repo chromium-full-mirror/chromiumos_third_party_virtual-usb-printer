@@ -23,7 +23,7 @@ class DeviceServer : public Server {
  public:
   // Creates device server object which listens on `port` and
   // registers itself to usbip host server listening on `host_port`.
-  DeviceServer(UsbDevice* device, uint16_t port, uint16_t host_port);
+  DeviceServer(uint16_t port, uint16_t host_port);
   void OnServerStarted() final;
 
  private:
@@ -48,9 +48,6 @@ class DeviceServer : public Server {
   // registration is done. This is needed for the usbip host to track life of
   // the usb device process (connection is closed when device process is dead).
   bool RegisterToHost();
-
-  // Read messages and forward it to devices for handling.
-  void HandleConnection(std::unique_ptr<IConnection> conn) final;
 
   base::raw_ptr<UsbDevice> device_;
   std::unique_ptr<IConnection> host_connection_;

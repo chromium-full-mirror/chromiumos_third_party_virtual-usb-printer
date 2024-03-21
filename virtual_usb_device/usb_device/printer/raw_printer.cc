@@ -12,6 +12,7 @@
 #include <brillo/flag_helper.h>
 #include <brillo/syslog_logging.h>
 
+#include "virtual-usb-printer/virtual_usb_device/usb_device/device_server.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/common/value_util.h"
 
@@ -43,11 +44,8 @@ void AppendToFile(base::FilePath path, SmartBuffer buf) {
 }
 
 RawUsbPrinter::RawUsbPrinter(const UsbDescriptors& descriptors,
-                             uint16_t port,
-                             uint16_t host_port,
                              const base::FilePath& document_output_path)
-    : UsbDevice(descriptors, port, host_port),
-      document_output_path_(document_output_path) {}
+    : UsbDevice(descriptors), document_output_path_(document_output_path) {}
 
 SmartBuffer RawUsbPrinter::HandleUsbData(const Urb& usb_request,
                                          const SmartBuffer& data) {
@@ -89,7 +87,6 @@ int main(int argc, char* argv[]) {
 
   base::FilePath document_output_path(FLAGS_record_doc_path);
 
-  RawUsbPrinter printer(usb_descriptors.value(), FLAGS_port, FLAGS_host_port,
-                        document_output_path);
-  printer.Run();
+  RawUsbPrinter printer(usb_descriptors.value(), document_output_path);
+  printer.Run(FLAGS_port, FLAGS_host_port);
 }

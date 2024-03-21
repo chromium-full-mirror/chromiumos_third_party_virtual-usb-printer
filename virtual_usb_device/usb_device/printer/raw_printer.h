@@ -21,12 +21,9 @@
 class RawUsbPrinter : public UsbDevice {
  public:
   // Creates a printer usb device object with provided usb descriptors
-  // in `descriptors`. This device registers itself with the usbip
-  // host on `host_port` and listens for the usb request on `port`.
-  // `document_output_path` is where a document is outputted to mimic printing.
+  // in `descriptors`.`document_output_path` is where a document is outputted
+  // to mimic printing.
   RawUsbPrinter(const UsbDescriptors& descriptors,
-                uint16_t port,
-                uint16_t host_port,
                 const base::FilePath& document_output_path);
 
   // Handles usb request by receiving usb data and writing it to file at

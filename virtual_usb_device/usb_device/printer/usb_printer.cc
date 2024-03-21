@@ -16,6 +16,7 @@
 #include "virtual-usb-printer/mock_printer/mock_printer.h"
 #include "virtual-usb-printer/mock_printer/parse_textproto.h"
 #include "virtual-usb-printer/virtual_usb_device/ipp_util.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_device/device_server.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/scanner/scanner.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
@@ -62,11 +63,9 @@ UsbPrinter::UsbPrinter(const UsbDescriptors& usb_descriptors,
                        std::unique_ptr<IppManager> ipp_manager,
                        std::unique_ptr<Scanner> scanner,
                        std::unique_ptr<mock_printer::MockPrinter> mock_printer,
-                       uint16_t port,
-                       uint16_t host_port,
                        const base::FilePath& document_output_path,
                        const base::FilePath& http_output_dir)
-    : UsbDevice(usb_descriptors, port, host_port),
+    : UsbDevice(usb_descriptors),
       ipp_manager_(std::move(ipp_manager)),
       scanner_(std::move(scanner)),
       mock_printer_(std::move(mock_printer)),
@@ -286,7 +285,6 @@ int main(int argc, char* argv[]) {
 
   UsbPrinter usb_printer(usb_descriptors.value(), std::move(ipp_manager),
                          std::move(scanner), std::move(mock_printer),
-                         FLAGS_port, FLAGS_host_port, document_output_path,
-                         http_log_dir);
-  usb_printer.Run();
+                         document_output_path, http_log_dir);
+  usb_printer.Run(FLAGS_port, FLAGS_host_port);
 }

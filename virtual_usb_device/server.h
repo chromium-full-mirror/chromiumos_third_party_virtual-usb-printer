@@ -15,6 +15,14 @@
 #include "connection/connection_factory.h"
 #include "virtual-usb-printer/common/smart_buffer.h"
 
+class ConnectionHandler {
+ public:
+  ConnectionHandler() = default;
+  virtual ~ConnectionHandler() = default;
+
+  virtual void HandleConnection(std::unique_ptr<IConnection> conn) = 0;
+};
+
 // Generic TCP/IP server.
 // TODO(santo): Move socket related code in seperate class
 // so that it this class could be mocked on unit tests.
@@ -39,10 +47,17 @@ class Server {
   virtual void OnServerStarted() {}
 
   // Processes all incoming message on connected socket.
-  virtual void HandleConnection(std::unique_ptr<IConnection> conn) = 0;
+  void HandleConnection(std::unique_ptr<IConnection> conn);
 
   // Returns the port number on which this server is listening.
   uint16_t GetListenPort() const { return connection_->get_port(); }
+
+  void SetConnectionHandler(ConnectionHandler* handler) {
+    connection_handler_ = handler;
+  }
+  ConnectionHandler* GetConnectionHandler() const {
+    return connection_handler_;
+  }
 
  private:
   // Creates a socket and start listening for connections.
@@ -51,6 +66,7 @@ class Server {
   void HandleLoop();
 
   std::unique_ptr<IServerConnection> connection_;
+  base::raw_ptr<ConnectionHandler> connection_handler_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_SERVER_H_
