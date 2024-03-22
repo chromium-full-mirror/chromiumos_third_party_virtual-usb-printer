@@ -139,7 +139,7 @@ std::string DescriptorTypeString(uint8_t wValue) {
 
 // Unpacks the standard USB SETUP packet contained within `setup` into a
 // UsbControlRequest struct and returns the result.
-UsbControlRequest CreateUsbControlRequest(int64_t setup) {
+UsbControlRequest CreateUsbControlRequest(uint64_t setup) {
   UsbControlRequest request;
   request.bmRequestType = (setup & REQUEST_TYPE_MASK) >> 56;
   request.bRequest = (setup & REQUEST_MASK) >> 48;
@@ -148,6 +148,8 @@ UsbControlRequest CreateUsbControlRequest(int64_t setup) {
   request.wIndex0 = (setup & INDEX_0_MASK) >> 24;
   request.wIndex1 = (setup & INDEX_1_MASK) >> 16;
   request.wLength = ntohs(setup & LENGTH_MASK);
+
+  VLOG(2) << "SETUP " << base::StringPrintf("0x%016" PRIX64, setup);
 
   VLOG(2) << "bmRequestType "
           << base::StringPrintf("0x%02X", request.bmRequestType);
@@ -211,6 +213,18 @@ SmartBuffer PackUrb(const Urb& urb) {
 
   result.Add(htobe64(urb.setup));
   return result;
+}
+
+void PrintUrb(const Urb& req) {
+  VLOG(2) << "devid: " << req.devid;
+  VLOG(2) << "direction: " << req.direction;
+  VLOG(2) << "ep: " << req.ep;
+  VLOG(2) << "transfer_flags: " << req.transfer_flags;
+  VLOG(2) << "transfer_buffer_length: " << req.transfer_buffer_length;
+  VLOG(2) << "start_frame: " << req.start_frame;
+  VLOG(2) << "num_of_packets: " << req.num_of_packets;
+  VLOG(2) << "interval: " << req.interval;
+  VLOG(2) << "setup: " << base::StringPrintf("0x%016" PRIX64, req.setup);
 }
 
 SmartBuffer PackUrbReply(const UrbReply& urb) {

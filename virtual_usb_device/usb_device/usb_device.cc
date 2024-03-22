@@ -75,19 +75,17 @@ UsbDescriptors::UsbDescriptors(
       interface_descriptors_(interface_descriptors),
       endpoint_descriptors_(endpoint_descriptors) {}
 
-std::optional<UsbDescriptors> UsbDescriptors::Create(
-    const std::string& descriptor_file) {
-  std::optional<std::string> descriptors_contents =
-      GetJSONContents(descriptor_file);
-  if (!descriptors_contents.has_value()) {
-    LOG(ERROR) << "Failed to load file contents for " << descriptor_file;
+std::optional<UsbDescriptors> UsbDescriptors::CreateFromJson(
+    const std::string& descriptors_contents) {
+  if (descriptors_contents.empty()) {
+    LOG(ERROR) << "Empty JSON string for usb descriptors.";
     return std::nullopt;
   }
 
   std::optional<base::Value> descriptors =
-      base::JSONReader::Read(*descriptors_contents);
+      base::JSONReader::Read(descriptors_contents);
   if (!descriptors) {
-    LOG(ERROR) << "Failed to parse " << descriptor_file;
+    LOG(ERROR) << "Failed to parse descriptors content";
     return std::nullopt;
   }
 
@@ -111,6 +109,18 @@ std::optional<UsbDescriptors> UsbDescriptors::Create(
 
   return UsbDescriptors(device, configuration, qualifier, strings,
                         ieee_device_id, interfaces, endpoint_map);
+}
+
+std::optional<UsbDescriptors> UsbDescriptors::Create(
+    const std::string& descriptor_file) {
+  std::optional<std::string> descriptors_contents =
+      GetJSONContents(descriptor_file);
+  if (!descriptors_contents.has_value()) {
+    LOG(ERROR) << "Failed to load file contents for " << descriptor_file;
+    return std::nullopt;
+  }
+
+  return UsbDescriptors::CreateFromJson(descriptors_contents.value());
 }
 
 InterfaceManager* UsbDevice::GetInterfaceManager(int endpoint) {
@@ -199,6 +209,7 @@ std::optional<SmartBuffer> UsbDevice::HandleUsbControl(
 
 SmartBuffer UsbDevice::HandleStandardControl(
     const Urb& usb_request, const UsbControlRequest& control_request) const {
+  PrintUsbControlRequest(control_request);
   switch (control_request.bRequest) {
     case GET_STATUS:
       return HandleGetStatus(usb_request, control_request);
@@ -296,6 +307,7 @@ SmartBuffer UsbDevice::HandleGetDeviceDescriptor(
   } else {
     response.Add(dev);
   }
+
   return response;
 }
 

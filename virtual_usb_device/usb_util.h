@@ -65,7 +65,7 @@ UrbReply UnpackUrbReply(SmartBuffer* buf);
 
 // Unpacks the standard USB SETUP packet contained within `setup` into a
 // UsbControlRequest struct and returns the result.
-UsbControlRequest CreateUsbControlRequest(int64_t setup);
+UsbControlRequest CreateUsbControlRequest(uint64_t setup);
 
 // Returns the numeric value of the "direction" bit within `bmRequestType`.
 int GetControlDirection(uint8_t bmRequestType);

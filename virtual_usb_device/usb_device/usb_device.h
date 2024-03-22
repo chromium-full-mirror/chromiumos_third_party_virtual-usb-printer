@@ -74,6 +74,8 @@ class UsbDescriptors {
   // JSON format in the file located at `descriptor_file`.
   static std::optional<UsbDescriptors> Create(
       const std::string& descriptor_file);
+  static std::optional<UsbDescriptors> CreateFromJson(
+      const std::string& descriptors_contents);
 
   const UsbDeviceDescriptor& device_descriptor() const {
     return device_descriptor_;
