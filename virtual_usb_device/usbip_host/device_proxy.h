@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <base/notreached.h>
+#include <base/functional/callback.h>
 
 #include "virtual-usb-printer/virtual_usb_device/connection/connection_factory.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
@@ -20,16 +21,19 @@
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 
-// This class act as a proxy for actual usb device similar to
-// dbus proxy classes. It communicates with actual usb device via socket and
-// receives responses.
-// There is single `DeviceProxy` for each usb device registered with UsbIpHost.
+// This class acts as a proxy for actual usb device, similar to dbus proxy
+// classes. It communicates with usb device process and receives responses of
+// the usb operations. There is single `DeviceProxy` for each usb device
+// registered with the usbip host.
 class DeviceProxy {
  public:
-  // Create a proxy object for usb device which listens on
-  // `port` with usb information `info`
-  DeviceProxy(const uint16_t port, const BusId& id, const size_t devnum);
-  ~DeviceProxy();
+  using CreateCb = base::RepeatingCallback<std::unique_ptr<DeviceProxy>(
+      const uint16_t, const ::BusId&, const size_t)>;
+
+  static std::unique_ptr<DeviceProxy> Create(const uint16_t port,
+                                             const BusId& id,
+                                             const size_t devnum);
+  virtual ~DeviceProxy();
 
   // Connect with usb devices process via socket.
   bool Connect();
@@ -67,6 +71,9 @@ class DeviceProxy {
   // Receives `size` amount of response data. The size is determined by the
   // `HandleUsbDeviceRequest` call.
   bool ReadUsbResponseData(const size_t size, SmartBuffer* response_data);
+  // Create a proxy object for usb device which listens on
+  // `port` with usb information `info`
+  DeviceProxy(const uint16_t port, const ::BusId& id, const size_t devnum);
 
   // connection to device server
   std::unique_ptr<IConnection> connection_;

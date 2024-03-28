@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <base/containers/flat_map.h>
 
@@ -24,7 +25,7 @@
 class UsbIpCore {
  public:
   // Creates object with internal task runner.
-  UsbIpCore() = default;
+  UsbIpCore();
   ~UsbIpCore() = default;
 
   UsbIpCore(const UsbIpCore&) = delete;
@@ -60,6 +61,11 @@ class UsbIpCore {
 
   bool IsAttached(const std::string& busId);
 
+  // Sets callback which can be used to create external device proxy.
+  void SetCreateDeviceProxyCallback(DeviceProxy::CreateCb& callback) {
+    create_device_proxy_callback_ = std::move(callback);
+  }
+
  private:
   // Reads busid from connection and returns it.
   BusId ReadBusId(IConnection* conn);
@@ -87,6 +93,8 @@ class UsbIpCore {
   base::flat_map<BusId, std::unique_ptr<DeviceProxy>> proxy_map_;
 
   size_t device_count_ = 0;
+
+  DeviceProxy::CreateCb create_device_proxy_callback_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_CORE_H_

@@ -13,6 +13,13 @@
 #include "virtual-usb-printer/virtual_usb_device/server.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 
+std::unique_ptr<DeviceProxy> DeviceProxy::Create(const uint16_t port,
+                                                 const ::BusId& id,
+                                                 const size_t devnum) {
+  std::unique_ptr<DeviceProxy> proxy(new DeviceProxy(port, id, devnum));
+  return proxy;
+}
+
 DeviceProxy::DeviceProxy(const uint16_t port,
                          const ::BusId& id,
                          const size_t devnum)

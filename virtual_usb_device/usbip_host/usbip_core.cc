@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include <base/functional/bind.h>
 #include <base/strings/stringprintf.h>
 
 #include "device_proxy.h"
@@ -24,13 +25,17 @@ std::string BusIdAsString(const BusId& busid) {
 
 }  // namespace
 
+UsbIpCore::UsbIpCore()
+    : create_device_proxy_callback_(base::BindRepeating(&DeviceProxy::Create)) {
+}
+
 bool UsbIpCore::RegisterDevice(const uint16_t port) {
   const size_t devnum = device_count_ + 1;
   BusId id = {'\0'};
   snprintf(id.data(), id.size(), "1-%zu", devnum);
 
-  std::unique_ptr<DeviceProxy> client;
-  client = std::make_unique<DeviceProxy>(port, id, devnum);
+  std::unique_ptr<DeviceProxy> client =
+      create_device_proxy_callback_.Run(port, id, devnum);
   proxy_map_[id] = std::move(client);
 
   device_count_++;
