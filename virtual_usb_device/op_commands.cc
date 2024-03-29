@@ -172,7 +172,7 @@ OpRepDevlistHeader UnpackOpRepDevlistHeader(SmartBuffer* buf) {
 
 OpRepDevlist UnpackOpRepDevlist(SmartBuffer* buf) {
   OpRepDevlist list;
-  CHECK(buf->size() >= sizeof(list));
+  CHECK(buf->size() >= sizeof(OpRepDevlistHeader));
   memcpy(&list, buf->data(), sizeof(OpRepDevlistHeader));
   buf->Erase(0, sizeof(OpRepDevlistHeader));
   UnpackOpRepDevlistHeader(&list.header);

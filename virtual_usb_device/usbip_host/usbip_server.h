@@ -20,7 +20,7 @@ class UsbIpManager;
 // This class is owned by `UsbIpManager`.
 class UsbIpServer : public Server {
  public:
-  explicit UsbIpServer(int port);
+  explicit UsbIpServer(const uint16_t port);
 
   // Emits message "USBIPHost:READY", so that external entity could know usbip
   // host is ready to process usbip messages.

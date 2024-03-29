@@ -64,19 +64,21 @@ bool UsbIpCore::RegisterDevice(const uint16_t port) {
   return true;
 }
 
-bool UsbIpCore::DeregisterDevice(const uint16_t& port) {
+bool UsbIpCore::DeregisterDevice(const uint16_t port) {
   const auto it = std::remove_if(
       proxy_map_.begin(), proxy_map_.end(),
       [port](const auto& value) { return (value.second->GetPort() == port); });
-  if (it == proxy_map_.end())
+  if (it == proxy_map_.end()) {
+    LOG(INFO) << "Device with port: " << port << "not found";
     return false;
+  }
   proxy_map_.erase(it, proxy_map_.end());
   return true;
 }
 
-void UsbIpCore::DetachUsbDevice(IConnection* conn) {
+void UsbIpCore::DetachUsbDevice(int fd) {
   for (auto& [busid, proxy] : proxy_map_) {
-    if (proxy->GetAttachedSocket() == conn->FD()) {
+    if (proxy->GetAttachedSocket() == fd) {
       proxy->Detach();
       return;
     }

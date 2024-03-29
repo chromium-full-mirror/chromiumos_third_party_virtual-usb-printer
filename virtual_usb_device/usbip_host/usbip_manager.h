@@ -10,6 +10,7 @@
 
 #include <base/containers/flat_map.h>
 #include <base/memory/scoped_refptr.h>
+#include <base/synchronization/waitable_event.h>
 #include <base/threading/thread.h>
 #include <base/task/sequenced_task_runner.h>
 
@@ -24,6 +25,8 @@
 // This class also owns any connection created by usbip client.
 class UsbIpManager : public ConnectionHandler {
  public:
+  using TaskFinishCb = base::RepeatingCallback<void(IConnection*)>;
+
   // Constructs UsbIpManager object.
   UsbIpManager();
   ~UsbIpManager();
@@ -73,6 +76,10 @@ class UsbIpManager : public ConnectionHandler {
     core_.SetCreateDeviceProxyCallback(callback);
   }
 
+  // Register a Callback which will be triggered when asynchronous usbip task is
+  // finished.
+  void SetTaskFinishedCb(TaskFinishCb& cb) { task_finished_cb_ = cb; }
+
  private:
   // Responds with the status of OP_REQ_BIND_CMD usbip message.
   void RespondBind(IConnection* conn, bool status);
@@ -100,6 +107,7 @@ class UsbIpManager : public ConnectionHandler {
   // Closes the connection `conn` and removes  thread which was servicing this
   // connection.
   void CloseConnection(std::unique_ptr<IConnection> conn);
+  void CleanRequestThreads(base::WaitableEvent* event);
 
   UsbIpCore core_;
 
@@ -115,6 +123,8 @@ class UsbIpManager : public ConnectionHandler {
   // Task runner where all function of `UsbIpCore` are run in a sequence to
   // ensure all data access are thread safe.
   scoped_refptr<base::SequencedTaskRunner> core_task_runner_;
+  // Callback to be triggered when asynchronous usbip task are finished.
+  TaskFinishCb task_finished_cb_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_MANAGER_H_

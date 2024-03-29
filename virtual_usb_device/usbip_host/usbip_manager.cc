@@ -25,7 +25,14 @@ UsbIpManager::UsbIpManager() {
       base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()});
 }
 
-UsbIpManager::~UsbIpManager() {}
+UsbIpManager::~UsbIpManager() {
+  base::WaitableEvent ev;
+  connection_thread_->task_runner()->PostTask(
+      FROM_HERE, base::BindOnce(&UsbIpManager::CleanRequestThreads,
+                                base::Unretained(this), &ev));
+  ev.Wait();
+  LOG(INFO) << "UsbIpManager is getting destructed";
+}
 
 void UsbIpManager::Run(const uint16_t port) {
   server_.reset(new UsbIpServer(port));
@@ -55,12 +62,14 @@ void UsbIpManager::HandleInConnectionThread(std::unique_ptr<IConnection> conn) {
       FROM_HERE, base::BindOnce(&UsbIpManager::HandleUsbIpRequest,
                                 base::Unretained(this), std::move(conn)));
   request_threads_map_[conn_fd] = std::move(request_thread);
+  LOG(INFO) << "New request thread added for connection fd:" << conn_fd;
 }
 
 void UsbIpManager::HandleUsbIpRequest(std::unique_ptr<IConnection> conn) {
   SmartBuffer buf = conn->Receive(sizeof(OpHeader));
   if (buf.size() != sizeof(OpHeader)) {
     LOG(INFO) << "An unrecognised message was received - ignoring it";
+    DisposeConnection(std::move(conn));
     return;
   }
 
@@ -103,6 +112,9 @@ void UsbIpManager::OnRegisterationDone(std::unique_ptr<IConnection> conn,
   LOG(INFO) << "USB Device (port:" << port << ")"
             << " registration : " << (status ? "Success" : "Failed");
   RespondBind(conn.get(), status);
+  if (task_finished_cb_)
+    task_finished_cb_.Run(conn.get());
+
   DisposeConnection(std::move(conn));
 }
 
@@ -111,7 +123,10 @@ void UsbIpManager::OnDeregisterationDone(std::unique_ptr<IConnection> conn,
                                          bool status) {
   LOG(INFO) << "USB Device (port:" << port << ")"
             << " Deregistered : " << (status ? "Success" : "Failed");
+
   RespondBind(conn.get(), status);
+  if (task_finished_cb_)
+    task_finished_cb_.Run(conn.get());
   DisposeConnection(std::move(conn));
 }
 
@@ -157,6 +172,9 @@ void UsbIpManager::HandleUnBind(std::unique_ptr<IConnection> conn) {
 
 void UsbIpManager::HandleUsbRequest(std::unique_ptr<IConnection> conn,
                                     bool last_status) {
+  // Either attach or a task to run usb command are finished.
+  if (task_finished_cb_)
+    task_finished_cb_.Run(conn.get());
   // If last command was successful then continue with processing next command.
   if (last_status) {
     SmartBuffer received = conn->Receive(sizeof(UsbipCmdSubmit));
@@ -183,7 +201,7 @@ void UsbIpManager::HandleUsbRequest(std::unique_ptr<IConnection> conn,
       // Connection is closed by usbip detach <port> command
       core_task_runner_->PostTask(
           FROM_HERE, base::BindOnce(&UsbIpCore::DetachUsbDevice,
-                                    base::Unretained(&core_), conn.get()));
+                                    base::Unretained(&core_), conn->FD()));
       // We can safety disconnect here since above post call only use connection
       // fd.
     } else {
@@ -203,6 +221,8 @@ void UsbIpManager::HandleAttach(std::unique_ptr<IConnection> conn) {
 }
 
 void UsbIpManager::OnHandleDeviceListDone(std::unique_ptr<IConnection> conn) {
+  if (task_finished_cb_)
+    task_finished_cb_.Run(conn.get());
   DisposeConnection(std::move(conn));
 }
 
@@ -222,5 +242,12 @@ void UsbIpManager::DisposeConnection(std::unique_ptr<IConnection> conn) {
 }
 
 void UsbIpManager::CloseConnection(std::unique_ptr<IConnection> conn) {
+  LOG(INFO) << "request thread removed for connection fd:" << conn->FD();
   request_threads_map_.erase(conn->FD());
+}
+
+void UsbIpManager::CleanRequestThreads(base::WaitableEvent* event) {
+  LOG(INFO) << "Removing all remaining request threads.";
+  request_threads_map_.clear();
+  event->Signal();
 }

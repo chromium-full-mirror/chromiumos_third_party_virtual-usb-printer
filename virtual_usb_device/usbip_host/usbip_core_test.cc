@@ -8,9 +8,10 @@
 #include <vector>
 #include <algorithm>
 
-#include <base/test/task_environment.h>
-#include <base/functional/bind.h>
 #include <gtest/gtest.h>
+
+#include <base/functional/bind.h>
+#include <base/test/task_environment.h>
 
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
@@ -18,13 +19,17 @@
 
 class FakeServerConnection : public IConnection {
  public:
-  FakeServerConnection() = default;
+  FakeServerConnection() {
+    // Each connection must have unique fd.
+    counter++;
+    conn_fd_ = counter + 3246;
+  }
 
   // ignore these
   bool Start() override { return true; }
   void Stop() override {}
   uint16_t GetPort() const override { return 3240; }
-  int FD() const override { return 100 + 3240; }
+  int FD() const override { return conn_fd_; }
 
   SmartBuffer Receive(size_t size) const override {
     size = std::min(size, server_receive_data_.size());
@@ -52,7 +57,11 @@ class FakeServerConnection : public IConnection {
   // Stores data sent and receive by Host server
   mutable std::vector<uint8_t> server_receive_data_;
   mutable std::vector<uint8_t> server_send_data_;
+  int conn_fd_;
+  static size_t counter;
 };
+
+size_t FakeServerConnection::counter = 0;
 
 // A DeviceProxy class implementation that communicates with
 // usb device using direct function call.
@@ -163,7 +172,7 @@ TEST_F(UsbIpCoreTest, HandleAttachInternalSuccess) {
   auto rep = UnpackOpRepImport(&buf);
   EXPECT_EQ(rep.header.status, 0);
 
-  core_->DetachUsbDevice(&fc);
+  core_->DetachUsbDevice(fc.FD());
   EXPECT_FALSE(core_->IsAttached("1-1"));
   buf = fc.TransferSendBuffer();
   EXPECT_EQ(buf.size(), 0);
@@ -215,13 +224,13 @@ TEST_F(UsbIpCoreTest, HandleDeviceListInternal) {
   EXPECT_EQ(list.header.numExportedDevices, 2);
 
   // Detach device 0.
-  core_->DetachUsbDevice(&fc1);
+  core_->DetachUsbDevice(fc1.FD());
   EXPECT_FALSE(core_->IsAttached("1-1"));
   buf = fc1.TransferSendBuffer();
   EXPECT_EQ(buf.size(), 0);
 
   // Detach device 1.
-  core_->DetachUsbDevice(&fc2);
+  core_->DetachUsbDevice(fc2.FD());
   EXPECT_FALSE(core_->IsAttached("1-2"));
   buf = fc2.TransferSendBuffer();
   EXPECT_EQ(buf.size(), 0);
@@ -259,7 +268,7 @@ TEST_F(UsbIpCoreTest, HandleUsbCommandSubmit_HostToDevice) {
   EXPECT_EQ(rep_submit.header.direction, rep_submit.header.direction);
   EXPECT_EQ(rep_submit.header.ep, rep_submit.header.ep);
 
-  core_->DetachUsbDevice(&fc);
+  core_->DetachUsbDevice(fc.FD());
   EXPECT_FALSE(core_->IsAttached("1-1"));
   buf = fc.TransferSendBuffer();
   EXPECT_EQ(buf.size(), 0);
@@ -297,7 +306,7 @@ TEST_F(UsbIpCoreTest, HandleUsbCommandSubmit_DeviceToHost) {
   EXPECT_EQ(rep_submit.header.direction, rep_submit.header.direction);
   EXPECT_EQ(rep_submit.header.ep, rep_submit.header.ep);
 
-  core_->DetachUsbDevice(&fc);
+  core_->DetachUsbDevice(fc.FD());
   EXPECT_FALSE(core_->IsAttached("1-1"));
   buf = fc.TransferSendBuffer();
   EXPECT_EQ(buf.size(), 0);

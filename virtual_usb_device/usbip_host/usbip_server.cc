@@ -13,7 +13,7 @@
 
 #include "usbip_manager.h"
 
-UsbIpServer::UsbIpServer(int port) : Server(port) {}
+UsbIpServer::UsbIpServer(const uint16_t port) : Server(port) {}
 
 void UsbIpServer::OnServerStarted() {
   printf("USBIPHost::READY\n");

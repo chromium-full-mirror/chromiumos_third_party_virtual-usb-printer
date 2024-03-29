@@ -4,19 +4,66 @@
 
 #include "usbip_manager.h"
 
-#include <map>
+#include <algorithm>
 #include <string>
-
-#include <base/strings/stringprintf.h>
-#include <base/task/thread_pool/thread_pool_instance.h>
-#include <base/threading/platform_thread.h>
-#include <base/threading/simple_thread.h>
-#include <base/time/time.h>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
-// A `DeviceProxy` class implementation that communicates with
-// usb device using direct function call.
+#include <base/synchronization/waitable_event.h>
+#include <base/task/thread_pool/thread_pool_instance.h>
+#include <base/test/task_environment.h>
+
+#include "virtual-usb-printer/virtual_usb_device/op_commands.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
+
+class FakeServerConnection : public IConnection {
+ public:
+  FakeServerConnection() {
+    // Each connection must have unique fd.
+    counter++;
+    conn_fd_ = counter + 3246;
+  }
+
+  // ignore these
+  bool Start() override { return true; }
+  void Stop() override {}
+  uint16_t GetPort() const override { return 3240; }
+  int FD() const override { return conn_fd_; }
+
+  SmartBuffer Receive(size_t size) const override {
+    size = std::min(size, server_receive_data_.size());
+    SmartBuffer r;
+    r.Add(server_receive_data_.data(), size);
+    server_receive_data_.erase(server_receive_data_.begin(),
+                               server_receive_data_.begin() + size);
+    return r;
+  }
+
+  bool Send(const SmartBuffer& smart_buffer) const override {
+    server_send_data_.insert(server_send_data_.end(),
+                             smart_buffer.contents().begin(),
+                             smart_buffer.contents().end());
+    return true;
+  }
+
+  SmartBuffer TransferSendBuffer(void) {
+    SmartBuffer r;
+    r.Add(server_send_data_.data(), server_send_data_.size());
+    server_send_data_.clear();
+    return r;
+  }
+
+  // Stores data sent and receive by Host server
+  mutable std::vector<uint8_t> server_receive_data_;
+  mutable std::vector<uint8_t> server_send_data_;
+  int conn_fd_;
+  static size_t counter;
+};
+
+size_t FakeServerConnection::counter = 0;
+
 class StubDeviceProxy : public DeviceProxy {
  public:
   static std::unique_ptr<DeviceProxy> Create(const uint16_t port,
@@ -38,8 +85,8 @@ class StubDeviceProxy : public DeviceProxy {
   ~StubDeviceProxy() override = default;
   bool ConnectDevice() override { return true; }
 
-  // Makes a direct function call to `UsbDevice` to get the response
-  // data.
+  // Sends the urb request to the usb device (which runs in different process)
+  // for handling and returns the size of response.
   bool HandleUsbDeviceRequest(const Urb& urb_request,
                               const SmartBuffer& data,
                               SmartBuffer* response_data,
@@ -62,190 +109,124 @@ class StubDeviceProxy : public DeviceProxy {
   std::unique_ptr<UsbDevice> usb_device_;
 };
 
-class TestThread : public base::SimpleThread {
+class UsbIpManagerTest : public testing::Test {
  public:
-  explicit TestThread(const uint16_t server_port)
-      : SimpleThread("HostRunnerThread"), server_port_(server_port) {}
+  UsbIpManagerTest() = default;
+  ~UsbIpManagerTest() = default;
+  void TaskFinished(IConnection* conn) {
+    FakeServerConnection* fc = dynamic_cast<FakeServerConnection*>(conn);
+    current_response_buf_ = fc->TransferSendBuffer();
+    cv_.Signal();
+  }
 
-  void Run() override {
+ protected:
+  void SetUp() override {
     DeviceProxy::CreateCb callback =
         base::BindRepeating(&StubDeviceProxy::Create);
     host_.SetCreateDeviceProxyCallback(callback);
-    host_.Run(server_port_);
+
+    base::RepeatingCallback<void(IConnection*)> cb = base::BindRepeating(
+        &UsbIpManagerTest::TaskFinished, base::Unretained(this));
+    host_.SetTaskFinishedCb(cb);
   }
 
-  // This function is assumed to be threadsafe since
-  // at the end it only calls `shutdown` for `socket`
-  // which is assumed to be threadsafe.
-  // The test will fail if `host_.Stop()` doesn't remain
-  // threadsafe in future.
-  void Stop() { host_.Stop(); }
+  SmartBuffer HandleRequest(const SmartBuffer& request) {
+    cv_.Reset();
+    if (current_response_buf_.size() > 0)
+      current_response_buf_.Shrink(0);
 
- private:
-  const uint16_t server_port_;
+    std::unique_ptr<FakeServerConnection> fc(new FakeServerConnection());
+    fc->server_receive_data_.resize(request.size());
+    std::copy(request.contents().begin(), request.contents().end(),
+              fc->server_receive_data_.begin());
+
+    host_.HandleConnection(std::move(fc));
+    cv_.Wait();
+
+    return current_response_buf_;
+  }
+
+  base::test::TaskEnvironment task_environment_{
+      base::test::TaskEnvironment::TimeSource::DEFAULT};
+
   UsbIpManager host_;
+  base::WaitableEvent cv_;
+  SmartBuffer current_response_buf_;
 };
 
-constexpr uint16_t SERVER_PORT = 3240;
-
-class UsbIpManagerTest : public testing::Test {
- public:
-  UsbIpManagerTest() : server_port_(SERVER_PORT) {}
-
- protected:
-  static void SetUpTestSuite() {
-    base::ThreadPoolInstance::Create("UsbIpHost Threadpool");
-    constexpr size_t max_num_foreground_threads = 1;  // Chosen randomly.
-    base::ThreadPoolInstance::InitParams init_params(
-        max_num_foreground_threads);
-    base::ThreadPoolInstance::Get()->Start(init_params);
-
-    host_runner_thread_ = new TestThread(SERVER_PORT);
-    host_runner_thread_->Start();
-  }
-
-  static void TearDownTestSuite() {
-    host_runner_thread_->Stop();
-    host_runner_thread_->Join();
-    base::ThreadPoolInstance::Get()->Shutdown();
-    delete host_runner_thread_;
-  }
-
-  void SetUp() override { WaitUntilServerReady(); }
-
-  void WaitUntilServerReady() {
-    size_t timeout = 300;  // Randomly chosen
-    auto conn = std::make_unique<ClientSocketConnection>(server_port_);
-    while (!conn->Start() && timeout > 0) {
-      base::PlatformThread::Sleep(base::Seconds(1));
-      timeout--;
-    }
-    if (timeout == 0)
-      LOG(ERROR) << "Couldn't connect to server, tried 99 times";
-    else
-      LOG(INFO) << "Server is ready for connection";
-  }
-
- protected:
-  static TestThread* host_runner_thread_;
-  const uint16_t server_port_;
-};
-
-TestThread* UsbIpManagerTest::host_runner_thread_ = nullptr;
-
-TEST_F(UsbIpManagerTest, HandleDeviceListNoDevice) {
-  auto conn = std::make_unique<ClientSocketConnection>(server_port_);
-  ASSERT_TRUE(conn->Start());
-  OpHeader header;
-  header.version = 2;
-  header.command = OP_REQ_DEVLIST_CMD;
-  header.status = 0;
-  SmartBuffer request_buf = PackOpHeader(header);
-  conn->Send(request_buf);
-
-  SmartBuffer response_buf = conn->Receive(sizeof(OpRepDevlistHeader));
-  OpRepDevlistHeader list_header = UnpackOpRepDevlistHeader(&response_buf);
-  int count = list_header.numExportedDevices;
-  EXPECT_EQ(count, 0);
-}
-
-TEST_F(UsbIpManagerTest, HandleDeviceListOneDevice) {
-  // Verify device registration.
+TEST_F(UsbIpManagerTest, HandleUsbIpRequests) {
+  const uint16_t port = 3245;
+  // Device registration request.
   {
-    auto conn = std::make_unique<ClientSocketConnection>(server_port_);
-    ASSERT_TRUE(conn->Start());
-    EXPECT_GT(conn->FD(), 0);
+    BindOrUnbindRequest req;
+    req.header.version = 2;
+    req.header.command = OP_REQ_BIND_CMD;
+    req.header.status = 0;
+    req.port = port;
+    SmartBuffer request = PackBindOrUnbindRequest(req);
+    SmartBuffer response = HandleRequest(request);
 
-    // Test OP_REQ_BIND_CMD request.
-    BindOrUnbindRequest request;
-    request.header.version = 2;
-    request.header.command = OP_REQ_BIND_CMD;
-    request.port = 3245;  // device port
-    SmartBuffer request_buf = PackBindOrUnbindRequest(request);
-    LOG(INFO) << "UsbIpManagerTest: send bind command";
-    conn->Send(request_buf);
-
-    SmartBuffer response_buf = conn->Receive(sizeof(OpHeader));
-    OpHeader header = UnpackOpHeader(&response_buf);
-    LOG(INFO) << "UsbIpManagerTest: received bind response "
-              << (header.status ? "failure" : "success");
-    EXPECT_EQ(header.status, 0);
+    OpHeader res = UnpackOpHeader(&response);
+    EXPECT_EQ(res.command, OP_REP_BIND_CMD);  // status 0 means success.
+    EXPECT_EQ(res.status, 0);                 // status 0 means success.
   }
 
-  // Verify device listing.
+  // Test device listing with OP_REQ_DEVLIST_CMD request.
   {
-    auto conn = std::make_unique<ClientSocketConnection>(server_port_);
-    ASSERT_TRUE(conn->Start());
-    OpHeader header;
-    header.version = 2;
-    header.command = OP_REQ_DEVLIST_CMD;
-    header.status = 0;
-    SmartBuffer request_buf = PackOpHeader(header);
-    LOG(INFO) << "UsbIpManagerTest: send device list command";
-    conn->Send(request_buf);
+    OpReqDevlist req;
+    req.version = 2;
+    req.command = OP_REQ_DEVLIST_CMD;
+    req.status = 0;
+    SmartBuffer request = PackOpHeader(req);
+    SmartBuffer response = HandleRequest(request);
 
-    SmartBuffer response_buf = conn->Receive(sizeof(OpRepDevlistHeader));
-    OpRepDevlistHeader list_header = UnpackOpRepDevlistHeader(&response_buf);
-    LOG(INFO) << "UsbIpManagerTest: received device list response";
-    int count = list_header.numExportedDevices;
-    EXPECT_EQ(count, 1);
+    auto list = UnpackOpRepDevlist(&response);
+    EXPECT_EQ(list.header.header.command, OP_REP_DEVLIST_CMD);
+    EXPECT_EQ(list.header.numExportedDevices, 1);
   }
 
-  // Verify if device attachment is successful.
+  // Test attaching of device with OP_REQ_IMPORT_CMD.
   {
-    auto conn = std::make_unique<ClientSocketConnection>(server_port_);
-    ASSERT_TRUE(conn->Start());
-    OpReqImport import_req;
-    memset(import_req.busID, '\0', 32);
-    snprintf(import_req.busID, sizeof(import_req.busID), "%s", "1-1");
-    import_req.header.version = 2;
-    import_req.header.command = OP_REQ_IMPORT_CMD;
-    import_req.header.status = 0;
-    SmartBuffer request_buf = PackOpReqImport(import_req);
-    LOG(INFO) << "UsbIpManagerTest: send import command";
-    conn->Send(request_buf);
-    SmartBuffer response_buf = conn->Receive(sizeof(OpHeader));
-    OpHeader header = UnpackOpHeader(&response_buf);
-    EXPECT_EQ(header.status, 0);
+    OpReqImport req;
+    req.header.version = 2;
+    req.header.command = OP_REQ_IMPORT_CMD;
+    req.header.status = 0;
+    std::fill(req.busID, req.busID + 32, '\0');
+    snprintf(req.busID, sizeof(req.busID), "%s", "1-1");
+    SmartBuffer request = PackOpReqImport(req);
+    SmartBuffer response = HandleRequest(request);
+
+    auto rep = UnpackOpRepImport(&response);
+    EXPECT_EQ(rep.header.status, 0);
+    EXPECT_EQ(rep.header.command, OP_REP_IMPORT_CMD);
+    EXPECT_EQ(strncmp(rep.device.busID, "1-1", sizeof("1-1")), 0);
   }
 
-  // Verify device deregistration(aka unbind).
+  // Device deregistration request.
   {
-    auto conn = std::make_unique<ClientSocketConnection>(server_port_);
-    ASSERT_TRUE(conn->Start());
-    EXPECT_GT(conn->FD(), 0);
-    // Test OP_REQ_BIND_CMD request.
-    BindOrUnbindRequest request;
-    request.header.version = 2;
-    request.header.command = OP_REQ_UNBIND_CMD;
-    request.port = 3245;
-    SmartBuffer request_buf = PackBindOrUnbindRequest(request);
-    LOG(INFO) << "UsbIpManagerTest: send Unbind command";
-    conn->Send(request_buf);
+    BindOrUnbindRequest req;
+    req.header.version = 2;
+    req.header.command = OP_REQ_UNBIND_CMD;
+    req.header.status = 0;
+    req.port = port;
+    SmartBuffer request = PackBindOrUnbindRequest(req);
+    SmartBuffer response = HandleRequest(request);
 
-    SmartBuffer response_buf = conn->Receive(sizeof(OpHeader));
-    OpHeader header = UnpackOpHeader(&response_buf);
-    LOG(INFO) << "UsbIpManagerTest: received unbind response "
-              << (header.status ? "failure" : "success");
-    EXPECT_EQ(header.status, 0);
+    OpHeader res = UnpackOpHeader(&response);
+    EXPECT_EQ(res.status, 0);  // status 0 means success.
   }
 
-  // Verify registered device count is back to 0.
+  // Test device list count is back to zero
   {
-    auto conn = std::make_unique<ClientSocketConnection>(server_port_);
-    ASSERT_TRUE(conn->Start());
-    OpHeader header;
-    header.version = 2;
-    header.command = OP_REQ_DEVLIST_CMD;
-    header.status = 0;
-    SmartBuffer request_buf = PackOpHeader(header);
-    LOG(INFO) << "UsbIpManagerTest: send device list command";
-    conn->Send(request_buf);
+    OpReqDevlist req;
+    req.version = 2;
+    req.command = OP_REQ_DEVLIST_CMD;
+    req.status = 0;
+    SmartBuffer request = PackOpHeader(req);
+    SmartBuffer response = HandleRequest(request);
 
-    SmartBuffer response_buf = conn->Receive(sizeof(OpRepDevlistHeader));
-    OpRepDevlistHeader list_header = UnpackOpRepDevlistHeader(&response_buf);
-    LOG(INFO) << "UsbIpManagerTest: received device list response";
-    int count = list_header.numExportedDevices;
-    EXPECT_EQ(count, 0);
+    auto list = UnpackOpRepDevlist(&response);
+    EXPECT_EQ(list.header.header.command, OP_REP_DEVLIST_CMD);
+    EXPECT_EQ(list.header.numExportedDevices, 0);
   }
 }
