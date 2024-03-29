@@ -108,7 +108,8 @@ ServerSocketConnection::ServerSocketConnection(uint16_t port)
     : port_(port), fd_(-1) {}
 
 ServerSocketConnection::~ServerSocketConnection() {
-  Stop();
+  if (close(fd_) < 0)
+    LOG(ERROR) << "Closing listening socket Failed";
 }
 
 bool ServerSocketConnection::Start() {
