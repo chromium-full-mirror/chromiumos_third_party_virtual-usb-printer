@@ -36,12 +36,12 @@ bool DeviceServer::RegisterToHost() {
   if (!host_connection_->Start())
     return false;
 
-  BindRequest request;
+  BindOrUnbindRequest request;
   request.header.version = kUsbipVersion;
   request.header.command = OP_REQ_BIND_CMD;
   request.port = GetListenPort();
 
-  SmartBuffer buf = PackBindRequest(request);
+  SmartBuffer buf = PackBindOrUnbindRequest(request);
   host_connection_->Send(buf);
 
   SmartBuffer res = host_connection_->Receive(sizeof(OpHeader));

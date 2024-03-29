@@ -71,6 +71,11 @@ void UsbIpManager::HandleUsbIpRequest(std::unique_ptr<IConnection> conn) {
     return;
   }
 
+  if (request.command == OP_REQ_UNBIND_CMD) {
+    HandleUnBind(std::move(conn));
+    return;
+  }
+
   if (request.command == OP_REQ_DEVLIST_CMD) {
     HandleDeviceList(std::move(conn));
     return;
@@ -102,6 +107,15 @@ void UsbIpManager::OnRegisterationDone(std::unique_ptr<IConnection> conn,
   DisposeConnection(std::move(conn));
 }
 
+void UsbIpManager::OnDeregisterationDone(std::unique_ptr<IConnection> conn,
+                                         uint16_t port,
+                                         bool status) {
+  LOG(INFO) << "USB Device (port:" << port << ")"
+            << " Deregistered : " << (status ? "Success" : "Failed");
+  RespondBind(conn.get(), status);
+  DisposeConnection(std::move(conn));
+}
+
 void UsbIpManager::HandleBind(std::unique_ptr<IConnection> conn) {
   uint16_t port = 0;
   SmartBuffer port_buffer = conn->Receive(sizeof(uint16_t));
@@ -120,6 +134,26 @@ void UsbIpManager::HandleBind(std::unique_ptr<IConnection> conn) {
                      port),
       base::BindOnce(&UsbIpManager::OnRegisterationDone, base::Unretained(this),
                      std::move(conn), port));
+}
+
+void UsbIpManager::HandleUnBind(std::unique_ptr<IConnection> conn) {
+  uint16_t port = 0;
+  SmartBuffer port_buffer = conn->Receive(sizeof(uint16_t));
+  if (port_buffer.size() != sizeof(uint16_t)) {
+    LOG(ERROR) << "Failed reading port value";
+    DisposeConnection(std::move(conn));
+    return;
+  }
+
+  memcpy(&port, port_buffer.data(), sizeof(uint16_t));
+  port = ntohs(port);
+
+  core_task_runner_->PostTaskAndReplyWithResult(
+      FROM_HERE,
+      base::BindOnce(&UsbIpCore::DeregisterDevice, base::Unretained(&core_),
+                     port),
+      base::BindOnce(&UsbIpManager::OnDeregisterationDone,
+                     base::Unretained(this), std::move(conn), port));
 }
 
 void UsbIpManager::HandleUsbRequest(std::unique_ptr<IConnection> conn,

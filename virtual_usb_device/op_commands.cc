@@ -258,7 +258,7 @@ void UnpackOpRepDevice(OpRepDevice* device) {
   device->bcdDevice = ntohs(device->bcdDevice);
 }
 
-SmartBuffer PackBindRequest(BindRequest& request) {
+SmartBuffer PackBindOrUnbindRequest(BindOrUnbindRequest& request) {
   SmartBuffer buf;
   buf.Add(PackOpHeader(request.header));
   buf.Add(htons(request.port));

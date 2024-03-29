@@ -61,7 +61,10 @@ bool UsbIpCore::DeregisterDevice(const uint16_t& port) {
   const auto it = std::remove_if(
       proxy_map_.begin(), proxy_map_.end(),
       [port](const auto& value) { return (value.second->GetPort() == port); });
-  return (it != proxy_map_.end());
+  if (it == proxy_map_.end())
+    return false;
+  proxy_map_.erase(it, proxy_map_.end());
+  return true;
 }
 
 void UsbIpCore::DetachUsbDevice(IConnection* conn) {

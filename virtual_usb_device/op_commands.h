@@ -85,10 +85,13 @@ struct OpRepDevInfo {
   OpRepDeviceInterface* interfaces;
 };
 
-// Custom usbip message which is used to bind the usb device with
-// UsbIpHost. Once usb device is binded with UsbIpHost, it is
-// considered exported and can be attached with `usbip attach` command.
-struct BindRequest {
+// Custom usbip message which is used to bind(register) or unbind(deregister)
+// usb device with the host. When usb device is binded with the host, host saves
+// the device information and the device is considered exported, i.e device can
+// be listed or attached by usbip client.
+// When usb device is Unbinded, host removes the device information and
+// thus can't be further seen by the usbip client.
+struct BindOrUnbindRequest {
   OpHeader header;
   uint16_t port;  // port on which usb device listens
   OpRepDevInfo device_desc;
@@ -159,7 +162,7 @@ SmartBuffer PackOpRepDevlist(OpRepDevlist devlist);
 SmartBuffer PackOpRepImport(OpRepImport message);
 SmartBuffer PackOpReqImport(OpReqImport import);
 SmartBuffer PackOpRepDevInfo(OpRepDevInfo& info);
-SmartBuffer PackBindRequest(BindRequest& request);
+SmartBuffer PackBindOrUnbindRequest(BindOrUnbindRequest& request);
 
 OpHeader UnpackOpHeader(SmartBuffer* buf);
 void UnpackOpHeader(OpHeader* header);
