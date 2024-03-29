@@ -66,7 +66,9 @@ bool DeviceProxy::GetOpRepDevInfo(OpRepDevInfo* info) {
   SmartBuffer descriptors_data;
   if (!ReadUsbResponseData(size, &descriptors_data))
     return false;
-  UsbDeviceDescriptor usb_descriptors = UnpackUsbDescriptor(descriptors_data);
+  UsbDeviceDescriptor usb_descriptors;
+  memcpy(&usb_descriptors, descriptors_data.data(),
+         sizeof(UsbDeviceDescriptor));
 
   request.setup =
       0x8006000200000A00;  // setup request to get config descriptors
@@ -76,11 +78,17 @@ bool DeviceProxy::GetOpRepDevInfo(OpRepDevInfo* info) {
   SmartBuffer configs_data;
   if (!ReadUsbResponseData(size, &configs_data))
     return false;
-  UsbConfigurationDescriptor usb_configs = UnpackConfigDescriptor(configs_data);
+  UsbConfigurationDescriptor usb_configs;
+  memcpy(&usb_configs, configs_data.data(), sizeof(UsbConfigurationDescriptor));
+  configs_data.Erase(0, sizeof(UsbConfigurationDescriptor));
 
   std::vector<UsbInterfaceDescriptor> usb_interfaces;
   while (configs_data.size() > sizeof(UsbInterfaceDescriptor)) {
-    usb_interfaces.push_back(UnpackInterfaceDescriptors(configs_data));
+    UsbInterfaceDescriptor idesc;
+    memcpy(&idesc, configs_data.data(), sizeof(UsbInterfaceDescriptor));
+    configs_data.Erase(0, sizeof(UsbInterfaceDescriptor));
+
+    usb_interfaces.push_back(idesc);
   }
 
   CreateOpRepDevInfo(usb_descriptors, usb_configs, usb_interfaces, info);
