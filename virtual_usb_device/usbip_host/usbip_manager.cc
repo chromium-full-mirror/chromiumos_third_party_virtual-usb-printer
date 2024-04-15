@@ -140,6 +140,8 @@ void UsbIpManager::HandleUsbRequest(std::unique_ptr<IConnection> conn,
                            base::Unretained(this), std::move(conn)));
       } else if (command.header.command == COMMAND_USBIP_CMD_UNLINK) {
         LOG(INFO) << "Received unlink URB...ignoring";
+        // Continue processing next usb request.
+        HandleUsbRequest(std::move(conn), true);
       } else {
         LOG(ERROR) << "Unknown usbip command";
       }

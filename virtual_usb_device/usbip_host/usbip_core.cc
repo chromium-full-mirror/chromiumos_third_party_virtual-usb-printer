@@ -161,8 +161,13 @@ bool UsbIpCore::HandleUsbCommandSubmitWithProxy(
     data = conn->Receive(usb_request.transfer_buffer_length);
 
   SmartBuffer response_data;
-  if (!proxy->HandleUsbDeviceRequest(urb_request, data, &response_data))
+  bool stalled = false;
+  if (!proxy->HandleUsbDeviceRequest(urb_request, data, &response_data,
+                                     &stalled))
     return false;
+
+  if (stalled)
+    return true;
 
   // If data transfer is from the device to host or there are control
   // requests then we have data to read in response.

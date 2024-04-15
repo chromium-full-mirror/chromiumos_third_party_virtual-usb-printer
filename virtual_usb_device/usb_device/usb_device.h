@@ -40,7 +40,7 @@ class InterfaceManager {
   SmartBuffer PopMessage();
 
   // Having just received some HTTP data, returns the message if
-  // it is complete; returns nullopt otherwise.
+  // it is complete; returns `nullopt` otherwise.
   std::optional<SmartBuffer> AddMessageAndReturnIfComplete(
       const SmartBuffer& message);
 
@@ -71,7 +71,7 @@ class UsbDescriptors {
  public:
   UsbDescriptors() = default;
   // Create a new UsbDescriptors object using the USB descriptors defined in
-  // json format in the file located at `descriptor_file`.
+  // JSON format in the file located at `descriptor_file`.
   static std::optional<UsbDescriptors> Create(
       const std::string& descriptor_file);
 
@@ -182,19 +182,26 @@ class UsbDevice : public ConnectionHandler {
 
   void HandleConnection(std::unique_ptr<IConnection> conn) override;
 
-  // Determines whether `usb_request` is either a control or data request and
-  // defers to the corresponding function.
-  SmartBuffer HandleUsbRequest(const Urb& usb_request, const SmartBuffer& data);
+  // Processes `usb_request` with `data` and returns the result of usb operation
+  // in optional `SmartBuffer`. If returned value doesn't contain a value then
+  // it means the operation was STALLED.
+  // Note: Return value can have an empty `SmartBuffer` and it means that
+  // operation was processed, although result was empty.
+  std::optional<SmartBuffer> HandleUsbRequest(const Urb& usb_request,
+                                              const SmartBuffer& data);
 
  private:
-  // Determines whether `usb_request` is either a standard or class-specific
-  // control request and defers to the corresponding function.
-  SmartBuffer HandleUsbControl(const Urb& usb_request) const;
+  // Processes usb control requests and returns the result in optional
+  // `SmartBuffer`. If optional return value doesn't contain a value then it
+  // means that the operation was `STALLED`.
+  std::optional<SmartBuffer> HandleUsbControl(const Urb& usb_request) const;
 
-  // Handles raw or ipp usb data received by usb device.
-  virtual SmartBuffer HandleUsbData(const Urb& usb_request,
-                                    const SmartBuffer& data) {
-    return {};
+  // Processes Raw or IPP usb data and returns the result in optional
+  // `SmartBuffer`. If optional return value doesn't contain a value then it
+  // means that the operation was `STALLED`.
+  virtual std::optional<SmartBuffer> HandleUsbData(const Urb& usb_request,
+                                                   const SmartBuffer& data) {
+    return std::nullopt;
   }
 
   // Handles usb requests of type=STANDARD_TYPE.
@@ -222,8 +229,10 @@ class UsbDevice : public ConnectionHandler {
   SmartBuffer HandleGetStringDescriptor(
       const Urb& usb_request, const UsbControlRequest& control_request) const;
 
-  // Handles device control specific USB requests.
-  SmartBuffer HandleDeviceControl(
+  // Handles usb device control specific USB requests and returns the result in
+  // optional `SmartBuffer`. If return value doesn't contain a value it means
+  // that operation was STALLED.
+  std::optional<SmartBuffer> HandleDeviceControl(
       const Urb& usb_request, const UsbControlRequest& control_request) const;
 
   // Responds with the ieee device id of usb device.
@@ -241,7 +250,8 @@ class UsbDevice : public ConnectionHandler {
   void SendUsbResponse(IConnection* conn,
                        const Urb& usb_request,
                        const uint8_t* data,
-                       size_t data_size) const;
+                       size_t data_size,
+                       bool is_stalled) const;
 
   UsbDescriptors usb_descriptors_;
   base::FilePath document_output_path_;

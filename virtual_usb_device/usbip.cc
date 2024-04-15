@@ -79,8 +79,6 @@ SmartBuffer PackUsbipCmdSubmit(const UsbipCmdSubmit& cmd) {
 
 UsbipCmdSubmit UnpackUsbipCmdSubmit(SmartBuffer* buf) {
   UsbipCmdSubmit result;
-  LOG(INFO) << "buf->size() " << buf->size();
-  LOG(INFO) << "sizeof UsbipCmdSubmit " << sizeof(result);
   CHECK(buf->size() >= sizeof(result));
   memcpy(&result, buf->data(), sizeof(result));
   buf->Erase(0, sizeof(result));

@@ -46,6 +46,7 @@
 #define GET_DEVICE_ID 0
 #define GET_PORT_STATUS 1
 #define SOFT_RESET 2
+#define GET_MAX_LUN 254
 
 // OP Commands.
 #define OP_REQ_IMPORT_CMD 0x8003

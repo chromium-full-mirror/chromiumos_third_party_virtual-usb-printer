@@ -60,6 +60,7 @@ void DeviceProxy::Detach() {
 }
 
 bool DeviceProxy::GetOpRepDevInfo(OpRepDevInfo* info) {
+  bool stalled = false;
   Urb request;
 
   request.direction = 0;
@@ -67,7 +68,7 @@ bool DeviceProxy::GetOpRepDevInfo(OpRepDevInfo* info) {
   request.setup =
       0x8006000100001200;  // setup request to get config descriptors
   SmartBuffer descriptors_data;
-  if (!HandleUsbDeviceRequest(request, {}, &descriptors_data))
+  if (!HandleUsbDeviceRequest(request, {}, &descriptors_data, &stalled))
     return false;
   UsbDeviceDescriptor usb_descriptors;
   memcpy(&usb_descriptors, descriptors_data.data(),
@@ -76,7 +77,7 @@ bool DeviceProxy::GetOpRepDevInfo(OpRepDevInfo* info) {
   request.setup =
       0x8006000200000A00;  // setup request to get config descriptors
   SmartBuffer configs_data;
-  if (!HandleUsbDeviceRequest(request, {}, &configs_data))
+  if (!HandleUsbDeviceRequest(request, {}, &configs_data, &stalled))
     return false;
   UsbConfigurationDescriptor usb_configs;
   memcpy(&usb_configs, configs_data.data(), sizeof(UsbConfigurationDescriptor));
@@ -106,7 +107,8 @@ bool DeviceProxy::GetOpRepDevInfo(OpRepDevInfo* info) {
 
 bool DeviceProxy::HandleUsbDeviceRequest(const Urb& urb_request,
                                          const SmartBuffer& data,
-                                         SmartBuffer* response_data) {
+                                         SmartBuffer* response_data,
+                                         bool* stalled) {
   // Send URB to device
   SmartBuffer buf = PackUrb(urb_request);
   buf.Add(data);
@@ -123,6 +125,10 @@ bool DeviceProxy::HandleUsbDeviceRequest(const Urb& urb_request,
   }
 
   UrbReply result = UnpackUrbReply(&reply_buf);
+  if (result.stalled) {
+    *stalled = result.stalled;
+    return true;
+  }
 
   return ReadUsbResponseData(result.actual_size, response_data);
 }

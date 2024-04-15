@@ -40,10 +40,11 @@ class UsbPrinter : public UsbDevice {
              const base::FilePath& document_output_path,
              const base::FilePath& http_output_dir);
 
-  // Handles usb request by receving usb data, processing them and returns
-  // result.
-  SmartBuffer HandleUsbData(const Urb& usb_request,
-                            const SmartBuffer& data) override;
+  // Receives the usb data in `data` which is http, process them as per
+  // `usb_request` and returns the result in optional `SmartBuffer`. If return
+  // value doesn't contain any value then it means that operation was stalled.
+  std::optional<SmartBuffer> HandleUsbData(const Urb& usb_request,
+                                           const SmartBuffer& data) override;
 
  private:
   // Below functions are used for IPP requests.

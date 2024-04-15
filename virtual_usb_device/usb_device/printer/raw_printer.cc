@@ -47,8 +47,8 @@ RawUsbPrinter::RawUsbPrinter(const UsbDescriptors& descriptors,
                              const base::FilePath& document_output_path)
     : UsbDevice(descriptors), document_output_path_(document_output_path) {}
 
-SmartBuffer RawUsbPrinter::HandleUsbData(const Urb& usb_request,
-                                         const SmartBuffer& data) {
+std::optional<SmartBuffer> RawUsbPrinter::HandleUsbData(
+    const Urb& usb_request, const SmartBuffer& data) {
   SmartBuffer response;
   size_t received = data.size();
   LOG(INFO) << "Received " << received << " bytes";

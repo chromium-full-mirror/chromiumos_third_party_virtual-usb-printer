@@ -4,6 +4,7 @@
 
 #include "usb_device.h"
 
+#include <optional>
 #include <utility>
 
 #include <base/check.h>
@@ -154,13 +155,17 @@ void UsbDevice::HandleConnection(std::unique_ptr<IConnection> conn) {
     if (request.ep != 0 && request.direction == 0) {
       data = conn->Receive(request.transfer_buffer_length);
     }
-    SmartBuffer response = HandleUsbRequest(request, data);
-    SendUsbResponse(conn.get(), request, response.data(), response.size());
+    std::optional<SmartBuffer> response = HandleUsbRequest(request, data);
+    if (response.has_value())
+      SendUsbResponse(conn.get(), request, response.value().data(),
+                      response.value().size(), false);
+    else
+      SendUsbResponse(conn.get(), request, nullptr, 0, true);
   }
 }
 
-SmartBuffer UsbDevice::HandleUsbRequest(const Urb& usb_request,
-                                        const SmartBuffer& data) {
+std::optional<SmartBuffer> UsbDevice::HandleUsbRequest(
+    const Urb& usb_request, const SmartBuffer& data) {
   // Endpoint 0 is used for USB control requests.
   if (usb_request.ep == 0) {
     return HandleUsbControl(usb_request);
@@ -173,7 +178,8 @@ SmartBuffer UsbDevice::HandleUsbRequest(const Urb& usb_request,
   }
 }
 
-SmartBuffer UsbDevice::HandleUsbControl(const Urb& usb_request) const {
+std::optional<SmartBuffer> UsbDevice::HandleUsbControl(
+    const Urb& usb_request) const {
   UsbControlRequest control_request =
       CreateUsbControlRequest(usb_request.setup);
   int request_type = GetControlType(control_request.bmRequestType);
@@ -217,11 +223,13 @@ SmartBuffer UsbDevice::HandleStandardControl(
   return SmartBuffer();
 }
 
-SmartBuffer UsbDevice::HandleDeviceControl(
+std::optional<SmartBuffer> UsbDevice::HandleDeviceControl(
     const Urb& usb_request, const UsbControlRequest& control_request) const {
   switch (control_request.bRequest) {
     case GET_DEVICE_ID:
       return HandleGetDeviceId(usb_request, control_request);
+    case GET_MAX_LUN:
+      return std::nullopt;  // Not responding i.e Stalling the command.
     case GET_PORT_STATUS:
       NOTIMPLEMENTED();
       break;
@@ -412,16 +420,17 @@ SmartBuffer UsbDevice::HandleBulkInRequest(const Urb& usb_request) {
 void UsbDevice::SendUsbResponse(IConnection* conn,
                                 const Urb& usb_request,
                                 const uint8_t* data,
-                                size_t data_size) const {
+                                size_t data_size,
+                                bool is_stalled) const {
   UrbReply reply;
   reply.devid = usb_request.devid;
   reply.direction = usb_request.direction;
   reply.ep = usb_request.ep;
   reply.actual_size = data_size;
+  reply.stalled = is_stalled;
   SmartBuffer buf = PackUrbReply(reply);
   if (data && (data_size > 0)) {
     buf.Add(data, data_size);
   }
-  LOG(INFO) << __func__ << " " << "data size: " << data_size;
   conn->Send(buf);
 }

@@ -72,8 +72,8 @@ UsbPrinter::UsbPrinter(const UsbDescriptors& usb_descriptors,
       document_output_path_(document_output_path),
       http_output_dir_(http_output_dir) {}
 
-SmartBuffer UsbPrinter::HandleUsbData(const Urb& usb_request,
-                                      const SmartBuffer& data) {
+std::optional<SmartBuffer> UsbPrinter::HandleUsbData(const Urb& usb_request,
+                                                     const SmartBuffer& data) {
   size_t received = data.size();
   LOG(INFO) << "Received " << received << " bytes";
   // Acknowledge receipt of BULK transfer.

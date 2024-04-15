@@ -218,8 +218,8 @@ SmartBuffer PackUrbReply(const UrbReply& urb) {
   result.Add(htonl(urb.devid));
   result.Add(htonl(urb.direction));
   result.Add(htonl(urb.ep));
-
   result.Add(htonl(urb.actual_size));
+  result.Add(htonl(urb.stalled));
   return result;
 }
 
@@ -234,5 +234,6 @@ UrbReply UnpackUrbReply(SmartBuffer* buf) {
   result.ep = ntohl(result.ep);
 
   result.actual_size = ntohl(result.actual_size);
+  result.stalled = ntohl(result.stalled);
   return result;
 }

@@ -50,11 +50,22 @@ class DeviceProxy {
   // Returns the attached socket descriptor.
   int GetAttachedSocket() const { return attached_socket_; }
 
-  // Sends the urb request to the usb device (which runs in different process)
-  // for handling and returns the size of response.
+  // Handles usb request by sending the request and data to the usb
+  // device running in different process and receiving the result back in
+  // `response_data`.
+  // `stalled` is set to true if usb request is stalled in the device process
+  // The output params are populated as:
+  // if `stalled == true` then command is stalled and thus `response_data` must
+  // be empty.
+  // if `stalled == false` then command is processed. `response_data` contains
+  // the result of operation which may be empty.
+  // if `response_data` is non-empty then `stalled` must be `false`.
+  // All of above cases denotes success and thus returns `true`. `false`
+  // is returned when connection to the device process fails.
   bool HandleUsbDeviceRequest(const Urb& urb_request,
                               const SmartBuffer& data,
-                              SmartBuffer* response_data);
+                              SmartBuffer* response_data,
+                              bool* stalled);
   // Returns port number on which usb device is listening.
   uint16_t GetPort() const { return connection_->get_port(); }
 
