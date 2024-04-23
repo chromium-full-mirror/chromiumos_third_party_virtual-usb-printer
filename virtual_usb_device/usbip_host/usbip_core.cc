@@ -48,12 +48,19 @@ bool UsbIpCore::RegisterDevice(const uint16_t port) {
 
   std::unique_ptr<DeviceProxy> client =
       create_device_proxy_callback_.Run(port, id, devnum);
+  if (!client->ConnectDevice()) {
+    LOG(ERROR) << "Failed to connect with usb device on port: " << port;
+    return false;
+  } else {
+    LOG(INFO) << "Connected with usb device on port: " << port;
+  }
+
   proxy_map_[id] = std::move(client);
 
   device_count_++;
 
-  LOG(INFO) << "Device registered: BusId " << BusIdToString(id)
-            << ", Device port: " << port << ", device count: " << (devnum);
+  VLOG(1) << "Device registered: BusId " << BusIdToString(id)
+          << ", Device port: " << port << ", device count: " << (devnum);
   return true;
 }
 

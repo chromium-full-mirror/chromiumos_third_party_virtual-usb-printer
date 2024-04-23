@@ -54,26 +54,21 @@ class FakeServerConnection : public IConnection {
   mutable std::vector<uint8_t> server_send_data_;
 };
 
+// A DeviceProxy class implementation that communicates with
+// usb device using direct function call.
 class StubDeviceProxy : public DeviceProxy {
  public:
   static std::unique_ptr<DeviceProxy> Create(const uint16_t port,
                                              const ::BusId& id,
                                              const size_t devnum) {
-    return std::make_unique<StubDeviceProxy>(port, id, devnum);
-  }
-
-  StubDeviceProxy(const uint16_t port, const ::BusId& id, const size_t devnum)
-      : DeviceProxy(port, id, devnum) {
-    const std::string descriptorsPath(
-        "/usr/local/etc/virtual-usb-printer/usb_printer.json");
-    std::optional<UsbDescriptors> usbDescriptors =
-        UsbDescriptors::Create(descriptorsPath);
-    if (usbDescriptors.has_value()) {
-      usb_device_.reset(new UsbDevice(usbDescriptors.value()));
-    }
+    std::unique_ptr<StubDeviceProxy> proxy(
+        new StubDeviceProxy(port, id, devnum));
+    return proxy;
   }
 
   ~StubDeviceProxy() override = default;
+
+  bool ConnectDevice() override { return true; }
 
   // Gets the result of usb request by making direct function call
   // to `UsbDevice`
@@ -97,6 +92,17 @@ class StubDeviceProxy : public DeviceProxy {
   }
 
  private:
+  StubDeviceProxy(const uint16_t port, const ::BusId& id, const size_t devnum)
+      : DeviceProxy(port, id, devnum) {
+    const std::string descriptorsPath(
+        "/usr/local/etc/virtual-usb-printer/usb_printer.json");
+    std::optional<UsbDescriptors> usbDescriptors =
+        UsbDescriptors::Create(descriptorsPath);
+    if (usbDescriptors.has_value()) {
+      usb_device_.reset(new UsbDevice(usbDescriptors.value()));
+    }
+  }
+
   std::unique_ptr<UsbDevice> usb_device_;
 };
 
