@@ -82,7 +82,7 @@ struct OpRepDeviceInterface {
 // (see struct OpRepDevlist also).
 struct OpRepDevInfo {
   OpRepDevice device;
-  OpRepDeviceInterface* interfaces;
+  std::vector<OpRepDeviceInterface> interfaces;
 };
 
 // Custom usbip message which is used to bind(register) or unbind(deregister)
@@ -134,7 +134,7 @@ void SetOpRepDevice(const UsbDeviceDescriptor& dev_dsc,
 // Assigns the values from `interfaces` into `rep_interfaces`.
 void SetOpRepDeviceInterfaces(
     const std::vector<UsbInterfaceDescriptor>& interfaces,
-    OpRepDeviceInterface** rep_interfaces);
+    std::vector<OpRepDeviceInterface>* rep_interfaces);
 
 // Set header for OP_REP_DEVLIST message.
 void CreateOpRepDevlistHeader(uint16_t numExportedDevices,

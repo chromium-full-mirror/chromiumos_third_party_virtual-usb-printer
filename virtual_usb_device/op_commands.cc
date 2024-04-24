@@ -61,10 +61,8 @@ void SetOpRepDevice(const UsbDeviceDescriptor& dev_dsc,
 
 void SetOpRepDeviceInterfaces(
     const std::vector<UsbInterfaceDescriptor>& interfaces,
-    OpRepDeviceInterface** rep_interfaces) {
-  // TODO(daviev): Change this to use a smart pointer at some point.
-  *rep_interfaces = reinterpret_cast<OpRepDeviceInterface*>(
-      malloc(interfaces.size() * sizeof(OpRepDeviceInterface)));
+    std::vector<OpRepDeviceInterface>* rep_interfaces) {
+  rep_interfaces->resize(interfaces.size());
   for (size_t i = 0; i < interfaces.size(); ++i) {
     const auto& interface = interfaces[i];
     (*rep_interfaces)[i].bInterfaceClass = interface.bInterfaceClass;
@@ -140,12 +138,10 @@ OpRepDevInfo UnpackOpRepDevInfo(SmartBuffer* buf) {
   buf->Erase(0, sizeof(devinfo.device));
   UnpackOpRepDevice(&devinfo.device);
 
+  devinfo.interfaces.resize(devinfo.device.bNumInterfaces);
   const size_t interface_size =
       sizeof(OpRepDeviceInterface) * devinfo.device.bNumInterfaces;
-
-  devinfo.interfaces =
-      reinterpret_cast<OpRepDeviceInterface*>(malloc(interface_size));
-  memcpy(devinfo.interfaces, buf->data(), interface_size);
+  memcpy(devinfo.interfaces.data(), buf->data(), interface_size);
   buf->Erase(0, interface_size);
   return devinfo;
 }
