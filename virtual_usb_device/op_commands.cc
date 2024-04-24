@@ -229,8 +229,7 @@ OpRepImport UnpackOpRepImport(SmartBuffer* buf) {
   OpRepImport result;
   CHECK(buf->size() >= sizeof(result));
   result.header = UnpackOpHeader(buf);
-  memcpy(&result.device, buf->data() + sizeof(result.header),
-         sizeof(result.device));
+  memcpy(&result.device, buf->data(), sizeof(result.device));
   UnpackOpRepDevice(&result.device);
   return result;
 }
