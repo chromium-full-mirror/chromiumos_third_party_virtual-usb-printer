@@ -24,7 +24,8 @@
 // This class also owns any connection created by usbip client.
 class UsbIpManager : public ConnectionHandler {
  public:
-  // Constructs UsbIpManager object.
+  static std::unique_ptr<UsbIpManager> CreateHost(const uint16_t port);
+  // Creates object which listens on `port` for usbip messages.
   UsbIpManager();
   ~UsbIpManager();
 
@@ -68,10 +69,6 @@ class UsbIpManager : public ConnectionHandler {
   // Posts a task in the `UsbIpCore` task runner to handle `OP_REQ_IMPORT` usbip
   // message.
   void HandleAttach(std::unique_ptr<IConnection> conn);
-
-  void SetCreateDeviceProxyCallback(DeviceProxy::CreateCb& callback) {
-    core_.SetCreateDeviceProxyCallback(callback);
-  }
 
  private:
   // Responds with the status of OP_REQ_BIND_CMD usbip message.

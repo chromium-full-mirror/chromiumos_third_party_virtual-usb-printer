@@ -22,7 +22,7 @@ UsbIpManager::UsbIpManager() {
 }
 
 UsbIpManager::~UsbIpManager() {
-  Stop();
+  server_->Stop();
 }
 
 void UsbIpManager::Run(const uint16_t port) {
@@ -36,10 +36,7 @@ void UsbIpManager::Run(const uint16_t port) {
 }
 
 void UsbIpManager::Stop() {
-  if (server_)
-    server_->Stop();
-  if (connection_thread_)
-    connection_thread_->Stop();
+  connection_thread_->Stop();
 }
 
 void UsbIpManager::HandleConnection(std::unique_ptr<IConnection> conn) {
