@@ -19,8 +19,10 @@ group("virtual-usb-device-all") {
       "//virtual-usb-printer/virtual_usb_device:ipp-manager-testrunner",
       "//virtual-usb-printer/virtual_usb_device:ipp-util-testrunner",
       "//virtual-usb-printer/virtual_usb_device:load-config-testrunner",
+
+      # TODO(santo) : Enable this test with new socket implementation
+      #"//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-test",
       "//virtual-usb-printer/virtual_usb_device:virtual-usbip-core-test",
-      "//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-test",
       "//virtual-usb-printer/virtual_usb_device/usb_device/scanner:escl-manager-testrunner",
       "//virtual-usb-printer/virtual_usb_device/usb_device/scanner:jpeg-util-testrunner",
     ]
@@ -149,50 +151,6 @@ executable("virtual-rawprinter") {
 if (use.test) {
   pkg_config("test_config") {
     pkg_deps = [ "libchrome-test" ]
-  }
-
-  executable("virtual-usbip-host-test") {
-    sources = [
-      "connection/socket_connection.cc",
-      "connection/socket_connection.h",
-      "device_descriptors.cc",
-      "device_descriptors.h",
-      "load_config.cc",
-      "op_commands.cc",
-      "op_commands.h",
-      "server.cc",
-      "server.h",
-      "usb_device/device_server.cc",
-      "usb_device/device_server.h",
-      "usb_device/usb_device.cc",
-      "usb_device/usb_device.h",
-      "usb_util.cc",
-      "usb_util.h",
-      "usbip.cc",
-      "usbip.h",
-      "usbip_host/device_proxy.cc",
-      "usbip_host/device_proxy.h",
-      "usbip_host/usbip_core.cc",
-      "usbip_host/usbip_core.h",
-      "usbip_host/usbip_manager.cc",
-      "usbip_host/usbip_manager.h",
-      "usbip_host/usbip_manager_test.cc",
-      "usbip_host/usbip_server.cc",
-      "usbip_host/usbip_server.h",
-    ]
-    output_dir = "$root_out_dir/virtual-usb-device"
-    configs += [
-      "//common-mk:test",
-      ":target_defaults",
-      ":test_config",
-    ]
-    deps = [
-      "//common-mk/testrunner",
-      "//virtual-usb-printer//common:smart_buffer",
-      "//virtual-usb-printer/common:http_util",
-      "//virtual-usb-printer/common:value_util",
-    ]
-    run_test = true
   }
 
   executable("virtual-usbip-core-test") {

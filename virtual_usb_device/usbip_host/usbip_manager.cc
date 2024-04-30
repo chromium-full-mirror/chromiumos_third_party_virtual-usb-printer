@@ -17,25 +17,26 @@
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
 
 UsbIpManager::UsbIpManager() {
-  connection_thread_.reset(new base::Thread("ConnectionThread"));
-  base::Thread::Options options(base::ThreadType::kDefault);
-  connection_thread_->StartWithOptions(std::move(options));
-
   core_task_runner_ =
       base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()});
 }
 
-UsbIpManager::~UsbIpManager() {}
+UsbIpManager::~UsbIpManager() {
+  server_->Stop();
+}
 
 void UsbIpManager::Run(const uint16_t port) {
+  connection_thread_.reset(new base::Thread("ConnectionThread"));
+  base::Thread::Options options(base::ThreadType::kDefault);
+  connection_thread_->StartWithOptions(std::move(options));
+
   server_.reset(new UsbIpServer(port));
   server_->SetConnectionHandler(this);
   server_->Start();
 }
 
 void UsbIpManager::Stop() {
-  if (server_)
-    server_->Stop();
+  connection_thread_->Stop();
 }
 
 void UsbIpManager::HandleConnection(std::unique_ptr<IConnection> conn) {
