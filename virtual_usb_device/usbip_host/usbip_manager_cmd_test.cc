@@ -4,16 +4,29 @@
 
 #include "usbip_manager.h"
 
-#include <map>
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <memory>
+#include <optional>
 #include <string>
 
+#include <base/logging.h>
 #include <base/strings/stringprintf.h>
 #include <base/task/thread_pool/thread_pool_instance.h>
 #include <base/threading/platform_thread.h>
 #include <base/threading/simple_thread.h>
 #include <base/time/time.h>
-
 #include <gtest/gtest.h>
+
+#include "device_proxy.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/socket_connection.h"
+#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
+#include "virtual-usb-printer/virtual_usb_device/op_commands.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_util.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
 
 // A `DeviceProxy` class implementation that communicates with
 // usb device using direct function call.

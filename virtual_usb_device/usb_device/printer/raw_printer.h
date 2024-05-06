@@ -5,17 +5,14 @@
 #ifndef VIRTUAL_USB_DEVICE_USB_DEVICE_PRINTER_RAW_PRINTER_H_
 #define VIRTUAL_USB_DEVICE_USB_DEVICE_PRINTER_RAW_PRINTER_H_
 
-#include <memory>
-#include <string>
+#include <optional>
 
-#include <base/files/file.h>
 #include <base/files/file_path.h>
 
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
-#include "virtual-usb-printer/virtual_usb_device/ipp_manager.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
-#include "virtual-usb-printer/mock_printer/mock_printer.h"
 
 // Represents a single usb printer that supports only raw data printing.
 class RawUsbPrinter : public UsbDevice {

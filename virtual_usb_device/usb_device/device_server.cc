@@ -4,19 +4,16 @@
 
 #include "device_server.h"
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 
-#include <base/check_op.h>
 #include <base/logging.h>
 
-#include "usb_device.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "virtual-usb-printer/virtual_usb_device/connection/socket_connection.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
-#include "virtual-usb-printer/virtual_usb_device/usb_util.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
 
 DeviceServer::DeviceServer(uint16_t port, uint16_t host_port)
     : Server(port), host_connection_(new ClientSocketConnection(host_port)) {}

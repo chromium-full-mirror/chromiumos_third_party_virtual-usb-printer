@@ -4,20 +4,31 @@
 
 #include "usb_printer.h"
 
-#include <vector>
+#include <memory>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
 
+#include <base/check.h>
+#include <base/files/file.h>
+#include <base/files/file_path.h>
 #include <base/files/file_util.h>
+#include <base/logging.h>
 #include <base/strings/string_util.h>
 #include <base/strings/stringprintf.h>
 #include <brillo/flag_helper.h>
 #include <brillo/syslog_logging.h>
 
-#include "virtual-usb-printer/common/value_util.h"
+#include "virtual-usb-printer/common/http_util.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "virtual-usb-printer/mock_printer/mock_printer.h"
 #include "virtual-usb-printer/mock_printer/parse_textproto.h"
+#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
+#include "virtual-usb-printer/virtual_usb_device/ipp_manager.h"
 #include "virtual-usb-printer/virtual_usb_device/ipp_util.h"
-#include "virtual-usb-printer/virtual_usb_device/usb_device/device_server.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/scanner/scanner.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
 #define DEFAULT_TCP_PRINTER_PORT 3241
@@ -223,10 +234,10 @@ int main(int argc, char* argv[]) {
   DEFINE_string(record_doc_path, "", "Path to file to record document to");
   DEFINE_string(http_header_output_dir, "",
                 "Path to the directory for writing out http header info");
-  DEFINE_int32(port, DEFAULT_TCP_PRINTER_PORT,
-               "Port on which this device listens to");
-  DEFINE_int32(host_port, DEFAULT_TCP_HOST_PORT,
-               "Usbip host port which this is binded");
+  DEFINE_uint32(port, DEFAULT_TCP_PRINTER_PORT,
+                "Port on which this device listens to");
+  DEFINE_uint32(host_port, DEFAULT_TCP_HOST_PORT,
+                "Usbip host port which this is binded");
   DEFINE_string(output_log_dir, "",
                 "Path to the directory for writing out log info");
 

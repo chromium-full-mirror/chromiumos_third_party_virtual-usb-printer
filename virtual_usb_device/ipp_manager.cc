@@ -4,13 +4,25 @@
 
 #include "ipp_manager.h"
 
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
+#include <base/files/file_path.h>
 #include <base/files/file_util.h>
+#include <base/json/json_reader.h>
 #include <base/logging.h>
 #include <base/strings/stringprintf.h>
+#include <base/values.h>
 #include <chromeos/libipp/ipp_enums.h>
+
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "virtual-usb-printer/common/value_util.h"
+#include "virtual-usb-printer/virtual_usb_device/ipp_util.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
 
 const uint16_t IppManager::kSuccessStatus = 0;
 

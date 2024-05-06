@@ -5,15 +5,12 @@
 #ifndef VIRTUAL_USB_DEVICE_SERVER_H_
 #define VIRTUAL_USB_DEVICE_SERVER_H_
 
-#include <netinet/in.h>
-#include <sys/socket.h>
-
+#include <cstdint>
 #include <memory>
 
-#include <base/files/scoped_file.h>
+#include <base/memory/raw_ptr.h>
 
 #include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
-#include "virtual-usb-printer/common/smart_buffer.h"
 
 class ConnectionHandler {
  public:

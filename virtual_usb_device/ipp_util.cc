@@ -6,18 +6,24 @@
 
 #include <arpa/inet.h>
 
+#include <climits>
+#include <cstdint>
+#include <cstring>
+#include <functional>
 #include <map>
 #include <optional>
 #include <set>
 #include <string>
+#include <vector>
 
 #include <base/check.h>
 #include <base/check_op.h>
 #include <base/values.h>
 
+#include "usbip_constants.h"
 #include "virtual-usb-printer/common/http_util.h"
 #include "virtual-usb-printer/common/smart_buffer.h"
-#include "usbip_constants.h"
+#include "virtual-usb-printer/virtual_usb_device/cups_constants.h"
 
 namespace {
 

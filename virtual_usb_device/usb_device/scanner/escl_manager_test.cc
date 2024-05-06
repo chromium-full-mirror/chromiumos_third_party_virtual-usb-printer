@@ -4,6 +4,7 @@
 
 #include "escl_manager.h"
 
+#include <cstdint>
 #include <optional>
 #include <utility>
 

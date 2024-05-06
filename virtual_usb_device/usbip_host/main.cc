@@ -15,12 +15,12 @@ constexpr char kUsage[] =
     "    --port=<unsigned int>";
 
 int main(int argc, char* argv[]) {
-  DEFINE_int32(port, USBIP_MANAGER_DEFAULT_TCP_SERV_PORT,
-               "Port that UsbIp server listens to");
-  DEFINE_int32(help, false, "print usage");
+  DEFINE_uint32(port, USBIP_MANAGER_DEFAULT_TCP_SERV_PORT,
+                "Port that UsbIp server listens to");
+  DEFINE_bool(help, false, "print usage");
   brillo::FlagHelper::Init(argc, argv, "Virtual USB Device");
   if (FLAGS_help) {
-    printf("%s\n", kUsage);
+    LOG(INFO) << "\n" << kUsage;
     return -1;
   }
   brillo::InitLog(brillo::kLogToSyslog | brillo::kLogToStderrIfTty);

@@ -5,16 +5,18 @@
 #ifndef VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_MANAGER_H_
 #define VIRTUAL_USB_DEVICE_USBIP_HOST_USBIP_MANAGER_H_
 
+#include <cstdint>
 #include <memory>
-#include <vector>
 
 #include <base/containers/flat_map.h>
 #include <base/memory/scoped_refptr.h>
 #include <base/synchronization/waitable_event.h>
-#include <base/threading/thread.h>
 #include <base/task/sequenced_task_runner.h>
+#include <base/threading/thread.h>
 
+#include "device_proxy.h"
 #include "usbip_core.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
 #include "virtual-usb-printer/virtual_usb_device/server.h"
 
 // This class manages usbip connections and requests recevied from the user.

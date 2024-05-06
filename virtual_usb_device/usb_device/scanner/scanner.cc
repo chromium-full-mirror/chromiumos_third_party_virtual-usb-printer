@@ -4,6 +4,9 @@
 
 #include "scanner.h"
 
+#include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include <base/check.h>
@@ -12,6 +15,10 @@
 #include <base/logging.h>
 #include <base/strings/stringprintf.h>
 #include <base/values.h>
+
+#include "escl_manager.h"
+#include "virtual-usb-printer/common/http_util.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 namespace {
 

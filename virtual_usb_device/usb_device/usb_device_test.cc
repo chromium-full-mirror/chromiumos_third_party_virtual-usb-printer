@@ -4,12 +4,19 @@
 
 #include "usb_device.h"
 
-#include <base/strings/stringprintf.h>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
+#include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 #include "virtual-usb-printer/virtual_usb_device/load_config.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
-#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
 const char* descriptors_json_str = R"({
     "device_descriptor": {

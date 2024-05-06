@@ -5,9 +5,11 @@
 #ifndef VIRTUAL_USB_DEVICE_CONNECTION_SOCKET_CONNECTION_H_
 #define VIRTUAL_USB_DEVICE_CONNECTION_SOCKET_CONNECTION_H_
 
+#include <cstdint>
 #include <memory>
 
 #include "connection.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // IP socket client implementation of `IConnection`
 class ClientSocketConnection : public IConnection {

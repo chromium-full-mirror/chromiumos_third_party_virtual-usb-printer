@@ -6,12 +6,15 @@
 #define VIRTUAL_USB_DEVICE_USB_DEVICE_SCANNER_SCANNER_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 
-#include <base/files/file.h>
 #include <base/files/file_path.h>
+#include <base/values.h>
 
 #include "escl_manager.h"
+#include "virtual-usb-printer/common/http_util.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // This class represent escl scanner and provides all functionality
 // related to scanning.

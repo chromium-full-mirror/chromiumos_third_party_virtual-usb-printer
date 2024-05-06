@@ -4,19 +4,10 @@
 
 #include "server.h"
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <algorithm>
-#include <utility>
+#include <cstdint>
 #include <memory>
+#include <utility>
 
-#include <base/check_op.h>
-#include <base/functional/bind.h>
-#include <base/functional/callback.h>
-#include <base/functional/callback_helpers.h>
 #include <base/logging.h>
 
 #include "virtual-usb-printer/virtual_usb_device/connection/socket_connection.h"

@@ -4,14 +4,10 @@
 
 #include "usbip_server.h"
 
-#include <arpa/inet.h>
-#include <memory>
-#include <utility>
+#include <cstdint>
+#include <cstdio>
 
-#include <base/task/thread_pool.h>
-#include <base/threading/thread.h>
-
-#include "usbip_manager.h"
+#include "virtual-usb-printer/virtual_usb_device/server.h"
 
 UsbIpServer::UsbIpServer(const uint16_t port) : Server(port) {}
 

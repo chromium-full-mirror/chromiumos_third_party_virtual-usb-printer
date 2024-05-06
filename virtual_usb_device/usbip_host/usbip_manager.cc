@@ -4,17 +4,25 @@
 
 #include "usbip_manager.h"
 
-#include <string>
+#include <arpa/inet.h>
+
+#include <cstdint>
+#include <cstring>
 #include <memory>
 #include <utility>
 
-#include <base/strings/stringprintf.h>
+#include <base/functional/bind.h>
+#include <base/synchronization/waitable_event.h>
+#include <base/task/sequenced_task_runner.h>
 #include <base/task/thread_pool.h>
+#include <base/threading/thread.h>
 
 #include "usbip_server.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
 
 UsbIpManager::UsbIpManager() {
   connection_thread_.reset(new base::Thread("ConnectionThread"));

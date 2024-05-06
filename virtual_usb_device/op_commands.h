@@ -19,12 +19,13 @@
  * https://en.opensuse.org/SDB:USBIP
  */
 
-#include <cstdlib>
+#include <cstdint>
 #include <array>
 #include <vector>
 
 #include "device_descriptors.h"
 #include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 #include "usbip_constants.h"
 
 constexpr uint16_t kUsbipVersion = 0x0111;  // usbip version in BCD.
@@ -94,7 +95,6 @@ struct OpRepDevInfo {
 struct BindOrUnbindRequest {
   OpHeader header;
   uint16_t port;  // port on which usb device listens
-  OpRepDevInfo device_desc;
 };
 
 // Defines the OpReqDevlist message.

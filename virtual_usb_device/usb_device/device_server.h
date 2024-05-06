@@ -5,15 +5,14 @@
 #ifndef VIRTUAL_USB_DEVICE_USB_DEVICE_DEVICE_SERVER_H_
 #define VIRTUAL_USB_DEVICE_USB_DEVICE_DEVICE_SERVER_H_
 
+#include <cstdint>
 #include <memory>
 
-#include <base/files/scoped_file.h>
 #include <base/memory/raw_ptr.h>
 
+#include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
 #include "virtual-usb-printer/virtual_usb_device/server.h"
-
-class UsbDevice;
-struct Urb;
+#include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 
 // Creates server which listens on socket for any raw usb command. All the usb
 // command are forwarded to `UsbDevice`. Once created, this class also register

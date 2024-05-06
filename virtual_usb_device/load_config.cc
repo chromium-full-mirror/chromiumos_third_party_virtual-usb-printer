@@ -5,6 +5,7 @@
 #include "load_config.h"
 
 #include <climits>
+#include <cstdint>
 #include <cstdio>
 #include <optional>
 #include <string>

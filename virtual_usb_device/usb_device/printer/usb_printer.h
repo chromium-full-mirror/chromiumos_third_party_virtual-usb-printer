@@ -5,21 +5,20 @@
 #ifndef VIRTUAL_USB_DEVICE_USB_DEVICE_PRINTER_USB_PRINTER_H_
 #define VIRTUAL_USB_DEVICE_USB_DEVICE_PRINTER_USB_PRINTER_H_
 
+#include <optional>
 #include <memory>
-#include <string>
-#include <utility>
 
-#include <base/files/file.h>
 #include <base/files/file_path.h>
 
-#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
-#include "virtual-usb-printer/virtual_usb_device/ipp_manager.h"
+#include "virtual-usb-printer/common/http_util.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "virtual-usb-printer/mock_printer/mock_printer.h"
 #include "virtual-usb-printer/mock_printer/parse_textproto.h"
+#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
+#include "virtual-usb-printer/virtual_usb_device/ipp_manager.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_device/scanner/scanner.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
-
-class Scanner;
 
 // Represents a generic usb device that supports IPP over USB. It could extract
 // the IPP message sent over USB and take actions. Any specific device can

@@ -4,8 +4,13 @@
 
 #include "device_descriptors.h"
 
-#include <cstdio>
 #include <arpa/inet.h>
+#include <cstdio>
+#include <cstring>
+
+#include <base/check.h>
+
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 SmartBuffer PackUsbDescriptor(UsbDeviceDescriptor& data) {
   SmartBuffer serialized;

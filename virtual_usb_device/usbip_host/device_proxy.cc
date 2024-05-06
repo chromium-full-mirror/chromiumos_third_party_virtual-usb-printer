@@ -4,14 +4,19 @@
 
 #include "device_proxy.h"
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
-
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <algorithm>
+#include <memory>
 #include <vector>
 
-#include "virtual-usb-printer/virtual_usb_device/server.h"
+#include <base/logging.h>
+
+#include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/socket_connection.h"
 #include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
 std::unique_ptr<DeviceProxy> DeviceProxy::Create(const uint16_t port,
                                                  const ::BusId& id,

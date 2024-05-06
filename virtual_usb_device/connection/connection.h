@@ -5,6 +5,7 @@
 #ifndef VIRTUAL_USB_DEVICE_CONNECTION_CONNECTION_H_
 #define VIRTUAL_USB_DEVICE_CONNECTION_CONNECTION_H_
 
+#include <cstdint>
 #include <memory>
 
 #include "virtual-usb-printer/common/smart_buffer.h"

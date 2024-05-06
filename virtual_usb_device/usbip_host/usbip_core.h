@@ -9,12 +9,13 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 #include <utility>
 
 #include <base/containers/flat_map.h>
 
 #include "device_proxy.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip.h"
 
 // This class handles usbip requests recevied from the user.  It filters the raw
 // usb command from usbip requests and forward them to the registered usb device

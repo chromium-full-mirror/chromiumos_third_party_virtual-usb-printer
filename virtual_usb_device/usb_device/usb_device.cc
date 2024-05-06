@@ -4,21 +4,27 @@
 
 #include "usb_device.h"
 
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <base/check.h>
-#include <base/check_op.h>
+#include <base/containers/flat_map.h>
+#include <base/json/json_reader.h>
 #include <base/logging.h>
-#include <base/notreached.h>
+#include <base/notimplemented.h>
 #include <base/strings/string_util.h>
-#include <base/strings/stringprintf.h>
 
+#include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/common/value_util.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
 #include "virtual-usb-printer/virtual_usb_device/load_config.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_device/device_server.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
-#include "virtual-usb-printer/common/value_util.h"
 
 void InterfaceManager::QueueMessage(const SmartBuffer& message) {
   queue_.push(message);

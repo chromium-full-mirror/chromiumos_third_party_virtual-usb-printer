@@ -10,10 +10,15 @@
 #include <sys/un.h>
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cstdio>
 #include <memory>
 
 #include <base/check_op.h>
 #include <base/logging.h>
+
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 ClientSocketConnection::ClientSocketConnection(uint16_t port)
     : port_(port), fd_(-1) {}

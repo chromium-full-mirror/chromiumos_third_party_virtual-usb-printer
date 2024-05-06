@@ -6,12 +6,15 @@
 
 #include <arpa/inet.h>
 
+#include <cstdint>
 #include <cstring>
+#include <vector>
 
+#include <base/check.h>
 #include <base/logging.h>
 
-#include "virtual-usb-printer/common/smart_buffer.h"
 #include "usbip_constants.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 
 // These are constants used to describe the exported device. They are used to
 // populate the OpRepDevice message used when responding to OpReqDevlist and

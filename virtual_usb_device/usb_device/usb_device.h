@@ -5,20 +5,20 @@
 #ifndef VIRTUAL_USB_DEVICE_USB_DEVICE_USB_DEVICE_H_
 #define VIRTUAL_USB_DEVICE_USB_DEVICE_USB_DEVICE_H_
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <queue>
 #include <string>
 #include <vector>
 
-#include <base/files/file.h>
 #include <base/files/file_path.h>
 #include <base/containers/flat_map.h>
 
-#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 #include "virtual-usb-printer/common/http_util.h"
-#include "virtual-usb-printer/virtual_usb_device/server.h"
 #include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
+#include "virtual-usb-printer/virtual_usb_device/server.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 
 // This class is responsible for managing an ippusb interface of a printer. It

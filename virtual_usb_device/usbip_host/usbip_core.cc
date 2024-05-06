@@ -5,17 +5,20 @@
 #include "usbip_core.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <utility>
 
 #include <base/functional/bind.h>
-#include <base/strings/stringprintf.h>
 
-#include "device_proxy.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
 #include "virtual-usb-printer/virtual_usb_device/usbip.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
 
 namespace {
 

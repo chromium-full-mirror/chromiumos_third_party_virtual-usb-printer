@@ -5,8 +5,9 @@
 #ifndef VIRTUAL_USB_DEVICE_LOAD_CONFIG_H_
 #define VIRTUAL_USB_DEVICE_LOAD_CONFIG_H_
 
-#include <vector>
+#include <cstdint>
 #include <string>
+#include <vector>
 
 #include <base/values.h>
 #include <base/containers/flat_map.h>

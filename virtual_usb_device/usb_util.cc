@@ -6,10 +6,17 @@
 
 #include <arpa/inet.h>
 
+#include <cstdint>
+#include <string>
+
 #include <base/logging.h>
 #include <base/notreached.h>
 #include <base/strings/string_util.h>
 #include <base/strings/stringprintf.h>
+
+#include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_util.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
 
 int GetControlDirection(uint8_t bmRequestType) {
   // Data transfer direction is bit 7.

@@ -5,18 +5,27 @@
 #include "usbip_manager.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include <base/synchronization/waitable_event.h>
 #include <base/task/thread_pool/thread_pool_instance.h>
 #include <base/test/task_environment.h>
+#include <gtest/gtest.h>
 
-#include "virtual-usb-printer/virtual_usb_device/op_commands.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
 #include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
+#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
+#include "virtual-usb-printer/virtual_usb_device/op_commands.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
+#include "virtual-usb-printer/virtual_usb_device/usb_util.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip.h"
+#include "virtual-usb-printer/virtual_usb_device/usbip_constants.h"
 
 class FakeServerConnection : public IConnection {
  public:

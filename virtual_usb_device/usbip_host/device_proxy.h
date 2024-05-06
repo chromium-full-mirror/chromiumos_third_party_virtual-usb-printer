@@ -5,21 +5,16 @@
 #ifndef VIRTUAL_USB_DEVICE_USBIP_HOST_DEVICE_PROXY_H_
 #define VIRTUAL_USB_DEVICE_USBIP_HOST_DEVICE_PROXY_H_
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
+#include <cstdint>
 #include <memory>
 #include <string>
-#include <vector>
 
-#include <base/notreached.h>
 #include <base/functional/callback.h>
 
-#include "virtual-usb-printer/virtual_usb_device/connection/socket_connection.h"
-#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
+#include "virtual-usb-printer/common/smart_buffer.h"
+#include "virtual-usb-printer/virtual_usb_device/connection/connection.h"
 #include "virtual-usb-printer/virtual_usb_device/op_commands.h"
 #include "virtual-usb-printer/virtual_usb_device/usb_util.h"
-#include "virtual-usb-printer/virtual_usb_device/usbip.h"
-#include "virtual-usb-printer/virtual_usb_device/usb_device/usb_device.h"
 
 // This class acts as a proxy for actual usb device, similar to dbus proxy
 // classes. It communicates with usb device process and receives responses of
