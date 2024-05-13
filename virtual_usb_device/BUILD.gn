@@ -19,11 +19,9 @@ group("virtual-usb-device-all") {
       "//virtual-usb-printer/virtual_usb_device:ipp-manager-testrunner",
       "//virtual-usb-printer/virtual_usb_device:ipp-util-testrunner",
       "//virtual-usb-printer/virtual_usb_device:load-config-testrunner",
-      "//virtual-usb-printer/virtual_usb_device:virtual-usbip-core-test",
-
-      # FIXME(b:312221802): Enable below test once issue is fixed.
-      #"//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-cmd-test",
       "//virtual-usb-printer/virtual_usb_device:virtual-usb-device-test",
+      "//virtual-usb-printer/virtual_usb_device:virtual-usbip-core-test",
+      "//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-cmd-test",
       "//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-test",
       "//virtual-usb-printer/virtual_usb_device/usb_device/scanner:escl-manager-testrunner",
       "//virtual-usb-printer/virtual_usb_device/usb_device/scanner:jpeg-util-testrunner",
