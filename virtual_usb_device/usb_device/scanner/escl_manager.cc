@@ -12,10 +12,10 @@
 #include <base/json/json_writer.h>
 #include <base/strings/stringprintf.h>
 #include <base/logging.h>
+#include <base/rand_util.h>
 #include <base/strings/string_split.h>
 #include <base/strings/string_util.h>
 #include <base/threading/platform_thread.h>
-#include <crypto/random.h>
 
 #include "scan_jpeg_util.h"
 #include "scan_xml_util.h"
@@ -28,7 +28,7 @@ std::string GenerateUUID() {
   // We only need 16 bytes of randomness, not 32, but using 32 makes the rest of
   // the code a little clearer.
   std::vector<uint8_t> bytes(32);
-  crypto::RandBytes(bytes.data(), bytes.size());
+  base::RandBytes(bytes);
 
   std::string uuid;
   for (int i = 0; i < 32; i++) {
