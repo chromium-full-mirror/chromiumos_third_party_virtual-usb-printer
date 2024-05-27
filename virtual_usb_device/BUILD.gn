@@ -20,6 +20,7 @@ group("virtual-usb-device-all") {
       "//virtual-usb-printer/virtual_usb_device:ipp-manager-testrunner",
       "//virtual-usb-printer/virtual_usb_device:ipp-util-testrunner",
       "//virtual-usb-printer/virtual_usb_device:load-config-testrunner",
+      "//virtual-usb-printer/virtual_usb_device:usb-util-tests",
       "//virtual-usb-printer/virtual_usb_device:virtual-usb-device-test",
       "//virtual-usb-printer/virtual_usb_device:virtual-usbip-core-test",
       "//virtual-usb-printer/virtual_usb_device:virtual-usbip-host-cmd-test",
@@ -152,6 +153,25 @@ executable("virtual-rawprinter") {
 if (use.test) {
   pkg_config("test_config") {
     pkg_deps = [ "libchrome-test" ]
+  }
+
+  executable("usb-util-tests") {
+    sources = [
+      "usb_util.cc",
+      "usb_util.h",
+      "usb_util_test.cc",
+    ]
+    output_dir = "$root_out_dir/virtual-usb-device"
+    configs += [
+      "//common-mk:test",
+      ":target_defaults",
+      ":test_config",
+    ]
+    deps = [
+      "//common-mk/testrunner",
+      "//virtual-usb-printer//common:smart_buffer",
+    ]
+    run_test = true
   }
 
   executable("device-descriptors-tests") {
