@@ -195,7 +195,7 @@ SmartBuffer PackInterfaceDescriptor(UsbInterfaceDescriptor& data);
 // from smart buffer.
 UsbDeviceDescriptor UnpackUsbDescriptor(SmartBuffer& data);
 UsbConfigurationDescriptor UnpackConfigDescriptor(SmartBuffer& data);
-UsbDeviceQualifierDescriptor UnpackDeviceQualifierDescriptor(SmartBuffer& data);
+UsbDeviceQualifierDescriptor UnpackQualifierDescriptor(SmartBuffer& data);
 UsbInterfaceDescriptor UnpackInterfaceDescriptors(SmartBuffer& data);
 
 // Test-only operators.

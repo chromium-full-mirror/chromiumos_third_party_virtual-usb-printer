@@ -58,6 +58,12 @@ SmartBuffer PackQualifierDescriptor(UsbDeviceQualifierDescriptor& data) {
   return serialized;
 }
 
+SmartBuffer PackInterfaceDescriptor(UsbInterfaceDescriptor& data) {
+  SmartBuffer packed;
+  packed.Add(data);
+  return packed;
+}
+
 UsbDeviceDescriptor UnpackUsbDescriptor(SmartBuffer& buf) {
   UsbDeviceDescriptor result;
   CHECK(buf.size() >= sizeof(result));
