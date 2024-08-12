@@ -255,7 +255,7 @@ bool AttributeTypeMatches(const ipp::Attribute& attribute,
     case (ipp::ValueTag::mimeMediaType):
       return mock_attribute.type() == mocking::IppAttribute::MIME_MEDIA_TYPE;
     default:
-      NOTREACHED() << "BUG: unhandled `ipp::ValueTag`";
+      NOTREACHED_IN_MIGRATION() << "BUG: unhandled `ipp::ValueTag`";
       return false;
   }
 }
@@ -278,7 +278,7 @@ bool AttributeValueMatches(const ipp::Attribute& attribute,
     case (mocking::IppAttribute::ValueCase::kResolutions):
       return ResolutionsMatch(attribute, mock_attribute);
     default:
-      NOTREACHED() << "BUG: unhandled `ValueCase`";
+      NOTREACHED_IN_MIGRATION() << "BUG: unhandled `ValueCase`";
       return false;
   }
 }

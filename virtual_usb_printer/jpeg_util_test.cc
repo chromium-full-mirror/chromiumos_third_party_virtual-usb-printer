@@ -220,7 +220,7 @@ bool MatchesExpectedTopTemplate(const ColorMode color_mode,
       return MatchesTemplateColors(color_mode, top_template, Pixels::kBlue,
                                    Pixels::kGreen);
     default:
-      NOTREACHED();
+      NOTREACHED_IN_MIGRATION();
       return false;
   }
 }
@@ -242,7 +242,7 @@ bool MatchesExpectedBottomTemplate(
       return MatchesTemplateColors(color_mode, bottom_template, Pixels::kRed,
                                    Pixels::kYellow);
     default:
-      NOTREACHED();
+      NOTREACHED_IN_MIGRATION();
       return false;
   }
 }

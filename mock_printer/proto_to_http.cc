@@ -25,7 +25,7 @@ std::string StatusCodeFromProto(
     case mocking::HttpProperties::INTERNAL_SERVER_ERROR:
       return "500 Internal Server Error";
     default:
-      NOTREACHED()
+      NOTREACHED_IN_MIGRATION()
           << "BUG: unhandled `mocking::HttpProperties::StatusCode` value case";
   }
   return "";  // not reached

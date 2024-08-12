@@ -48,7 +48,7 @@ std::string RequestTypeString(uint8_t bmRequestType) {
     case RESERVED_TYPE:
       return "Reserved";
     default:
-      NOTREACHED();
+      NOTREACHED_IN_MIGRATION();
   }
 
   return "Invalid";

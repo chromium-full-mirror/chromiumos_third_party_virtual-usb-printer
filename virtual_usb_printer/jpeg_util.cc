@@ -81,7 +81,7 @@ void SetRows(const ColorMode color_mode,
       quadrants[ImageQuadrant::kBottomRight] = {255, 150, 0};
       break;
     default:
-      NOTREACHED();
+      NOTREACHED_IN_MIGRATION();
       break;
   }
 

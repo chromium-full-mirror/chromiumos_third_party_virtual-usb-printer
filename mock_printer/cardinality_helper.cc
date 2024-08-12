@@ -191,7 +191,7 @@ std::unique_ptr<CardinalityHelper> CardinalityHelper::Create(
   }
   // The generated C++ code doesn't quite allow us to exhaust every
   // possible variant of `Cardinality::Type`.
-  NOTREACHED();
+  NOTREACHED_IN_MIGRATION();
   return std::make_unique<AllInOrder>(num_expectations);
 }
 
