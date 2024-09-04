@@ -86,10 +86,7 @@ SmartBuffer IppManager::HandleSendDocument(const IppHeader& request_header,
 
   if (!document_output_path_.empty()) {
     LOG(INFO) << "Recording document...";
-    int written = base::WriteFile(document_output_path_,
-                                  reinterpret_cast<const char*>(body.data()),
-                                  body.size());
-    if (written != body.size()) {
+    if (!base::WriteFile(document_output_path_, body.contents())) {
       PLOG(ERROR) << "Failed to write document to file: "
                   << document_output_path_;
     }
