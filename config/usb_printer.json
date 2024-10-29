@@ -12,7 +12,7 @@
         "bcdDevice": 0,
         "iManufacturer": 1,
         "iProduct": 2,
-        "iSerialNumber": 1,
+        "iSerialNumber": 3,
         "bNumConfigurations": 1
     },
     "configuration_descriptor": {
@@ -70,7 +70,8 @@
     },
     "string_descriptors": [
         "DavieV",
-        "Virtual USB Printer"
+        "Virtual USB Printer",
+        "GOOG1111"
     ],
     "ieee_device_id": {
         "bLength1": 0,
