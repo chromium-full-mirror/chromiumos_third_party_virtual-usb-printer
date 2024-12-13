@@ -19,6 +19,7 @@
 #include <base/strings/stringprintf.h>
 #include <brillo/flag_helper.h>
 #include <brillo/syslog_logging.h>
+#include <chromeos/libipp/ipp_enums.h>
 
 #include "virtual-usb-printer/common/http_util.h"
 #include "virtual-usb-printer/common/smart_buffer.h"
@@ -46,6 +47,8 @@ constexpr char kUsage[] =
     "    --port=<unsigned int>";
 
 namespace {
+
+using OperationId = ipp::E_operations_supported;
 
 // Creates a `MockPrinter` using the `mocking::TestCase` textproto at
 // `script_path`.
@@ -81,7 +84,8 @@ UsbPrinter::UsbPrinter(const UsbDescriptors& usb_descriptors,
       scanner_(std::move(scanner)),
       mock_printer_(std::move(mock_printer)),
       document_output_path_(document_output_path),
-      http_output_dir_(http_output_dir) {}
+      http_output_dir_(http_output_dir),
+      http_ipp_log_counter_(0) {}
 
 std::optional<SmartBuffer> UsbPrinter::HandleUsbData(const Urb& usb_request,
                                                      const SmartBuffer& data) {
@@ -137,6 +141,9 @@ HttpResponse UsbPrinter::GenerateHttpResponseFromIppManager(SmartBuffer* body) {
     response.status = "415 Unsupported Media Type";
     return response;
   }
+
+  LogIppHeaders(ipp_header.value());
+
   response.status = "200 OK";
   response.headers["Content-Type"] = "application/ipp";
   response.body = ipp_manager_->HandleIppRequest(ipp_header.value(), *body);
@@ -193,9 +200,8 @@ void UsbPrinter::LogHttpHeaders(const HttpRequest& request) {
     return;
   }
 
-  static int counter = 0;
   const std::string filename =
-      base::StringPrintf("http-header-%04d.txt", ++counter);
+      base::StringPrintf("http-header-%04d.txt", ++http_ipp_log_counter_);
   const base::FilePath filePath = http_output_dir_.Append(filename);
   base::File file(filePath,
                   base::File::FLAG_OPEN_ALWAYS | base::File::FLAG_WRITE);
@@ -221,6 +227,33 @@ void UsbPrinter::LogHttpHeaders(const HttpRequest& request) {
       PLOG(ERROR) << "Failed to write http headers to file at " << filePath;
       return;
     }
+  }
+}
+
+void UsbPrinter::LogIppHeaders(const IppHeader& ipp_header) {
+  if (http_output_dir_.empty()) {
+    return;
+  }
+
+  const std::string filename =
+      base::StringPrintf("ipp-header-%04d.txt", http_ipp_log_counter_);
+  const base::FilePath filePath = http_output_dir_.Append(filename);
+  base::File file(filePath,
+                  base::File::FLAG_OPEN_ALWAYS | base::File::FLAG_WRITE);
+  if (!file.IsValid()) {
+    LOG(ERROR) << "Failed to open/create file at " << filePath;
+    return;
+  }
+
+  const OperationId op_id = static_cast<OperationId>(ipp_header.operation_id);
+
+  const std::string msg = base::StringPrintf(
+      "Major: %d\nMinor: %d\nOp ID: %s\nRequest ID: %d\n", ipp_header.major,
+      ipp_header.minor, ipp::ToString(op_id).c_str(), ipp_header.request_id);
+
+  const int written = file.WriteAtCurrentPos(msg.c_str(), msg.length());
+  if (written != msg.length()) {
+    PLOG(ERROR) << "Failed to write IPP request line to file at " << filePath;
   }
 }
 

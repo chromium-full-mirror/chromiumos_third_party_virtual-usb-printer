@@ -58,6 +58,9 @@ class UsbPrinter : public UsbDevice {
   // If desired (by a non-empty http_output_dir_), this will create a file and
   // log the HTTP info to this file.
   void LogHttpHeaders(const HttpRequest& request);
+  // If desired (by a non-empty http_output_dir_), this will create a file and
+  // log the IPP info to this file.
+  void LogIppHeaders(const IppHeader& ipp_header);
 
   // Generates http responses for the printing requests identified by
   // `request`.
@@ -78,6 +81,9 @@ class UsbPrinter : public UsbDevice {
 
   base::FilePath document_output_path_;
   base::FilePath http_output_dir_;
+
+  // Counter used for logging both HTTP & IPP protocol messages
+  int http_ipp_log_counter_;
 };
 
 #endif  // VIRTUAL_USB_DEVICE_USB_DEVICE_PRINTER_USB_PRINTER_H_
