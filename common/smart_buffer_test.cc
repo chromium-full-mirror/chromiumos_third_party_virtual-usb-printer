@@ -9,7 +9,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "virtual-usb-printer/virtual_usb_printer/device_descriptors.h"
+#include "virtual-usb-printer/virtual_usb_device/device_descriptors.h"
 
 namespace {
 

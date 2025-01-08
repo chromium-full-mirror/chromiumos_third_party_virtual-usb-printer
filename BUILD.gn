@@ -5,7 +5,5 @@
 import("//common-mk/pkg_config.gni")
 
 group("all") {
-  # TODO(santo): older virtual usb printer will be removed in future
-  deps = [ "//virtual-usb-printer/virtual_usb_printer:virtual-usb-printer-all" ]
-  deps += [ "//virtual-usb-printer/virtual_usb_device:virtual-usb-device-all" ]
+  deps = [ "//virtual-usb-printer/virtual_usb_device:virtual-usb-device-all" ]
 }

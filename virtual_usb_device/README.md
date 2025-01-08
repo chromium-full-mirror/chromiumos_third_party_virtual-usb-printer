@@ -6,7 +6,7 @@ New virtual usb devices can be created by providing  device specific implementat
 
 ## Motivation
 
-Before, there was a [virtual-usb-printer](../virtual_usb_printer/README.md) component which emulated a usb printer
+Before, there was a virtual-usb-printer component which emulated a usb printer
 using USB/IP and IPP-over-USB protocol. The older design was monolithic, non-scalable, single threaded, blocking and inflexible with the newer requirement. This motivated to create a new framework to sort out these limitations.
 
 ## How it works
