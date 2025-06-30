@@ -328,9 +328,7 @@ ipp::GroupTag TagFromProtobuf(const mocking::IppGroup& mock_group) {
     case (mocking::IppGroup::UNSUPPORTED_ATTRIBUTES):
       return ipp::GroupTag::unsupported_attributes;
     default:
-      CHECK(false) << "BUG: unhandled IppGroupTag variant";
-      // Silences compiler; never reached
-      return ipp::GroupTag::unsupported_attributes;
+      NOTREACHED() << "BUG: unhandled IppGroupTag variant";
   }
 }
 
