@@ -73,11 +73,9 @@ class IppTestCaseHolder : public TestCaseHolder {
           // for a step to reach saturation is if a match is found,
           // and when a match is found, the test case should advance
           // to prevent revisiting a saturated step (see above).
-          NOTREACHED_IN_MIGRATION() << "BUG: step saturated but no match found";
-          return nullptr;
+          NOTREACHED() << "BUG: step saturated but no match found";
       }
-      NOTREACHED_IN_MIGRATION()
-          << "BUG: no-match case flowed outside switch statement";
+      NOTREACHED() << "BUG: no-match case flowed outside switch statement";
     }
 
     error_ = "Test case exhausted: no matching expectation";

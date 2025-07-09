@@ -155,8 +155,7 @@ void CopyAttributes(const mocking::IppCollection& mock_collection,
                            CopyDateTimes(mock_attribute));
         break;
       default:
-        NOTREACHED_IN_MIGRATION()
-            << "BUG: unhandled `mocking::IppAttribute` value case";
+        NOTREACHED() << "BUG: unhandled `mocking::IppAttribute` value case";
     }
   }
 }
