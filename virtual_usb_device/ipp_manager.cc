@@ -40,8 +40,8 @@ std::unique_ptr<IppManager> IppManager::Create(
   }
   // The values inside the `attributes_data_` are referenced as pointer all
   // the way, so this must exists till this object is alive.
-  std::optional<base::Value> attributes_data =
-      base::JSONReader::Read(*attributes_contents);
+  std::optional<base::Value> attributes_data = base::JSONReader::Read(
+      *attributes_contents, base::JSON_PARSE_CHROMIUM_EXTENSIONS);
   if (!attributes_data) {
     LOG(ERROR) << "Failed to parse " << ipp_attributes_path;
     return nullptr;

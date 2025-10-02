@@ -173,8 +173,8 @@ std::optional<ScannerCapabilities> Scanner::InitializeEsclCaps(
     return std::nullopt;
   }
 
-  std::optional<base::Value> capabilities_json =
-      base::JSONReader::Read(capabilities_string);
+  std::optional<base::Value> capabilities_json = base::JSONReader::Read(
+      capabilities_string, base::JSON_PARSE_CHROMIUM_EXTENSIONS);
   if (!capabilities_json) {
     LOG(ERROR) << "Failed to parse capabilities as JSON";
     return std::nullopt;

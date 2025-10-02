@@ -88,8 +88,8 @@ std::optional<UsbDescriptors> UsbDescriptors::CreateFromJson(
     return std::nullopt;
   }
 
-  std::optional<base::Value> descriptors =
-      base::JSONReader::Read(descriptors_contents);
+  std::optional<base::Value> descriptors = base::JSONReader::Read(
+      descriptors_contents, base::JSON_PARSE_CHROMIUM_EXTENSIONS);
   if (!descriptors) {
     LOG(ERROR) << "Failed to parse descriptors content";
     return std::nullopt;
