@@ -6,8 +6,8 @@
 
 #include <optional>
 #include <utility>
+#include <algorithm>
 
-#include <base/containers/contains.h>
 #include <base/files/file_util.h>
 #include <base/json/json_writer.h>
 #include <base/strings/stringprintf.h>
@@ -184,7 +184,7 @@ HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
     return response;
   }
 
-  if (!base::Contains(caps.color_modes,
+  if (!std::ranges::contains(caps.color_modes,
                       ColorModeAsString(settings.color_mode))) {
     LOG(ERROR) << "Requested unsupported color mode '"
                << ColorModeAsString(settings.color_mode) << "'";
@@ -195,7 +195,7 @@ HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
     return response;
   }
 
-  if (!base::Contains(caps.formats, settings.document_format)) {
+  if (!std::ranges::contains(caps.formats, settings.document_format)) {
     LOG(ERROR) << "Requested unsupported document format '"
                << settings.document_format << "'";
     response.status = "409 Conflict";
@@ -209,7 +209,7 @@ HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
     return response;
   }
 
-  if (!base::Contains(caps.resolutions, settings.x_resolution)) {
+  if (!std::ranges::contains(caps.resolutions, settings.x_resolution)) {
     LOG(ERROR) << "Requested unsupported resolution '" << settings.x_resolution
                << "'";
     response.status = "409 Conflict";
