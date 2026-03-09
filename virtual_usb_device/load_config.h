@@ -16,41 +16,41 @@
 #include "usbip_constants.h"
 
 // Extract the uint8_t value associated with `key` from `dict`.
-uint8_t GetByteValue(const base::Value::Dict& dict, const std::string& key);
+uint8_t GetByteValue(const base::DictValue& dict, const std::string& key);
 
 // Extract the uint16_t value associated with `key` from `dict`.
-uint16_t GetWordValue(const base::Value::Dict& dict, const std::string& key);
+uint16_t GetWordValue(const base::DictValue& dict, const std::string& key);
 
 // Extract the USB device descriptor from the given `printer` config JSON.
-UsbDeviceDescriptor GetDeviceDescriptor(const base::Value::Dict& printer);
+UsbDeviceDescriptor GetDeviceDescriptor(const base::DictValue& printer);
 
 // Extract the USB configuration descriptor from the given `printer` config
 // JSON.
 UsbConfigurationDescriptor GetConfigurationDescriptor(
-    const base::Value::Dict& printer);
+    const base::DictValue& printer);
 
 // Extract the USB device qualifier descriptor from the given `printer` config
 // JSON.
 UsbDeviceQualifierDescriptor GetDeviceQualifierDescriptor(
-    const base::Value::Dict& printer);
+    const base::DictValue& printer);
 
 // Extract each of the USB interface descriptors from the given `printer` config
 // JSON and return them in a vector.
 std::vector<UsbInterfaceDescriptor> GetInterfaceDescriptors(
-    const base::Value::Dict& printer);
+    const base::DictValue& printer);
 
 // Extract the values from the given interface descriptor JSON `descriptor`.
 UsbInterfaceDescriptor GetInterfaceDescriptor(
-    const base::Value::Dict& descriptor);
+    const base::DictValue& descriptor);
 
 // Extract the interface descriptors and their associated endpoint descriptors
 // to construct a mapping from interface numbers to a collection of endpoint
 // descriptors.
 base::flat_map<uint8_t, std::vector<UsbEndpointDescriptor>>
-GetEndpointDescriptorMap(const base::Value::Dict& printer);
+GetEndpointDescriptorMap(const base::DictValue& printer);
 
 // Extract the USB endpoint descriptor from the given `printer` config JSON.
-UsbEndpointDescriptor GetEndpointDescriptor(const base::Value::Dict& printer);
+UsbEndpointDescriptor GetEndpointDescriptor(const base::DictValue& printer);
 
 // Converts `string` into a USB string descriptor stored in a vector of
 // characters.
@@ -62,9 +62,9 @@ std::vector<char> ConvertStringToStringDescriptor(const std::string& str);
 // descriptors are expected to be stored in a list associated with the key
 // "string_descriptors".
 std::vector<std::vector<char>> GetStringDescriptors(
-    const base::Value::Dict& printer);
+    const base::DictValue& printer);
 
 // Extracts the IEEE Device ID from the given `printer` config JSON.
-std::vector<char> GetIEEEDeviceId(const base::Value::Dict& printer);
+std::vector<char> GetIEEEDeviceId(const base::DictValue& printer);
 
 #endif  // VIRTUAL_USB_DEVICE_LOAD_CONFIG_H_

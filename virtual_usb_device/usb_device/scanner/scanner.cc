@@ -23,8 +23,8 @@
 namespace {
 
 std::optional<std::vector<std::string>> ExtractStringList(
-    const base::Value::Dict& root, const std::string& config_name) {
-  const base::Value::List* value = root.FindList(config_name);
+    const base::DictValue& root, const std::string& config_name) {
+  const base::ListValue* value = root.FindList(config_name);
   if (!value) {
     LOG(ERROR) << "Config is missing " << config_name << " settings";
     return std::nullopt;
@@ -40,9 +40,9 @@ std::optional<std::vector<std::string>> ExtractStringList(
   return config_list;
 }
 
-std::optional<std::vector<int>> ExtractIntList(const base::Value::Dict& root,
+std::optional<std::vector<int>> ExtractIntList(const base::DictValue& root,
                                                const std::string& config_name) {
-  const base::Value::List* value = root.FindList(config_name);
+  const base::ListValue* value = root.FindList(config_name);
   if (!value) {
     LOG(ERROR) << "Config is missing " << config_name << " settings";
     return std::nullopt;
@@ -59,7 +59,7 @@ std::optional<std::vector<int>> ExtractIntList(const base::Value::Dict& root,
 }
 
 std::optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
-    const base::Value::Dict& config) {
+    const base::DictValue& config) {
   SourceCapabilities result;
   result.max_width = config.FindInt("MaxWidth");
   result.max_height = config.FindInt("MaxHeight");
@@ -101,7 +101,7 @@ std::optional<SourceCapabilities> CreateSourceCapabilitiesFromConfig(
 
 // static
 std::optional<ScannerCapabilities> Scanner::CreateScannerCapabilitiesFromConfig(
-    const base::Value::Dict& config) {
+    const base::DictValue& config) {
   ScannerCapabilities result;
   const std::string* make_and_model = config.FindString("MakeAndModel");
   if (!make_and_model) {
@@ -117,7 +117,7 @@ std::optional<ScannerCapabilities> Scanner::CreateScannerCapabilitiesFromConfig(
   }
   result.serial_number = *serial_number;
 
-  const base::Value::Dict* platen = config.FindDict("Platen");
+  const base::DictValue* platen = config.FindDict("Platen");
   if (!platen) {
     LOG(ERROR) << "Config is missing Platen source capabilities";
     return std::nullopt;
@@ -131,7 +131,7 @@ std::optional<ScannerCapabilities> Scanner::CreateScannerCapabilitiesFromConfig(
   }
   result.platen_capabilities = platen_capabilities.value();
 
-  const base::Value::Dict* adf = config.FindDict("ADF");
+  const base::DictValue* adf = config.FindDict("ADF");
   if (adf) {
     std::optional<SourceCapabilities> adf_capabilities =
         CreateSourceCapabilitiesFromConfig(*adf);

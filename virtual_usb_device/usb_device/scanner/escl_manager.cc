@@ -185,7 +185,7 @@ HttpResponse EsclManager::HandleCreateScanJob(const SmartBuffer& request_body) {
   }
 
   if (!std::ranges::contains(caps.color_modes,
-                      ColorModeAsString(settings.color_mode))) {
+                             ColorModeAsString(settings.color_mode))) {
     LOG(ERROR) << "Requested unsupported color mode '"
                << ColorModeAsString(settings.color_mode) << "'";
     for (const auto& mode : caps.color_modes) {
@@ -319,7 +319,7 @@ bool EsclManager::LogSettings(const ScanSettings& settings) {
   if (output_log_dir_.empty())
     return true;
 
-  base::Value::Dict settings_dict = SettingsToDict(settings);
+  base::DictValue settings_dict = SettingsToDict(settings);
   std::string json_settings;
   if (!base::JSONWriter::Write(settings_dict, &json_settings)) {
     LOG(ERROR) << "Failed to write settings in json format.";
@@ -336,16 +336,16 @@ bool EsclManager::LogSettings(const ScanSettings& settings) {
   return true;
 }
 
-base::Value::Dict EsclManager::SettingsToDict(const ScanSettings& settings) {
-  base::Value::Dict dict;
+base::DictValue EsclManager::SettingsToDict(const ScanSettings& settings) {
+  base::DictValue dict;
   dict.Set("DocumentFormat", settings.document_format);
   dict.Set("ColorMode", settings.color_mode);
   dict.Set("InputSource", settings.input_source);
   dict.Set("XResolution", settings.x_resolution);
   dict.Set("YResolution", settings.y_resolution);
-  base::Value::List regions;
+  base::ListValue regions;
   for (const ScanRegion& r : settings.regions) {
-    base::Value::Dict region_dict;
+    base::DictValue region_dict;
     region_dict.Set("Units", r.units);
     region_dict.Set("Height", r.height);
     region_dict.Set("Width", r.width);

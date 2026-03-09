@@ -27,7 +27,7 @@
 
 namespace {
 
-std::vector<IppAttribute> GetAttributes(const base::Value::List& attributes) {
+std::vector<IppAttribute> GetAttributes(const base::ListValue& attributes) {
   std::vector<IppAttribute> ipp_attributes;
   for (std::size_t i = 0; i < attributes.size(); ++i) {
     const base::Value& attributes_dictionary = attributes[i];
@@ -339,7 +339,7 @@ bool RemoveIppAttributes(SmartBuffer* buf) {
   return true;
 }
 
-IppAttribute GetAttribute(const base::Value::Dict& attribute) {
+IppAttribute GetAttribute(const base::DictValue& attribute) {
   const std::string* type = attribute.FindString(kTypeKey);
   const std::string* name = attribute.FindString(kNameKey);
   const base::Value* value = attribute.Find(kValueKey);
@@ -350,9 +350,9 @@ IppAttribute GetAttribute(const base::Value::Dict& attribute) {
   return IppAttribute(*type, *name, value);
 }
 
-std::vector<IppAttribute> GetAttributes(const base::Value::Dict& attributes,
+std::vector<IppAttribute> GetAttributes(const base::DictValue& attributes,
                                         const std::string& key) {
-  const base::Value::List* attributes_list = attributes.FindList(key);
+  const base::ListValue* attributes_list = attributes.FindList(key);
   CHECK(attributes_list) << "Failed to extract attributes list for key " << key;
 
   return GetAttributes(*attributes_list);

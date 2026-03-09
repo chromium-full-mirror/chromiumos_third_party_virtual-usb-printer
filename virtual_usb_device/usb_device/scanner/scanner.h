@@ -38,7 +38,7 @@ class Scanner {
                                  const SmartBuffer& request_body);
   // Create ScannerCapabilities from the config dictionary.
   static std::optional<ScannerCapabilities> CreateScannerCapabilitiesFromConfig(
-      const base::Value::Dict& config);
+      const base::DictValue& config);
 
  private:
   // Attempts to initialize an ScannerCapabilities.

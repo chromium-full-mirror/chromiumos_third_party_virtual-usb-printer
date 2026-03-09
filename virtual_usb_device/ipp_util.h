@@ -120,10 +120,10 @@ bool RemoveIppAttributes(SmartBuffer* buf);
 
 // Construct an IppAttribute object for the given |attribute| which should be a
 // JSON representation of a single IPP attribute.
-IppAttribute GetAttribute(const base::Value::Dict& attribute);
+IppAttribute GetAttribute(const base::DictValue& attribute);
 
 // Extracts ipp attributes from the |attributes| JSON.
-std::vector<IppAttribute> GetAttributes(const base::Value::Dict& attributes,
+std::vector<IppAttribute> GetAttributes(const base::DictValue& attributes,
                                         const std::string& key);
 
 // Converts the |name| of a tag into its corresponding value from cups.
