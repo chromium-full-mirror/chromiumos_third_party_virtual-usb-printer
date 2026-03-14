@@ -147,25 +147,25 @@ constexpr char kScanInvalidSource[] =
    "</scan:ScanSettings>";
 // clang-format on
 
-Value::Dict CreateCapabilitiesJson(bool createAdf = true) {
-  Value::Dict dict;
+base::DictValue CreateCapabilitiesJson(bool createAdf = true) {
+  base::DictValue dict;
   dict.Set("MakeAndModel", "Test Make and Model");
   dict.Set("SerialNumber", "Test Serial");
 
-  Value::Dict platen;
+  base::DictValue platen;
   platen.Set("MaxWidth", 3660);
   platen.Set("MaxHeight", 5160);
 
-  Value::List platen_color_modes;
+  base::ListValue platen_color_modes;
   platen_color_modes.Append("RGB24");
   platen_color_modes.Append("Grayscale8");
   platen.Set("ColorModes", std::move(platen_color_modes));
 
-  Value::List platen_document_formats;
+  base::ListValue platen_document_formats;
   platen_document_formats.Append("application/pdf");
   platen.Set("DocumentFormats", std::move(platen_document_formats));
 
-  Value::List platen_resolutions;
+  base::ListValue platen_resolutions;
   platen_resolutions.Append(100);
   platen_resolutions.Append(200);
   platen_resolutions.Append(300);
@@ -174,20 +174,20 @@ Value::Dict CreateCapabilitiesJson(bool createAdf = true) {
   dict.Set("Platen", std::move(platen));
 
   if (createAdf) {
-    Value::Dict adf;
+    base::DictValue adf;
     adf.Set("MaxWidth", 3660);
     adf.Set("MaxHeight", 5160);
 
-    Value::List adf_color_modes;
+    base::ListValue adf_color_modes;
     adf_color_modes.Append("BlackAndWhite1");
     adf_color_modes.Append("Grayscale8");
     adf.Set("ColorModes", std::move(adf_color_modes));
 
-    Value::List adf_document_formats;
+    base::ListValue adf_document_formats;
     adf_document_formats.Append("image/jpeg");
     adf.Set("DocumentFormats", std::move(adf_document_formats));
 
-    Value::List adf_resolutions;
+    base::ListValue adf_resolutions;
     adf_resolutions.Append(75);
     adf_resolutions.Append(150);
     adf_resolutions.Append(600);
@@ -250,75 +250,75 @@ TEST(ScannerCapabilities, Initialize) {
 }
 
 TEST(ScannerCapabilities, InitializeFailColorModeHasInteger) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   json.FindListByDottedPath("Platen.ColorModes")->Append(Value(9));
   EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailDocumentFormatsHasDouble) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   json.FindListByDottedPath("Platen.DocumentFormats")->Append(Value(2.7));
   EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailResolutionsHasString) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   json.FindListByDottedPath("Platen.Resolutions")->Append(Value("600"));
   EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingMakeAndModel) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.Remove("MakeAndModel"));
   EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingSerialNumber) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.Remove("SerialNumber"));
   EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingColorModes) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.ColorModes"));
   EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingDocumentFormats) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.DocumentFormats"));
   EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingResolutions) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.Resolutions"));
   EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializeFailMissingPlatenSection) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.Remove("Platen"));
   EXPECT_FALSE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializePassMissingMaxWidth) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.MaxWidth"));
   EXPECT_TRUE(json.RemoveByDottedPath("ADF.MaxWidth"));
   EXPECT_TRUE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializePassMissingMaxHeight) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("Platen.MaxHeight"));
   EXPECT_TRUE(json.RemoveByDottedPath("ADF.MaxHeight"));
   EXPECT_TRUE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
 
 TEST(ScannerCapabilities, InitializePassMissingJustification) {
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   EXPECT_TRUE(json.RemoveByDottedPath("ADF.XJustification"));
   EXPECT_TRUE(Scanner::CreateScannerCapabilitiesFromConfig(std::move(json)));
 }
@@ -684,7 +684,7 @@ TEST(HandleEsclRequest, InvalidScanJobs) {
   request.method = "POST";
   request.uri = "/eSCL/ScanJobs";
 
-  Value::Dict json = CreateCapabilitiesJson();
+  base::DictValue json = CreateCapabilitiesJson();
   {
     auto* value = json.FindListByDottedPath("Platen.DocumentFormats");
     ASSERT_TRUE(value);
