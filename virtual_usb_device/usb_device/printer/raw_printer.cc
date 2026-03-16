@@ -6,6 +6,7 @@
 
 #include <optional>
 
+#include <base/containers/span.h>
 #include <base/files/file.h>
 #include <base/files/file_path.h>
 #include <base/logging.h>
@@ -37,9 +38,9 @@ void AppendToFile(base::FilePath path, SmartBuffer buf) {
     return;
   }
 
-  int written = file.WriteAtCurrentPos(
-      reinterpret_cast<const char*>(buf.data()), buf.size());
-  if (written != buf.size()) {
+  auto written =
+      file.WriteAtCurrentPos(base::span<const uint8_t>(buf.data(), buf.size()));
+  if (!written.has_value() || *written != buf.size()) {
     PLOG(ERROR) << "Failed to write buf to file at " << path;
   }
 }

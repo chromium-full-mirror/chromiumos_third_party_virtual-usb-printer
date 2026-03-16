@@ -11,6 +11,7 @@
 #include <utility>
 
 #include <base/check.h>
+#include <base/containers/span.h>
 #include <base/files/file.h>
 #include <base/files/file_path.h>
 #include <base/files/file_util.h>
@@ -212,8 +213,8 @@ void UsbPrinter::LogHttpHeaders(const HttpRequest& request) {
 
   const std::string msg =
       base::StringPrintf("%s\n", request.request_line.c_str());
-  const int written = file.WriteAtCurrentPos(msg.c_str(), msg.length());
-  if (written != msg.length()) {
+  auto written = file.WriteAtCurrentPos(base::as_byte_span(msg));
+  if (!written.has_value() || *written != msg.length()) {
     PLOG(ERROR) << "Failed to write HTTP request line to file at " << filePath;
     return;
   }
@@ -222,8 +223,8 @@ void UsbPrinter::LogHttpHeaders(const HttpRequest& request) {
   for (auto it = headers.begin(); it != headers.end(); ++it) {
     const std::string msg =
         base::StringPrintf("%s: %s\n", it->first.c_str(), it->second.c_str());
-    const int written = file.WriteAtCurrentPos(msg.c_str(), msg.length());
-    if (written != msg.length()) {
+    auto written = file.WriteAtCurrentPos(base::as_byte_span(msg));
+    if (!written.has_value() || *written != msg.length()) {
       PLOG(ERROR) << "Failed to write http headers to file at " << filePath;
       return;
     }
@@ -251,8 +252,8 @@ void UsbPrinter::LogIppHeaders(const IppHeader& ipp_header) {
       "Major: %d\nMinor: %d\nOp ID: %s\nRequest ID: %d\n", ipp_header.major,
       ipp_header.minor, ipp::ToString(op_id).c_str(), ipp_header.request_id);
 
-  const int written = file.WriteAtCurrentPos(msg.c_str(), msg.length());
-  if (written != msg.length()) {
+  auto written = file.WriteAtCurrentPos(base::as_byte_span(msg));
+  if (!written.has_value() || *written != msg.length()) {
     PLOG(ERROR) << "Failed to write IPP request line to file at " << filePath;
   }
 }
